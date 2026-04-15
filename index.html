@@ -268,6 +268,80 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   </div>
 </div>
 
+<!-- FAQ 浮動按鈕 -->
+<button onclick="toggleFaq()" style="position:fixed;bottom:24px;right:24px;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#000;font-weight:800;font-size:18px;border:none;cursor:pointer;box-shadow:0 4px 16px #0006;z-index:998">?</button>
+
+<!-- FAQ Modal -->
+<div id="faq-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000a;z-index:997;align-items:flex-end;justify-content:center;padding:0">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:24px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
+      <div style="font-weight:800;font-size:16px">❓ 常見問題 &amp; 使用說明</div>
+      <button onclick="toggleFaq()" style="background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+
+    <div style="font-size:13px;line-height:1.8">
+
+      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">🏠 首頁</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 顯示比賽結束倒數計時和下次測量日提醒</div>
+        <div>• 當前獎金池金額和參賽人數</div>
+        <div>• 即時排行榜（依總得分排名）</div>
+        <div>• 全員體脂趨勢折線圖</div>
+        <div>• 點「📋 比賽規則」可展開查看完整規則</div>
+      </div>
+
+      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">🔐 登入</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 點右上角「登入」進入個人後台</div>
+        <div>• 帳號密碼由管理員建立，請洽管理員取得</div>
+      </div>
+
+      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">📊 我的數據</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 顯示目標體脂、當前降幅、穩定加分與總評分</div>
+        <div>• 所有測量紀錄表格，標示來源（管理員／本人）</div>
+        <div>• 個人體脂率和體重趨勢折線圖</div>
+        <div>• 可申請刪除已有紀錄（需管理員審核）</div>
+      </div>
+
+      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">➕ 新增測量</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 自行填入體重、體脂等數據，立即儲存</div>
+        <div>• <strong style="color:var(--text)">注意：自填數據僅供個人參考，不納入計分和排行榜</strong></div>
+        <div>• 計分用的官方數據由管理員在測量日統一錄入</div>
+        <div>• 可標記生理期，生理期數據不納入加分計算</div>
+      </div>
+
+      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">📔 私人日記</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 記錄每天的心得、飲食、運動等內容</div>
+        <div>• 只有自己看得到，完全私人</div>
+        <div>• 可用日期範圍篩選歷史日記</div>
+      </div>
+
+      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">👤 設定</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 可修改顯示暱稱（排行榜上顯示的名字）</div>
+      </div>
+
+      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">📈 我的趨勢圖</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 在「我的數據」頁面下方可查看個人體脂率和體重折線圖</div>
+        <div>• 納入所有已核准的數據（管理員錄入 + 本人填的）</div>
+      </div>
+
+      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">❓ 常見問題</div>
+      <div style="color:var(--muted)">
+        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：為什麼我的排名沒有更新？</strong><br>A：排行榜只計算管理員在測量日錄入的數據，測量日分別為 4/15、4/29、5/13、5/27、6/10、6/24。</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：自己填的數據會影響排名嗎？</strong><br>A：不會，自填數據只供個人趨勢參考，排名和計分只用管理員錄入的數據。</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：我填錯數據怎麼辦？</strong><br>A：可以在「我的數據」點「刪」申請刪除，管理員審核後會刪除。若是計分紀錄填錯，請直接聯絡管理員。</div>
+        <div><strong style="color:var(--text)">Q：退賽可以退款嗎？</strong><br>A：退賽不退款，公基金一旦投入即不退還。</div>
+      </div>
+
+    </div>
+  </div>
+</div>
+
 <script>
 const firebaseConfig={apiKey:"AIzaSyD_s-anl91EMmC1TtmXNpVlyBcD7sYjzzk",authDomain:"fat-loss-game.firebaseapp.com",projectId:"fat-loss-game",storageBucket:"fat-loss-game.appspot.com",messagingSenderId:"280707290748",appId:"1:280707290748:web:aa7946aef2cc96cafe5bf9"};
 firebase.initializeApp(firebaseConfig);
@@ -276,6 +350,7 @@ const END_DATE=new Date('2026-06-24T23:59:59'), PRIZE_PER=3000, PRIZE_BACK=2000,
 const COLORS=['#f5a623','#4cde8f','#5b9cf6','#c084fc','#fb7185','#38bdf8','#a78bfa','#f472b6'];
 let CU=null, USERS_CACHE=[], publicChart=null;
 
+function toggleFaq(){const m=document.getElementById('faq-modal');m.style.display=m.style.display==='none'?'flex':'none';}
 function toggleRules(){
   const c=document.getElementById('rules-content');
   const a=document.getElementById('rules-arrow');
