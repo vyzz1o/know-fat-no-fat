@@ -6,7 +6,7 @@
 <title>🏆 脂己脂彼 百戰百勝</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-<script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-storage-compat.js"></script>
+
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -121,7 +121,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div class="period-btn" id="period-toggle" onclick="this.classList.toggle('active')">
         <span>🩸</span> 生理期中 (不列入穩定下降加分判斷)
       </div>
-      <label>證明照片</label><input type="file" id="rec-file" accept="image/*">
+
       <button class="btn btn-primary" id="btn-submit-rec" onclick="submitRecord()">送出審核</button>
     </div>
   </div>
@@ -167,7 +167,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 <script>
 const firebaseConfig={apiKey:"AIzaSyD_s-anl91EMmC1TtmXNpVlyBcD7sYjzzk",authDomain:"fat-loss-game.firebaseapp.com",projectId:"fat-loss-game",storageBucket:"fat-loss-game.appspot.com",messagingSenderId:"280707290748",appId:"1:280707290748:web:aa7946aef2cc96cafe5bf9"};
 firebase.initializeApp(firebaseConfig);
-const db=firebase.firestore(), storage=firebase.storage();
+const db=firebase.firestore();
 const END_DATE=new Date('2026-06-24T23:59:59'), PRIZE_PER=3000, PRIZE_BACK=2000, RATE_GOAL=0.07;
 const COLORS=['#f5a623','#4cde8f','#5b9cf6','#c084fc','#fb7185','#38bdf8','#a78bfa','#f472b6'];
 let CU=null, USERS_CACHE=[], publicChart=null;
@@ -231,7 +231,7 @@ async function loadUserRecords(){
     gBox.innerHTML=`<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div></div><div>${s.isWinner?'✅ 已達標':'進行中'}</div></div>`;
     sBar.innerHTML=`<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
   }
-  document.getElementById('user-record-list').innerHTML=`<table><tr><th>日期</th><th>體脂</th><th>生理</th><th>照片</th><th>狀態</th><th>操作</th></tr>`+recs.map(r=>`<tr><td>${r.date}</td><td>${r.bodyFat}%</td><td>${r.isPeriod?'🔴':'--'}</td><td>${r.imgUrl?`<a href="${r.imgUrl}" target="_blank">🔗</a>`:'--'}</td><td>${r.status==='approved'?'✅':'⏳'}</td><td><button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button></td></tr>`).join('')+`</table>`;
+  document.getElementById('user-record-list').innerHTML=`<table><tr><th>日期</th><th>體脂</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+recs.map(r=>`<tr><td>${r.date}</td><td>${r.bodyFat}%</td><td>${r.isPeriod?'🔴':'--'}</td><td>${r.status==='approved'?'✅':'⏳'}</td><td><button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button></td></tr>`).join('')+`</table>`;
 }
 
 async function login(){
@@ -242,11 +242,10 @@ async function login(){
   else toast('帳號或密碼錯誤','error');
 }
 async function submitRecord(){
-  const w=document.getElementById('rec-weight').value,f=document.getElementById('rec-bodyfat').value,d=document.getElementById('rec-date').value,file=document.getElementById('rec-file').files[0],isP=document.getElementById('period-toggle').classList.contains('active');
+  const w=document.getElementById('rec-weight').value,f=document.getElementById('rec-bodyfat').value,d=document.getElementById('rec-date').value,isP=document.getElementById('period-toggle').classList.contains('active');
   if(!w||!f||!d)return toast("請填寫數據","error");
   const btn=document.getElementById('btn-submit-rec');btn.disabled=true;btn.innerText="上傳中...";
-  let imgUrl="";if(file){const ref=storage.ref(`recs/${CU.id}_${Date.now()}`);await ref.put(file);imgUrl=await ref.getDownloadURL();}
-  await db.collection('records').add({userId:CU.id,weight:parseFloat(w),bodyFat:parseFloat(f),date:d,imgUrl,isPeriod:isP,status:'pending',createdAt:Date.now()});
+  await db.collection('records').add({userId:CU.id,weight:parseFloat(w),bodyFat:parseFloat(f),date:d,isPeriod:isP,status:'pending',createdAt:Date.now()});
   toast("送審成功");btn.disabled=false;btn.innerText="送出審核";loadUserRecords();
 }
 async function submitDiary(){const c=document.getElementById('diary-content').value;if(!c)return;await db.collection('diaries').add({userId:CU.id,content:c,date:new Date().toLocaleDateString(),createdAt:Date.now()});document.getElementById('diary-content').value='';loadUserDiaries();}
