@@ -231,7 +231,7 @@ async function loadUserRecords(){
     gBox.innerHTML=`<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div></div><div>${s.isWinner?'✅ 已達標':'進行中'}</div></div>`;
     sBar.innerHTML=`<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
   }
-  document.getElementById('user-record-list').innerHTML=`<table><tr><th>日期</th><th>體脂</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+recs.map(r=>`<tr><td>${r.date}</td><td>${r.bodyFat}%</td><td>${r.isPeriod?'🔴':'--'}</td><td>${r.status==='approved'?'✅':'⏳'}</td><td><button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button></td></tr>`).join('')+`</table>`;
+  document.getElementById('user-record-list').innerHTML=`<table><tr><th>日期</th><th>體重</th><th>體脂</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+recs.map(r=>`<tr><td>${r.date}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.isPeriod?'🔴':'--'}</td><td>${r.status==='approved'?'✅':'⏳'}</td><td><button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button></td></tr>`).join('')+`</table>`;
 }
 
 async function login(){
