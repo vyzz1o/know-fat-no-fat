@@ -241,7 +241,11 @@ async function loadUserRecords(){
     gBox.innerHTML=`<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div></div><div>${s.isWinner?'✅ 已達標':'進行中'}</div></div>`;
     sBar.innerHTML=`<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
   }
-  document.getElementById('user-record-list').innerHTML=`<div style="overflow-x:auto"><table><tr><th>日期</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+recs.map(r=>`<tr><td>${r.date}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'kg':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${r.status==='approved'?'✅':'⏳'}</td><td><button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button></td></tr>`).join('')+`</table></div>`;
+  document.getElementById('user-record-list').innerHTML=`<div style="overflow-x:auto"><table><tr><th>日期</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+recs.map(r=>{
+    const statusTxt = r.status==='approved'?'✅':r.status==='delete_pending'?'🗑待刪除':r.status==='rejected'?'❌拒絕':'⏳審核中';
+    const canDelete = r.status==='approved';
+    return`<tr><td>${r.date}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'kg':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td>${canDelete?`<button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button>`:''}</td></tr>`;
+  }).join('')+`</table></div>`;
 }
 
 async function login(){
@@ -267,9 +271,22 @@ async function submitDiary(){const c=document.getElementById('diary-content').va
 async function loadUserDiaries(){const snap=await db.collection('diaries').where('userId','==',CU.id).orderBy('createdAt','desc').get();document.getElementById('diary-list').innerHTML=snap.docs.map(d=>`<div class="card" style="font-size:12px;margin-top:10px"><div style="color:var(--muted);margin-bottom:4px">${d.data().date}</div>${d.data().content}</div>`).join('');}
 async function registerUser(){const id=document.getElementById('reg-id').value.trim(),n=document.getElementById('reg-name').value.trim(),p=document.getElementById('reg-pw').value;if(!id||!n||!p)return toast('請填寫所有欄位','error');await db.collection('users').doc(id).set({name:n,password:p,role:'user'});toast(`${n} 已建立`);loadAdminUserList();loadPublicData();}
 async function deleteUser(id){if(!confirm("確定刪除？"))return;await db.collection('users').doc(id).delete();loadAdminUserList();loadPublicData();}
-async function deleteRecord(id){if(!confirm("確定刪除？"))return;await db.collection('records').doc(id).delete();loadUserRecords();loadPublicData();}
+async function deleteRecord(id){if(!confirm("確定申請刪除？需管理員審核後才會正式刪除。"))return;await db.collection('records').doc(id).update({status:'delete_pending'});toast("已送出刪除申請，等待管理員審核");loadUserRecords();}
 async function approveRecord(id){await db.collection('records').doc(id).update({status:'approved'});loadPending();loadPublicData();}
-async function loadPending(){const snap=await db.collection('records').where('status','==','pending').get();document.getElementById('pending-list').innerHTML=snap.empty?"目前無待審核資料":snap.docs.map(doc=>{const r=doc.data();return`<div class="lb-row"><div style="flex:1"><strong>${r.userId}</strong>：體脂 ${r.bodyFat}%，體重 ${r.weight}kg，${r.date} ${r.isPeriod?'🔴生理期':''}</div><button class="btn btn-primary" style="width:auto;padding:5px 12px" onclick="approveRecord('${doc.id}')">✓ 核准</button></div>`;}).join('');}
+async function rejectRecord(id){await db.collection('records').doc(id).update({status:'rejected'});loadPending();toast("已拒絕");}
+async function approveDelete(id){await db.collection('records').doc(id).delete();loadPending();loadPublicData();toast("已批准刪除");}
+async function rejectDelete(id){await db.collection('records').doc(id).update({status:'approved'});loadPending();toast("已拒絕刪除申請");}
+async function loadPending(){
+  const snap=await db.collection('records').where('status','in',['pending','delete_pending']).get();
+  if(snap.empty){document.getElementById('pending-list').innerHTML="目前無待審核資料";return;}
+  document.getElementById('pending-list').innerHTML=snap.docs.map(doc=>{
+    const r=doc.data();
+    if(r.status==='delete_pending'){
+      return`<div class="lb-row"><div style="flex:1"><span style="color:var(--red);font-weight:700">🗑 刪除申請</span> <strong>${r.userId}</strong>：體脂 ${r.bodyFat}%，體重 ${r.weight}kg，${r.date}</div><button class="btn btn-primary" style="width:auto;padding:5px 12px;background:var(--red);color:#fff;margin-right:6px" onclick="approveDelete('${doc.id}')">✓ 批准刪除</button><button class="btn-red" style="background:var(--surface);color:var(--muted);border:1px solid var(--border)" onclick="rejectDelete('${doc.id}')">✗ 拒絕</button></div>`;
+    }
+    return`<div class="lb-row"><div style="flex:1"><strong>${r.userId}</strong>：體脂 ${r.bodyFat}%，體重 ${r.weight}kg，${r.date} ${r.isPeriod?'🔴生理期':''}</div><button class="btn btn-primary" style="width:auto;padding:5px 12px;margin-right:6px" onclick="approveRecord('${doc.id}')">✓ 核准</button><button class="btn-red" onclick="rejectRecord('${doc.id}')">✗ 拒絕</button></div>`;
+  }).join('');
+}
 async function loadAdminUserList(){const snap=await db.collection('users').get();const users=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');document.getElementById('admin-user-list').innerHTML=users.length===0?'尚無參賽者':users.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');}
 function updateAdminTargetSelect(){const sel=document.getElementById('admin-target-user');if(sel)sel.innerHTML=USERS_CACHE.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');}
 async function adminSubmitRecord(){
