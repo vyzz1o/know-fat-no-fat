@@ -346,14 +346,20 @@ async function submitDiary(){
   if(!c)return;
   const today=new Date().toISOString().split('T')[0];
   await db.collection('diaries').add({userId:CU.id,content:c,date:today,createdAt:Date.now()});
+  toast('日記已儲存！');
   document.getElementById('diary-content').value='';
   loadUserDiaries();
 }
 let ALL_DIARIES=[];
 async function loadUserDiaries(){
-  const snap=await db.collection('diaries').where('userId','==',CU.id).orderBy('createdAt','desc').get();
-  ALL_DIARIES=snap.docs.map(d=>({id:d.id,...d.data()}));
-  renderDiaries(ALL_DIARIES);
+  try {
+    const snap=await db.collection('diaries').where('userId','==',CU.id).get();
+    ALL_DIARIES=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
+    renderDiaries(ALL_DIARIES);
+  } catch(e) {
+    console.error('日記載入失敗',e);
+    toast('日記載入失敗','error');
+  }
 }
 function renderDiaries(list){
   document.getElementById('diary-list').innerHTML=list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px">尚無日記</div>':list.map(d=>`<div class="card" style="font-size:12px;margin-top:10px"><div style="color:var(--muted);margin-bottom:4px">${d.date}</div>${d.content}</div>`).join('');
