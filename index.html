@@ -21,8 +21,9 @@ label{font-size:12px;color:var(--muted);margin-bottom:4px;display:block}
 input,textarea,select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:13px;width:100%;outline:none;margin-bottom:10px}
 textarea{height:80px;resize:none}
 .btn{border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .15s}
-.btn-primary{background:var(--accent);color:#000; width:100%}
+.btn-primary{background:var(--accent);color:#000;width:100%}
 .btn-ghost{background:transparent;border:1px solid var(--border);color:var(--muted)}
+.btn-red{background:var(--red);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:12px;font-weight:700;cursor:pointer}
 .page{display:none}.page.active{display:block}
 .countdown-box{background:linear-gradient(135deg,#1e2433,#161a23);border:1px solid var(--border);border-radius:12px;padding:16px;text-align:center;margin-bottom:14px}
 .countdown-nums{display:flex;justify-content:center;gap:10px;margin-top:10px}
@@ -34,7 +35,7 @@ textarea{height:80px;resize:none}
 .lb-rank{font-size:18px;width:30px;text-align:center}
 .lb-bar-wrap{flex:1;background:var(--surface);border-radius:4px;height:8px;overflow:hidden;margin:4px 0}
 .lb-bar{height:8px;border-radius:4px;background:var(--accent)}
-.goal-box{background:linear-gradient(135deg,#4cde8f15,#4cde8f05);border:1px solid #4cde8f33;border-radius:10px;padding:14px 16px;margin-bottom:14px; display:flex; justify-content: space-between; align-items: center;}
+.goal-box{background:linear-gradient(135deg,#4cde8f15,#4cde8f05);border:1px solid #4cde8f33;border-radius:10px;padding:14px 16px;margin-bottom:14px;display:flex;justify-content:space-between;align-items:center;}
 .stat-box{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;text-align:center}
 .stat-label{font-size:10px;color:var(--muted);margin-bottom:2px}
 .stat-val{font-size:14px;font-weight:800}
@@ -42,8 +43,8 @@ textarea{height:80px;resize:none}
 .tabs{display:flex;gap:4px;margin-bottom:18px;overflow-x:auto}
 .tab{padding:7px 14px;border-radius:8px;font-size:13px;font-weight:600;cursor:pointer;border:none;background:var(--surface);color:var(--muted);white-space:nowrap}
 .tab.active{background:var(--accent);color:#000}
-.period-btn{background:var(--surface); border:1px solid var(--border); border-radius:8px; padding:8px; color:var(--muted); font-size:12px; cursor:pointer; margin-bottom:10px; display:flex; align-items:center; gap:8px;}
-.period-btn.active{background:#f05c6e20; border-color:var(--red); color:var(--red);}
+.period-btn{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px;color:var(--muted);font-size:12px;cursor:pointer;margin-bottom:10px;display:flex;align-items:center;gap:8px;}
+.period-btn.active{background:#f05c6e20;border-color:var(--red);color:var(--red);}
 table{width:100%;border-collapse:collapse;font-size:11px}
 th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .toast{position:fixed;bottom:22px;right:18px;z-index:9999;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;display:none;box-shadow:0 4px 12px #000}
@@ -53,118 +54,117 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 <body>
 
 <nav>
-    <div class="nav-title" onclick="goPublic()">🏆 脂己脂彼</div>
-    <div id="nav-right"><button class="btn btn-ghost" style="width:auto;padding:5px 12px" onclick="showPage('login')">登入</button></div>
+  <div class="nav-title" onclick="goPublic()">🏆 脂己脂彼</div>
+  <div id="nav-right"><button class="btn btn-ghost" style="width:auto;padding:5px 12px" onclick="showPage('login')">登入</button></div>
 </nav>
 
 <div class="page active" id="page-public">
 <main>
-    <div class="countdown-box">
-        <div style="font-size:12px;color:var(--muted)">比賽結束倒數</div>
-        <div style="font-size:13px;font-weight:700;margin-top:4px">2026/04/15 — 2026/06/24（共10週）</div>
-        <div class="countdown-nums" id="countdown-display"></div>
+  <div class="countdown-box">
+    <div style="font-size:12px;color:var(--muted)">比賽結束倒數</div>
+    <div style="font-size:13px;font-weight:700;margin-top:4px">2026/04/15 — 2026/06/24（共10週）</div>
+    <div class="countdown-nums" id="countdown-display"></div>
+  </div>
+  <div class="prize-banner">
+    <div>
+      <div style="font-size:11px;color:var(--muted)">💰 當前獎金池</div>
+      <div id="prize-amount" style="font-size:26px;font-weight:800;color:var(--accent)">NT$ 0</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:2px">體脂下降率達 7% 退 $2,000</div>
     </div>
-
-    <div class="prize-banner">
-        <div>
-            <div style="font-size:11px;color:var(--muted)">💰 當前獎金池</div>
-            <div id="prize-amount" style="font-size:26px;font-weight:800;color:var(--accent)">NT$ 0</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:2px">體脂下降率達 7% 退 $2,000</div>
-        </div>
-        <div style="text-align:right">
-            <div style="font-size:11px;color:var(--muted)">參賽人數</div>
-            <div id="prize-count" style="font-size:22px;font-weight:700">0</div>
-            <div style="font-size:10px;color:var(--muted)">人 × NT$3,000</div>
-        </div>
+    <div style="text-align:right">
+      <div style="font-size:11px;color:var(--muted)">參賽人數</div>
+      <div id="prize-count" style="font-size:22px;font-weight:700">0</div>
+      <div style="font-size:10px;color:var(--muted)">人 × NT$3,000</div>
     </div>
-
-    <div class="card">
-        <h2>🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2>
-        <div id="public-lb">載入數據中...</div>
-    </div>
-
-    <div class="card">
-        <h2>📈 全員體脂趨勢</h2>
-        <div style="height:200px;"><canvas id="chart-public-fat"></canvas></div>
-        <div id="chart-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:11px"></div>
-    </div>
+  </div>
+  <div class="card">
+    <h2>🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2>
+    <div id="public-lb">載入數據中...</div>
+  </div>
+  <div class="card">
+    <h2>📈 全員體脂趨勢</h2>
+    <div style="height:200px;"><canvas id="chart-public-fat"></canvas></div>
+    <div id="chart-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:11px"></div>
+  </div>
 </main>
 </div>
 
 <div class="page" id="page-login">
-    <div style="display:flex;align-items:center;justify-content:center;min-height:80vh;padding:20px">
-        <div class="card" style="width:100%;max-width:320px;padding:28px">
-            <h2 style="text-align:center;color:var(--accent)">參賽者登入</h2>
-            <input id="login-id" placeholder="帳號"><input id="login-pw" type="password" placeholder="密碼">
-            <button class="btn btn-primary" onclick="login()">登入系統</button>
-            <button class="btn btn-ghost" style="margin-top:10px" onclick="goPublic()">← 返回首頁</button>
-        </div>
+  <div style="display:flex;align-items:center;justify-content:center;min-height:80vh;padding:20px">
+    <div class="card" style="width:100%;max-width:320px;padding:28px">
+      <h2 style="text-align:center;color:var(--accent)">參賽者登入</h2>
+      <input id="login-id" placeholder="帳號">
+      <input id="login-pw" type="password" placeholder="密碼">
+      <button class="btn btn-primary" onclick="login()">登入系統</button>
+      <button class="btn btn-ghost" style="margin-top:10px;width:100%" onclick="goPublic()">← 返回首頁</button>
     </div>
+  </div>
 </div>
 
 <div class="page" id="page-user">
 <main>
-    <div id="user-goal-box"></div>
-    <div id="user-score-bar"></div>
-    
-    <div class="tabs" id="user-tabs">
-        <button class="tab active" onclick="userTab('mydata')">📊 我的數據</button>
-        <button class="tab" onclick="userTab('addrecord')">➕ 新增測量</button>
-        <button class="tab" onclick="userTab('diary')">📔 私人日記</button>
-        <button class="tab" onclick="userTab('profile')">👤 設定</button>
+  <div id="user-goal-box"></div>
+  <div id="user-score-bar"></div>
+  <div class="tabs" id="user-tabs">
+    <button class="tab active" onclick="userTab('mydata')">📊 我的數據</button>
+    <button class="tab" onclick="userTab('addrecord')">➕ 新增測量</button>
+    <button class="tab" onclick="userTab('diary')">📔 私人日記</button>
+    <button class="tab" onclick="userTab('profile')">👤 設定</button>
+  </div>
+  <div id="utab-mydata"><div class="card"><h2>數據紀錄</h2><div id="user-record-list"></div></div></div>
+  <div id="utab-addrecord" style="display:none">
+    <div class="card">
+      <h2>➕ 新增測量紀錄</h2>
+      <label>測量日期</label><input type="date" id="rec-date">
+      <label>體重 (kg)</label><input type="number" step="0.1" id="rec-weight">
+      <label>體脂 (%)</label><input type="number" step="0.1" id="rec-bodyfat">
+      <div class="period-btn" id="period-toggle" onclick="this.classList.toggle('active')">
+        <span>🩸</span> 生理期中 (不列入穩定下降加分判斷)
+      </div>
+      <label>證明照片</label><input type="file" id="rec-file" accept="image/*">
+      <button class="btn btn-primary" id="btn-submit-rec" onclick="submitRecord()">送出審核</button>
     </div>
-
-    <div id="utab-mydata"><div class="card"><h2>數據紀錄</h2><div id="user-record-list"></div></div></div>
-
-    <div id="utab-addrecord" style="display:none">
-        <div class="card">
-            <h2>➕ 新增測量紀錄</h2>
-            <label>測量日期</label><input type="date" id="rec-date">
-            <label>體重 (kg)</label><input type="number" step="0.1" id="rec-weight">
-            <label>體脂 (%)</label><input type="number" step="0.1" id="rec-bodyfat">
-            <div class="period-btn" id="period-toggle" onclick="this.classList.toggle('active')">
-                <span>🩸</span> 生理期中 (不列入穩定下降加分判斷)
-            </div>
-            <label>證明照片</label><input type="file" id="rec-file" accept="image/*">
-            <button class="btn btn-primary" id="btn-submit-rec" onclick="submitRecord()">送出審核</button>
-        </div>
-    </div>
-
-    <div id="utab-diary" style="display:none">
-        <div class="card"><h2>📔 紀錄減脂日記</h2><textarea id="diary-content" placeholder="紀錄內容..."></textarea><button class="btn btn-primary" onclick="submitDiary()">儲存日記</button></div>
-        <div id="diary-list"></div>
-    </div>
-
-    <div id="utab-profile" style="display:none">
-        <div class="card"><h2>👤 設定</h2><label>顯示暱稱</label><input id="profile-name"><button class="btn btn-primary" onclick="saveProfile()">更新資料</button></div>
-    </div>
-    <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px">安全登出</button>
+  </div>
+  <div id="utab-diary" style="display:none">
+    <div class="card"><h2>📔 紀錄減脂日記</h2><textarea id="diary-content" placeholder="紀錄內容..."></textarea><button class="btn btn-primary" onclick="submitDiary()">儲存日記</button></div>
+    <div id="diary-list"></div>
+  </div>
+  <div id="utab-profile" style="display:none">
+    <div class="card"><h2>👤 設定</h2><label>顯示暱稱</label><input id="profile-name"><button class="btn btn-primary" onclick="saveProfile()">更新資料</button></div>
+  </div>
+  <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px;width:100%">安全登出</button>
 </main>
 </div>
 
 <div class="page" id="page-admin">
 <main>
-    <div class="tabs" id="admin-tabs">
-        <button class="tab active" onclick="adminTab('pending')">⏳ 審核</button>
-        <button class="tab" onclick="adminTab('admin-add')">➕ 代錄</button>
-        <button class="tab" onclick="adminTab('register')">👤 用戶管理</button>
+  <div class="tabs" id="admin-tabs">
+    <button class="tab active" onclick="adminTab('pending')">⏳ 審核</button>
+    <button class="tab" onclick="adminTab('admin-add')">➕ 代錄</button>
+    <button class="tab" onclick="adminTab('register')">👤 用戶管理</button>
+  </div>
+  <div id="atab-pending"><div class="card"><h2>⏳ 待審核名單</h2><div id="pending-list"></div></div></div>
+  <div id="atab-admin-add" style="display:none">
+    <div class="card">
+      <h2>管理員代錄</h2>
+      <select id="admin-target-user"></select>
+      <input type="date" id="admin-rec-date">
+      <input type="number" step="0.1" id="admin-rec-weight" placeholder="體重">
+      <input type="number" step="0.1" id="admin-rec-bodyfat" placeholder="體脂">
+      <button class="btn btn-primary" onclick="adminSubmitRecord()">錄入發佈</button>
     </div>
-    <div id="atab-pending"><div class="card"><h2>⏳ 待審核名單</h2><div id="pending-list"></div></div></div>
-    <div id="atab-admin-add" style="display:none">
-        <div class="card"><h2>管理員代錄</h2><select id="admin-target-user"></select><input type="date" id="admin-rec-date"><input type="number" step="0.1" id="admin-rec-weight" placeholder="體重"><input type="number" step="0.1" id="admin-rec-bodyfat" placeholder="體脂"><button class="btn btn-primary" onclick="adminSubmitRecord()">錄入發佈</button></div>
-    </div>
-    <div id="atab-register" style="display:none">
-        <div class="card"><h2>➕ 建立帳號</h2><input id="reg-id" placeholder="ID"><input id="reg-name" placeholder="暱稱"><input id="reg-pw" placeholder="密碼"><button class="btn btn-primary" onclick="registerUser()">建立</button></div>
-        <div class="card"><h2>👥 參賽者清單</h2><div id="admin-user-list"></div></div>
-    </div>
-    <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px">登出管理員</button>
+  </div>
+  <div id="atab-register" style="display:none">
+    <div class="card"><h2>➕ 建立帳號</h2><input id="reg-id" placeholder="ID"><input id="reg-name" placeholder="暱稱"><input id="reg-pw" placeholder="密碼"><button class="btn btn-primary" onclick="registerUser()">建立</button></div>
+    <div class="card"><h2>👥 參賽者清單</h2><div id="admin-user-list"></div></div>
+  </div>
+  <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px;width:100%">登出管理員</button>
 </main>
 </div>
 
 <div id="toast-el" class="toast"></div>
 
 <script>
-// --- 初始化 Firebase ---
 const firebaseConfig={apiKey:"AIzaSyD_s-anl91EMmC1TtmXNpVlyBcD7sYjzzk",authDomain:"fat-loss-game.firebaseapp.com",projectId:"fat-loss-game",storageBucket:"fat-loss-game.appspot.com",messagingSenderId:"280707290748",appId:"1:280707290748:web:aa7946aef2cc96cafe5bf9"};
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore(), storage=firebase.storage();
@@ -179,107 +179,99 @@ function updateNav(){const nr=document.getElementById('nav-right');nr.innerHTML=
 function goDashboard(){CU.role==='admin'?showPage('admin'):showPage('user');}
 function logout(){CU=null;updateNav();goPublic();toast("已登出");}
 
-// --- 最終對帳計分公式 ---
-function calculateFullStats(recs) {
-    if (recs.length < 2) return { fatRate:0, weightRate:0, bonus:0, total:0, isWinner:false };
-    const start = recs[0], last = recs[recs.length-1];
-    const fRate = (start.bodyFat - last.bodyFat) / start.bodyFat;
-    const wRate = (start.weight - last.weight) / start.weight;
-    
-    // 生理期排除邏輯
-    const nonPeriod = recs.filter(r => !r.isPeriod);
-    let upCount = 0;
-    if (nonPeriod.length >= 2) {
-        for (let i = 1; i < nonPeriod.length; i++) {
-            if (nonPeriod[i].bodyFat > nonPeriod[i-1].bodyFat) upCount++;
-        }
-    }
-    const bonus = (upCount === 0) ? 0.10 : (upCount === 1 ? 0.05 : 0);
-    const total = ((fRate * 0.7) + (wRate * 0.3)) * (1 + bonus);
-    const isWinner = fRate >= RATE_GOAL; // 下降率達 7% 退 2000
-    
-    return { fatRate: fRate*100, weightRate: wRate*100, bonus: bonus*100, total: total*100, isWinner };
+function calculateFullStats(recs){
+  if(recs.length<2) return {fatRate:0,weightRate:0,bonus:0,total:0,isWinner:false};
+  const start=recs[0],last=recs[recs.length-1];
+  const fRate=(start.bodyFat-last.bodyFat)/start.bodyFat;
+  const wRate=(start.weight-last.weight)/start.weight;
+  const nonPeriod=recs.filter(r=>!r.isPeriod);
+  let upCount=0;
+  if(nonPeriod.length>=2){for(let i=1;i<nonPeriod.length;i++){if(nonPeriod[i].bodyFat>nonPeriod[i-1].bodyFat)upCount++;}}
+  const bonus=(upCount===0)?0.10:(upCount===1?0.05:0);
+  const total=((fRate*0.7)+(wRate*0.3))*(1+bonus);
+  const isWinner=fRate>=RATE_GOAL;
+  return{fatRate:fRate*100,weightRate:wRate*100,bonus:bonus*100,total:total*100,isWinner};
 }
 
-// --- 獎金與排行連動 ---
 async function loadPublicData(){
-  try {
-    const uSnap = await db.collection('users').get();
-    const currentUsers = uSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
-    USERS_CACHE = currentUsers;
-    document.getElementById('prize-count').textContent = currentUsers.length;
-
-    const rSnap = await db.collection('records').where('status','==','approved').get();
-    const records={}; rSnap.docs.forEach(d=>{const r=d.data(); if(!records[r.userId])records[r.userId]=[]; records[r.userId].push(r);});
-    Object.keys(records).forEach(id => records[id].sort((a,b)=>a.date.localeCompare(b.date)));
-
-    let winners = 0;
-    const rows = currentUsers.map(u => {
-      const r = records[u.id] || [];
-      const s = calculateFullStats(r);
-      if(s.isWinner) winners++;
-      return { id:u.id, name: u.name || u.id, score: s.total, history: r.map(rec => rec.bodyFat) };
-    }).sort((a,b) => b.score - a.score);
-
-    const finalAmount = (currentUsers.length * PRIZE_PER) - (winners * PRIZE_BACK);
-    document.getElementById('prize-amount').textContent = `NT$ ${finalAmount.toLocaleString()}`;
-
-    document.getElementById('public-lb').innerHTML = rows.map((u,i)=>`<div class="lb-row"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div>${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${Math.max(u.score*2,0)}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`).join('');
+  try{
+    const uSnap=await db.collection('users').get();
+    const currentUsers=uSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
+    USERS_CACHE=currentUsers;
+    document.getElementById('prize-count').textContent=currentUsers.length;
+    const rSnap=await db.collection('records').where('status','==','approved').get();
+    const records={};rSnap.docs.forEach(d=>{const r=d.data();if(!records[r.userId])records[r.userId]=[];records[r.userId].push(r);});
+    Object.keys(records).forEach(id=>records[id].sort((a,b)=>a.date.localeCompare(b.date)));
+    let winners=0;
+    const rows=currentUsers.map(u=>{const r=records[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
+    const finalAmount=(currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK);
+    document.getElementById('prize-amount').textContent=`NT$ ${finalAmount.toLocaleString()}`;
+    document.getElementById('public-lb').innerHTML=rows.map((u,i)=>`<div class="lb-row"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div>${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${Math.max(u.score*2,0)}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`).join('');
     renderTrendChart(rows);
-    if(CU && CU.role==='admin') updateAdminTargetSelect();
-  } catch(e) {}
+    if(CU&&CU.role==='admin')updateAdminTargetSelect();
+  }catch(e){console.error(e);}
 }
 
-function renderTrendChart(rows) {
-  const ctx=document.getElementById('chart-public-fat').getContext('2d'); if(publicChart) publicChart.destroy();
-  const maxLen=Math.max(...rows.map(r=>r.history.length), 0);
-  publicChart=new Chart(ctx, {type:'line', data:{labels:Array.from({length:maxLen},(_,i)=>`T${i+1}`), datasets:rows.map((u,i)=>({label:u.name, data:u.history, borderColor:COLORS[i%COLORS.length], tension:0.3}))}, options:{responsive:true, maintainAspectRatio:false, plugins:{legend:{display:false}}}});
+function renderTrendChart(rows){
+  const ctx=document.getElementById('chart-public-fat').getContext('2d');if(publicChart)publicChart.destroy();
+  const maxLen=Math.max(...rows.map(r=>r.history.length),0);
+  publicChart=new Chart(ctx,{type:'line',data:{labels:Array.from({length:maxLen},(_,i)=>`T${i+1}`),datasets:rows.map((u,i)=>({label:u.name,data:u.history,borderColor:COLORS[i%COLORS.length],tension:0.3}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
 }
 
-// --- 用戶後台：全數據方塊 ---
 async function loadUserRecords(){
-  if(!CU) return;
-  const snap = await db.collection('records').where('userId','==',CU.id).get();
-  const recs = snap.docs.map(doc=>({id:doc.id,...doc.data()})).sort((a,b)=>b.date.localeCompare(a.date));
-  const app = [...recs].filter(r=>r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
-  
-  const gBox = document.getElementById('user-goal-box');
-  const sBar = document.getElementById('user-score-bar');
-
-  if(app.length > 0){
-    const s = calculateFullStats(app);
-    const f=app[0], l=app[app.length-1], target=(f.bodyFat * (1 - RATE_GOAL)).toFixed(1);
-    gBox.innerHTML = `<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div></div><div>${s.isWinner ? '✅ 已達標' : '進行中'}</div></div>`;
-    sBar.innerHTML = `<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
+  if(!CU)return;
+  const snap=await db.collection('records').where('userId','==',CU.id).get();
+  const recs=snap.docs.map(doc=>({id:doc.id,...doc.data()})).sort((a,b)=>b.date.localeCompare(a.date));
+  const app=[...recs].filter(r=>r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
+  const gBox=document.getElementById('user-goal-box');
+  const sBar=document.getElementById('user-score-bar');
+  if(app.length>0){
+    const s=calculateFullStats(app);
+    const f=app[0],target=(f.bodyFat*(1-RATE_GOAL)).toFixed(1);
+    gBox.innerHTML=`<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div></div><div>${s.isWinner?'✅ 已達標':'進行中'}</div></div>`;
+    sBar.innerHTML=`<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
   }
-  document.getElementById('user-record-list').innerHTML = `<table><tr><th>日期</th><th>體脂</th><th>生理</th><th>照片</th><th>狀態</th><th>操作</th></tr>` + recs.map(r => `<tr><td>${r.date}</td><td>${r.bodyFat}%</td><td>${r.isPeriod?'🔴':'--'}</td><td>${r.imgUrl?`<a href="${r.imgUrl}" target="_blank">🔗</a>`:'--'}</td><td>${r.status==='approved'?'✅':'⏳'}</td><td><button class="btn btn-red" style="padding:2px 5px" onclick="deleteRecord('${r.id}')">刪</button></td></tr>`).join('') + `</table>`;
+  document.getElementById('user-record-list').innerHTML=`<table><tr><th>日期</th><th>體脂</th><th>生理</th><th>照片</th><th>狀態</th><th>操作</th></tr>`+recs.map(r=>`<tr><td>${r.date}</td><td>${r.bodyFat}%</td><td>${r.isPeriod?'🔴':'--'}</td><td>${r.imgUrl?`<a href="${r.imgUrl}" target="_blank">🔗</a>`:'--'}</td><td>${r.status==='approved'?'✅':'⏳'}</td><td><button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button></td></tr>`).join('')+`</table>`;
 }
 
-// --- 基礎操作與日記 ---
-async function login(){ const id=document.getElementById('login-id').value.trim(), pw=document.getElementById('login-pw').value; if(id==='admin'&&pw==='admin123'){ CU={id:'admin',role:'admin'}; updateNav(); showPage('admin'); loadPending(); loadAdminUserList(); return; } const snap=await db.collection('users').doc(id).get(); if(snap.exists && snap.data().password===pw){ CU={id,...snap.data()}; updateNav(); showPage('user'); userTab('mydata'); loadUserRecords(); loadUserDiaries(); } }
-async function submitRecord(){
-    const w=document.getElementById('rec-weight').value, f=document.getElementById('rec-bodyfat').value, d=document.getElementById('rec-date').value, file=document.getElementById('rec-file').files[0], isP=document.getElementById('period-toggle').classList.contains('active');
-    if(!w||!f||!d) return toast("填寫數據","error");
-    const btn=document.getElementById('btn-submit-rec'); btn.disabled=true; btn.innerText="上傳中...";
-    let imgUrl=""; if(file){ const ref=storage.ref(`recs/${CU.id}_${Date.now()}`); await ref.put(file); imgUrl=await ref.getDownloadURL(); }
-    await db.collection('records').add({userId:CU.id, weight:parseFloat(w), bodyFat:parseFloat(f), date:d, imgUrl, isPeriod:isP, status:'pending', createdAt:Date.now()});
-    toast("送審成功"); btn.disabled=false; btn.innerText="送出"; loadUserRecords();
+async function login(){
+  const id=document.getElementById('login-id').value.trim(),pw=document.getElementById('login-pw').value;
+  if(id==='admin'&&pw==='admin123'){CU={id:'admin',role:'admin'};updateNav();showPage('admin');loadPending();loadAdminUserList();return;}
+  const snap=await db.collection('users').doc(id).get();
+  if(snap.exists&&snap.data().password===pw){CU={id,...snap.data()};updateNav();showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
+  else toast('帳號或密碼錯誤','error');
 }
-async function submitDiary(){ const c=document.getElementById('diary-content').value; if(!c)return; await db.collection('diaries').add({userId:CU.id, content:c, date:new Date().toLocaleDateString(), createdAt:Date.now()}); document.getElementById('diary-content').value=''; loadUserDiaries(); }
-async function loadUserDiaries(){ const snap=await db.collection('diaries').where('userId','==',CU.id).orderBy('createdAt','desc').get(); document.getElementById('diary-list').innerHTML=snap.docs.map(d=>`<div class="card" style="font-size:12px; margin-top:10px"><div style="color:var(--muted);margin-bottom:4px">${d.data().date}</div>${d.data().content}</div>`).join(''); }
-async function registerUser(){ const id=document.getElementById('reg-id').value.trim(), n=document.getElementById('reg-name').value.trim(), p=document.getElementById('reg-pw').value; await db.collection('users').doc(id).set({name:n, password:p, role:'user'}); loadAdminUserList(); loadPublicData(); }
-async function deleteUser(id){ if(!confirm("？")) return; await db.collection('users').doc(id).delete(); loadAdminUserList(); loadPublicData(); }
-async function deleteRecord(id){ await db.collection('records').doc(id).delete(); loadUserRecords(); loadPublicData(); }
-async function approveRecord(id){ await db.collection('records').doc(id).update({status:'approved'}); loadPending(); await loadPublicData(); }
-async function loadPending(){ const snap=await db.collection('records').where('status','==','pending').get(); document.getElementById('pending-list').innerHTML=snap.empty?"無":snap.docs.map(doc=>{const r=doc.data(); return `<div class="lb-row"><div style="flex:1">${doc.data().userId}: ${doc.data().bodyFat}% ${doc.data().isPeriod?'🔴':''}</div><button class="btn btn-primary" onclick="approveRecord('${doc.id}')">准</button></div>`;}).join(''); }
-async function loadAdminUserList(){ const snap=await db.collection('users').get(); const users=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user'); document.getElementById('admin-user-list').innerHTML=users.map(u=>(`<div class="lb-row"><div style="flex:1">${u.name}</div><button class="btn btn-red" onclick="deleteUser('${u.id}')">刪</button></div>`)).join(''); }
-function updateAdminTargetSelect(){ const sel=document.getElementById('admin-target-user'); if(sel) sel.innerHTML=USERS_CACHE.map(u => `<option value="${u.id}">${u.name}</option>`).join(''); }
-async function adminSubmitRecord(){ const tid=document.getElementById('admin-target-user').value, w=document.getElementById('admin-rec-weight').value, f=document.getElementById('admin-rec-bodyfat').value, d=document.getElementById('admin-rec-date').value; await db.collection('records').add({userId:tid, weight:parseFloat(w), bodyFat:parseFloat(f), date:d, status:'approved', createdAt:Date.now()}); loadPublicData(); }
-function saveProfile(){ db.collection('users').doc(CU.id).update({name:document.getElementById('profile-name').value}); toast("成功"); loadPublicData(); }
-function userTab(t){['mydata','addrecord','diary','profile'].forEach(tab=>document.getElementById('utab-'+tab).style.display=tab===t?'block':'none'); document.querySelectorAll('#user-tabs .tab').forEach(b=>b.classList.toggle('active', b.innerText.includes(t==='mydata'?'數據':t==='addrecord'?'新增':t==='diary'?'日記':'設定')));}
-function adminTab(t){['pending','admin-add','register'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none'); document.querySelectorAll('#admin-tabs .tab').forEach(b=>b.classList.toggle('active', b.innerText.includes(t==='pending'?'審核':t==='admin-add'?'代入':'用戶')));}
-function tick(){ const diff=END_DATE-new Date(); const d=Math.floor(diff/86400000), h=Math.floor((diff%86400000)/3600000), m=Math.floor((diff%3600000)/60000), s=Math.floor((diff%60000)/1000); document.getElementById('countdown-display').innerHTML=[['天',d],['時',h],['分',m],['秒',s]].map(([u,v])=>`<div class="countdown-unit"><div class="countdown-num">${String(v).padStart(2,'0')}</div><div class="countdown-lbl">${u}</div></div>`).join(''); }
-setInterval(tick,1000); tick(); goPublic();
+async function submitRecord(){
+  const w=document.getElementById('rec-weight').value,f=document.getElementById('rec-bodyfat').value,d=document.getElementById('rec-date').value,file=document.getElementById('rec-file').files[0],isP=document.getElementById('period-toggle').classList.contains('active');
+  if(!w||!f||!d)return toast("請填寫數據","error");
+  const btn=document.getElementById('btn-submit-rec');btn.disabled=true;btn.innerText="上傳中...";
+  let imgUrl="";if(file){const ref=storage.ref(`recs/${CU.id}_${Date.now()}`);await ref.put(file);imgUrl=await ref.getDownloadURL();}
+  await db.collection('records').add({userId:CU.id,weight:parseFloat(w),bodyFat:parseFloat(f),date:d,imgUrl,isPeriod:isP,status:'pending',createdAt:Date.now()});
+  toast("送審成功");btn.disabled=false;btn.innerText="送出審核";loadUserRecords();
+}
+async function submitDiary(){const c=document.getElementById('diary-content').value;if(!c)return;await db.collection('diaries').add({userId:CU.id,content:c,date:new Date().toLocaleDateString(),createdAt:Date.now()});document.getElementById('diary-content').value='';loadUserDiaries();}
+async function loadUserDiaries(){const snap=await db.collection('diaries').where('userId','==',CU.id).orderBy('createdAt','desc').get();document.getElementById('diary-list').innerHTML=snap.docs.map(d=>`<div class="card" style="font-size:12px;margin-top:10px"><div style="color:var(--muted);margin-bottom:4px">${d.data().date}</div>${d.data().content}</div>`).join('');}
+async function registerUser(){const id=document.getElementById('reg-id').value.trim(),n=document.getElementById('reg-name').value.trim(),p=document.getElementById('reg-pw').value;if(!id||!n||!p)return toast('請填寫所有欄位','error');await db.collection('users').doc(id).set({name:n,password:p,role:'user'});toast(`${n} 已建立`);loadAdminUserList();loadPublicData();}
+async function deleteUser(id){if(!confirm("確定刪除？"))return;await db.collection('users').doc(id).delete();loadAdminUserList();loadPublicData();}
+async function deleteRecord(id){if(!confirm("確定刪除？"))return;await db.collection('records').doc(id).delete();loadUserRecords();loadPublicData();}
+async function approveRecord(id){await db.collection('records').doc(id).update({status:'approved'});loadPending();loadPublicData();}
+async function loadPending(){const snap=await db.collection('records').where('status','==','pending').get();document.getElementById('pending-list').innerHTML=snap.empty?"目前無待審核資料":snap.docs.map(doc=>{const r=doc.data();return`<div class="lb-row"><div style="flex:1"><strong>${r.userId}</strong>：體脂 ${r.bodyFat}%，體重 ${r.weight}kg，${r.date} ${r.isPeriod?'🔴生理期':''}</div><button class="btn btn-primary" style="width:auto;padding:5px 12px" onclick="approveRecord('${doc.id}')">✓ 核准</button></div>`;}).join('');}
+async function loadAdminUserList(){const snap=await db.collection('users').get();const users=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');document.getElementById('admin-user-list').innerHTML=users.length===0?'尚無參賽者':users.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');}
+function updateAdminTargetSelect(){const sel=document.getElementById('admin-target-user');if(sel)sel.innerHTML=USERS_CACHE.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');}
+async function adminSubmitRecord(){const tid=document.getElementById('admin-target-user').value,w=document.getElementById('admin-rec-weight').value,f=document.getElementById('admin-rec-bodyfat').value,d=document.getElementById('admin-rec-date').value;if(!w||!f||!d)return toast('請填寫所有欄位','error');await db.collection('records').add({userId:tid,weight:parseFloat(w),bodyFat:parseFloat(f),date:d,status:'approved',createdAt:Date.now()});toast('已錄入');loadPublicData();}
+function saveProfile(){db.collection('users').doc(CU.id).update({name:document.getElementById('profile-name').value});toast("更新成功");loadPublicData();}
+
+function userTab(t){
+  ['mydata','addrecord','diary','profile'].forEach(tab=>document.getElementById('utab-'+tab).style.display=tab===t?'block':'none');
+  document.querySelectorAll('#user-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['mydata','addrecord','diary','profile'].indexOf(t)));
+}
+function adminTab(t){
+  ['pending','admin-add','register'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
+  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register'].indexOf(t)));
+}
+
+function tick(){const diff=END_DATE-new Date();if(diff<0){document.getElementById('countdown-display').innerHTML='<div style="color:var(--accent);font-weight:800">比賽已結束！</div>';return;}const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);document.getElementById('countdown-display').innerHTML=[['天',d],['時',h],['分',m],['秒',s]].map(([u,v])=>`<div class="countdown-unit"><div class="countdown-num">${String(v).padStart(2,'0')}</div><div class="countdown-lbl">${u}</div></div>`).join('');}
+setInterval(tick,1000);tick();goPublic();
 </script>
 </body>
 </html>
