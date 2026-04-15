@@ -388,24 +388,24 @@ function adminTab(t){
 
 const MEASURE_DATES=['2026-04-15','2026-04-29','2026-05-13','2026-05-27','2026-06-10','2026-06-24'];
 function getNextMeasure(){
-  const today=new Date().toISOString().split('T')[0];
+  const now=new Date();
+  const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
   const next=MEASURE_DATES.find(d=>d>=today);
-  return next||null;
+  return{next:next||null, today};
 }
 function tick(){
   const diff=END_DATE-new Date();
   if(diff<0){document.getElementById('countdown-display').innerHTML='<div style="color:var(--accent);font-weight:800">比賽已結束！</div>';return;}
   const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
   document.getElementById('countdown-display').innerHTML=[['天',d],['時',h],['分',m],['秒',s]].map(([u,v])=>`<div class="countdown-unit"><div class="countdown-num">${String(v).padStart(2,'0')}</div><div class="countdown-lbl">${u}</div></div>`).join('');
-  const next=getNextMeasure();
+  const {next,today}=getNextMeasure();
   const box=document.getElementById('next-measure-box');
   if(box){
     if(!next){box.innerHTML='所有測量日已完成 🎉';return;}
-    const today=new Date().toISOString().split('T')[0];
     if(next===today){
       box.innerHTML=`<span style="color:var(--green);font-weight:700">📏 今天是測量日！記得量體脂！</span>`;
     } else {
-      const diffDays=Math.ceil((new Date(next)-new Date(today))/(86400000));
+      const diffDays=Math.round((new Date(next+'T00:00:00')-new Date(today+'T00:00:00'))/(86400000));
       box.innerHTML=`📏 下次測量日：<strong style="color:var(--accent)">${next}</strong>（還有 ${diffDays} 天）`;
     }
   }
