@@ -210,10 +210,19 @@ async function loadPublicData(){
     USERS_CACHE=currentUsers;
     document.getElementById('prize-count').textContent=currentUsers.length;
     const rSnap=await db.collection('records').where('status','==','approved').get();
-    const records={};rSnap.docs.forEach(d=>{const r=d.data();if(!records[r.userId])records[r.userId]=[];records[r.userId].push(r);});
-    Object.keys(records).forEach(id=>records[id].sort((a,b)=>a.date.localeCompare(b.date)));
+    const allRecords={}, adminRecords={};
+    rSnap.docs.forEach(d=>{
+      const r=d.data();
+      if(!allRecords[r.userId])allRecords[r.userId]=[];
+      allRecords[r.userId].push(r);
+      if(r.adminEntered){
+        if(!adminRecords[r.userId])adminRecords[r.userId]=[];
+        adminRecords[r.userId].push(r);
+      }
+    });
+    Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
     let winners=0;
-    const rows=currentUsers.map(u=>{const r=records[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
+    const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
     const finalAmount=(currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK);
     document.getElementById('prize-amount').textContent=`NT$ ${finalAmount.toLocaleString()}`;
     document.getElementById('public-lb').innerHTML=rows.map((u,i)=>`<div class="lb-row"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div>${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${Math.max(u.score*2,0)}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`).join('');
@@ -232,7 +241,7 @@ async function loadUserRecords(){
   if(!CU)return;
   const snap=await db.collection('records').where('userId','==',CU.id).get();
   const recs=snap.docs.map(doc=>({id:doc.id,...doc.data()})).sort((a,b)=>b.date.localeCompare(a.date));
-  const app=[...recs].filter(r=>r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
+  const app=[...recs].filter(r=>r.adminEntered&&r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
   const gBox=document.getElementById('user-goal-box');
   const sBar=document.getElementById('user-score-bar');
   if(app.length>0){
@@ -241,11 +250,16 @@ async function loadUserRecords(){
     gBox.innerHTML=`<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div></div><div>${s.isWinner?'✅ 已達標':'進行中'}</div></div>`;
     sBar.innerHTML=`<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
   }
-  document.getElementById('user-record-list').innerHTML=`<div style="overflow-x:auto"><table><tr><th>日期</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+recs.map(r=>{
+  const officialRecs = recs.filter(r=>r.adminEntered && r.status==='approved');
+  const personalRecs = recs.filter(r=>!r.adminEntered);
+  const renderTable = (list) => list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px 0">尚無紀錄</div>':`<div style="overflow-x:auto"><table><tr><th>日期</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
     const statusTxt = r.status==='approved'?'✅':r.status==='delete_pending'?'🗑待刪除':r.status==='rejected'?'❌拒絕':'⏳審核中';
     const canDelete = r.status==='approved';
     return`<tr><td>${r.date}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'kg':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td>${canDelete?`<button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button>`:''}</td></tr>`;
   }).join('')+`</table></div>`;
+  document.getElementById('user-record-list').innerHTML=
+    `<div style="font-size:12px;font-weight:700;color:var(--accent);margin-bottom:8px">📋 計分紀錄（管理員錄入）</div>`+renderTable(officialRecs)+
+    `<div style="font-size:12px;font-weight:700;color:var(--muted);margin-top:16px;margin-bottom:8px">📝 個人紀錄（僅供參考，不計分）</div>`+renderTable(personalRecs);
 }
 
 async function login(){
@@ -297,7 +311,7 @@ async function adminSubmitRecord(){
   const bmr=document.getElementById('admin-rec-bmr').value;
   const bodyage=document.getElementById('admin-rec-bodyage').value;
   if(!w||!f||!d)return toast('請填寫所有欄位','error');
-  await db.collection('records').add({userId:tid,weight:parseFloat(w),bodyFat:parseFloat(f),subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,bodyage:bodyage?parseFloat(bodyage):null,date:d,status:'approved',createdAt:Date.now()});
+  await db.collection('records').add({userId:tid,weight:parseFloat(w),bodyFat:parseFloat(f),subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,bodyage:bodyage?parseFloat(bodyage):null,date:d,status:'approved',adminEntered:true,createdAt:Date.now()});
   toast('已錄入');loadPublicData();
 }
 function saveProfile(){db.collection('users').doc(CU.id).update({name:document.getElementById('profile-name').value});toast("更新成功");loadPublicData();}
