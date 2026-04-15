@@ -267,6 +267,7 @@ function userTab(t){
 function adminTab(t){
   ['pending','admin-add','register'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
   document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register'].indexOf(t)));
+  if(t==='admin-add') loadPublicData();
 }
 
 function tick(){const diff=END_DATE-new Date();if(diff<0){document.getElementById('countdown-display').innerHTML='<div style="color:var(--accent);font-weight:800">比賽已結束！</div>';return;}const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);document.getElementById('countdown-display').innerHTML=[['天',d],['時',h],['分',m],['秒',s]].map(([u,v])=>`<div class="countdown-unit"><div class="countdown-num">${String(v).padStart(2,'0')}</div><div class="countdown-lbl">${u}</div></div>`).join('');}
