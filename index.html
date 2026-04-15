@@ -236,7 +236,7 @@ async function loadUserRecords(){
 
 async function login(){
   const id=document.getElementById('login-id').value.trim(),pw=document.getElementById('login-pw').value;
-  if(id==='admin'&&pw==='admin123'){CU={id:'admin',role:'admin'};updateNav();showPage('admin');loadPending();loadAdminUserList();return;}
+  if(id==='knowfatnofat'&&pw==='knowfatnofat2026'){CU={id:'admin',role:'admin'};updateNav();showPage('admin');loadPending();loadAdminUserList();return;}
   const snap=await db.collection('users').doc(id).get();
   if(snap.exists&&snap.data().password===pw){CU={id,...snap.data()};updateNav();showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
   else toast('帳號或密碼錯誤','error');
