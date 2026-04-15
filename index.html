@@ -48,7 +48,14 @@ textarea{height:80px;resize:none}
 table{width:100%;border-collapse:collapse;font-size:11px}
 th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .toast{position:fixed;bottom:22px;right:18px;z-index:9999;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;display:none;box-shadow:0 4px 12px #000}
-@media(max-width:520px){.grid4{grid-template-columns:1fr 1fr}}
+@media(max-width:520px){
+  .grid4{grid-template-columns:1fr 1fr}
+  .mobile-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
+  table{font-size:10px;min-width:480px}
+  th,td{padding:5px 6px}
+  .tabs{gap:3px}
+  .tab{padding:6px 10px;font-size:12px}
+}
 </style>
 </head>
 <body>
@@ -64,6 +71,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <div style="font-size:12px;color:var(--muted)">比賽結束倒數</div>
     <div style="font-size:13px;font-weight:700;margin-top:4px">2026/04/15 — 2026/06/24（共10週）</div>
     <div class="countdown-nums" id="countdown-display"></div>
+    <div id="next-measure-box" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
   </div>
   <div class="prize-banner">
     <div>
@@ -132,6 +140,15 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   </div>
   <div id="utab-diary" style="display:none">
     <div class="card"><h2>📔 紀錄減脂日記</h2><textarea id="diary-content" placeholder="紀錄內容..."></textarea><button class="btn btn-primary" onclick="submitDiary()">儲存日記</button></div>
+    <div class="card" style="padding:12px 18px">
+      <div style="display:flex;align-items:center;gap:8px;flex-wrap:wrap">
+        <label style="margin:0">篩選日期：</label>
+        <input type="date" id="diary-filter-start" style="width:auto;margin:0" onchange="filterDiaries()">
+        <span style="color:var(--muted)">—</span>
+        <input type="date" id="diary-filter-end" style="width:auto;margin:0" onchange="filterDiaries()">
+        <button class="btn-ghost" style="font-size:11px;padding:4px 10px;border-radius:6px;border:1px solid var(--border);background:transparent;color:var(--muted);cursor:pointer" onclick="clearDiaryFilter()">清除</button>
+      </div>
+    </div>
     <div id="diary-list"></div>
   </div>
   <div id="utab-profile" style="display:none">
@@ -229,7 +246,11 @@ async function loadPublicData(){
     const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
     const finalAmount=(currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK);
     document.getElementById('prize-amount').textContent=`NT$ ${finalAmount.toLocaleString()}`;
-    document.getElementById('public-lb').innerHTML=rows.map((u,i)=>`<div class="lb-row"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div>${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${Math.max(u.score*2,0)}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`).join('');
+    document.getElementById('public-lb').innerHTML=rows.map((u,i)=>{
+      const maxScore=rows[0]?Math.max(rows[0].score,0.01):1;
+      const barW=Math.max((u.score/maxScore)*100,0);
+      return`<div class="lb-row"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div>${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`;
+    }).join('');
     renderTrendChart(rows);
     if(CU&&CU.role==='admin')updateAdminTargetSelect();
   }catch(e){console.error(e);}
@@ -283,8 +304,38 @@ async function submitRecord(){
   await db.collection('records').add({userId:CU.id,weight:parseFloat(w),bodyFat:parseFloat(f),subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,bodyage:bodyage?parseFloat(bodyage):null,date:d,isPeriod:isP,status:'approved',adminEntered:false,createdAt:Date.now()});
   toast("個人紀錄已儲存！");btn.disabled=false;btn.innerText="儲存紀錄";loadUserRecords();
 }
-async function submitDiary(){const c=document.getElementById('diary-content').value;if(!c)return;await db.collection('diaries').add({userId:CU.id,content:c,date:new Date().toLocaleDateString(),createdAt:Date.now()});document.getElementById('diary-content').value='';loadUserDiaries();}
-async function loadUserDiaries(){const snap=await db.collection('diaries').where('userId','==',CU.id).orderBy('createdAt','desc').get();document.getElementById('diary-list').innerHTML=snap.docs.map(d=>`<div class="card" style="font-size:12px;margin-top:10px"><div style="color:var(--muted);margin-bottom:4px">${d.data().date}</div>${d.data().content}</div>`).join('');}
+async function submitDiary(){
+  const c=document.getElementById('diary-content').value;
+  if(!c)return;
+  const today=new Date().toISOString().split('T')[0];
+  await db.collection('diaries').add({userId:CU.id,content:c,date:today,createdAt:Date.now()});
+  document.getElementById('diary-content').value='';
+  loadUserDiaries();
+}
+let ALL_DIARIES=[];
+async function loadUserDiaries(){
+  const snap=await db.collection('diaries').where('userId','==',CU.id).orderBy('createdAt','desc').get();
+  ALL_DIARIES=snap.docs.map(d=>({id:d.id,...d.data()}));
+  renderDiaries(ALL_DIARIES);
+}
+function renderDiaries(list){
+  document.getElementById('diary-list').innerHTML=list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px">尚無日記</div>':list.map(d=>`<div class="card" style="font-size:12px;margin-top:10px"><div style="color:var(--muted);margin-bottom:4px">${d.date}</div>${d.content}</div>`).join('');
+}
+function filterDiaries(){
+  const s=document.getElementById('diary-filter-start').value;
+  const e=document.getElementById('diary-filter-end').value;
+  const filtered=ALL_DIARIES.filter(d=>{
+    if(s&&d.date<s)return false;
+    if(e&&d.date>e)return false;
+    return true;
+  });
+  renderDiaries(filtered);
+}
+function clearDiaryFilter(){
+  document.getElementById('diary-filter-start').value='';
+  document.getElementById('diary-filter-end').value='';
+  renderDiaries(ALL_DIARIES);
+}
 async function registerUser(){const id=document.getElementById('reg-id').value.trim(),n=document.getElementById('reg-name').value.trim(),p=document.getElementById('reg-pw').value;if(!id||!n||!p)return toast('請填寫所有欄位','error');await db.collection('users').doc(id).set({name:n,password:p,role:'user'});toast(`${n} 已建立`);loadAdminUserList();loadPublicData();}
 async function deleteUser(id){if(!confirm("確定刪除？"))return;await db.collection('users').doc(id).delete();loadAdminUserList();loadPublicData();}
 async function deleteRecord(id){if(!confirm("確定申請刪除？需管理員審核後才會正式刪除。"))return;await db.collection('records').doc(id).update({status:'delete_pending'});toast("已送出刪除申請，等待管理員審核");loadUserRecords();}
@@ -335,7 +386,30 @@ function adminTab(t){
   if(t==='history')loadHistory();
 }
 
-function tick(){const diff=END_DATE-new Date();if(diff<0){document.getElementById('countdown-display').innerHTML='<div style="color:var(--accent);font-weight:800">比賽已結束！</div>';return;}const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);document.getElementById('countdown-display').innerHTML=[['天',d],['時',h],['分',m],['秒',s]].map(([u,v])=>`<div class="countdown-unit"><div class="countdown-num">${String(v).padStart(2,'0')}</div><div class="countdown-lbl">${u}</div></div>`).join('');}
+const MEASURE_DATES=['2026-04-15','2026-04-29','2026-05-13','2026-05-27','2026-06-10','2026-06-24'];
+function getNextMeasure(){
+  const today=new Date().toISOString().split('T')[0];
+  const next=MEASURE_DATES.find(d=>d>=today);
+  return next||null;
+}
+function tick(){
+  const diff=END_DATE-new Date();
+  if(diff<0){document.getElementById('countdown-display').innerHTML='<div style="color:var(--accent);font-weight:800">比賽已結束！</div>';return;}
+  const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
+  document.getElementById('countdown-display').innerHTML=[['天',d],['時',h],['分',m],['秒',s]].map(([u,v])=>`<div class="countdown-unit"><div class="countdown-num">${String(v).padStart(2,'0')}</div><div class="countdown-lbl">${u}</div></div>`).join('');
+  const next=getNextMeasure();
+  const box=document.getElementById('next-measure-box');
+  if(box){
+    if(!next){box.innerHTML='所有測量日已完成 🎉';return;}
+    const today=new Date().toISOString().split('T')[0];
+    if(next===today){
+      box.innerHTML=`<span style="color:var(--green);font-weight:700">📏 今天是測量日！記得量體脂！</span>`;
+    } else {
+      const diffDays=Math.ceil((new Date(next)-new Date(today))/(86400000));
+      box.innerHTML=`📏 下次測量日：<strong style="color:var(--accent)">${next}</strong>（還有 ${diffDays} 天）`;
+    }
+  }
+}
 setInterval(tick,1000);tick();goPublic();
 </script>
 </body>
