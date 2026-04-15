@@ -85,6 +85,63 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div style="font-size:10px;color:var(--muted)">人 × NT$3,000</div>
     </div>
   </div>
+  <div class="card" style="margin-bottom:14px">
+    <div onclick="toggleRules()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+      <div style="font-weight:700;font-size:15px">📋 比賽規則</div>
+      <div id="rules-arrow" style="color:var(--muted);font-size:13px;transition:transform 0.2s">▼ 展開</div>
+    </div>
+    <div id="rules-content" style="display:none;margin-top:16px">
+
+      <div style="margin-bottom:16px">
+        <div style="color:var(--accent);font-weight:700;margin-bottom:8px">⏱ 比賽時長</div>
+        <div style="font-size:13px;color:var(--muted)">2026/04/15 — 2026/06/24（共 10 週）</div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="color:var(--accent);font-weight:700;margin-bottom:8px">📊 評分方式</div>
+        <div style="font-size:13px;line-height:1.8">
+          <div>✦ 體脂下降率 × <strong>70%</strong></div>
+          <div>✦ 體重下降率 × <strong>30%</strong></div>
+          <div style="margin-top:6px;color:var(--muted)">總分 ＝ [（體脂降率×70%）＋（體重降率×30%）] × (1＋加分%)</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="color:var(--accent);font-weight:700;margin-bottom:8px">⭐ 加分機制（最高 +10%）</div>
+        <div style="font-size:13px;line-height:1.8">
+          <div>✦ 每次測量皆下降或持平 👉 <strong style="color:var(--green)">+10%</strong></div>
+          <div>✦ 僅 1 次回升，其餘皆下降 👉 <strong style="color:var(--green)">+5%</strong></div>
+          <div>✦ 回升 2 次以上 👉 <strong style="color:var(--muted)">不加分</strong></div>
+          <div style="margin-top:6px;color:var(--muted);font-size:12px">※ 生理期數據浮動忽略不計｜持平視為合格</div>
+          <div style="color:var(--muted);font-size:12px">※ 測量日：4/15、4/29、5/13、5/27、6/10、6/24</div>
+        </div>
+      </div>
+
+      <div style="margin-bottom:16px">
+        <div style="color:var(--accent);font-weight:700;margin-bottom:8px">💰 公基金機制</div>
+        <div style="font-size:13px;line-height:1.8">
+          <div>✦ 每人投入 <strong>NT$3,000</strong>，退賽不退款</div>
+          <div>✦ 體脂下降率 ≥ 7% 可退回 <strong style="color:var(--green)">NT$2,000</strong></div>
+          <div style="margin-top:6px">未達標或剩餘公基金分配：</div>
+          <div>🥇 第 1 名 → <strong>60%</strong></div>
+          <div>🥈 第 2 名 → <strong>25%</strong></div>
+          <div>🥉 第 3 名 → <strong>15%</strong></div>
+        </div>
+      </div>
+
+      <div>
+        <div style="color:var(--accent);font-weight:700;margin-bottom:8px">📏 測量規範</div>
+        <div style="font-size:13px;line-height:1.8;color:var(--muted)">
+          <div>✔ 同一台體脂機</div>
+          <div>✔ 到公司後測量</div>
+          <div>✔ 固定輕裝或一致穿著</div>
+          <div>✔ 前後條件一致</div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
   <div class="card">
     <h2>🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2>
     <div id="public-lb">載入數據中...</div>
@@ -219,6 +276,12 @@ const END_DATE=new Date('2026-06-24T23:59:59'), PRIZE_PER=3000, PRIZE_BACK=2000,
 const COLORS=['#f5a623','#4cde8f','#5b9cf6','#c084fc','#fb7185','#38bdf8','#a78bfa','#f472b6'];
 let CU=null, USERS_CACHE=[], publicChart=null;
 
+function toggleRules(){
+  const c=document.getElementById('rules-content');
+  const a=document.getElementById('rules-arrow');
+  if(c.style.display==='none'){c.style.display='block';a.textContent='▲ 收起';}
+  else{c.style.display='none';a.textContent='▼ 展開';}
+}
 function toast(msg,type='success'){const el=document.getElementById('toast-el');el.textContent=msg;el.style.background=type==='error'?'var(--red)':'var(--green)';el.style.color='#fff';el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');}
 function goPublic(){showPage('public');loadPublicData();}
