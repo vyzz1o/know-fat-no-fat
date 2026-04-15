@@ -118,6 +118,11 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <label>測量日期</label><input type="date" id="rec-date">
       <label>體重 (kg)</label><input type="number" step="0.1" id="rec-weight">
       <label>體脂 (%)</label><input type="number" step="0.1" id="rec-bodyfat">
+      <label>皮下脂肪率 (%)</label><input type="number" step="0.1" id="rec-subcut">
+      <label>骨骼肌 (kg)</label><input type="number" step="0.1" id="rec-muscle">
+      <label>內臟脂肪程度</label><input type="number" step="1" id="rec-visceral">
+      <label>基礎代謝量 (kcal)</label><input type="number" step="1" id="rec-bmr">
+      <label>身體年齡</label><input type="number" step="1" id="rec-bodyage">
       <div class="period-btn" id="period-toggle" onclick="this.classList.toggle('active')">
         <span>🩸</span> 生理期中 (不列入穩定下降加分判斷)
       </div>
@@ -149,8 +154,13 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <h2>管理員代錄</h2>
       <select id="admin-target-user"></select>
       <input type="date" id="admin-rec-date">
-      <input type="number" step="0.1" id="admin-rec-weight" placeholder="體重">
-      <input type="number" step="0.1" id="admin-rec-bodyfat" placeholder="體脂">
+      <input type="number" step="0.1" id="admin-rec-weight" placeholder="體重 (kg)">
+      <input type="number" step="0.1" id="admin-rec-bodyfat" placeholder="體脂 (%)">
+      <input type="number" step="0.1" id="admin-rec-subcut" placeholder="皮下脂肪率 (%)">
+      <input type="number" step="0.1" id="admin-rec-muscle" placeholder="骨骼肌 (kg)">
+      <input type="number" step="1" id="admin-rec-visceral" placeholder="內臟脂肪程度">
+      <input type="number" step="1" id="admin-rec-bmr" placeholder="基礎代謝量 (kcal)">
+      <input type="number" step="1" id="admin-rec-bodyage" placeholder="身體年齡">
       <button class="btn btn-primary" onclick="adminSubmitRecord()">錄入發佈</button>
     </div>
   </div>
@@ -231,7 +241,7 @@ async function loadUserRecords(){
     gBox.innerHTML=`<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div></div><div>${s.isWinner?'✅ 已達標':'進行中'}</div></div>`;
     sBar.innerHTML=`<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
   }
-  document.getElementById('user-record-list').innerHTML=`<table><tr><th>日期</th><th>體重</th><th>體脂</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+recs.map(r=>`<tr><td>${r.date}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.isPeriod?'🔴':'--'}</td><td>${r.status==='approved'?'✅':'⏳'}</td><td><button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button></td></tr>`).join('')+`</table>`;
+  document.getElementById('user-record-list').innerHTML=`<div style="overflow-x:auto"><table><tr><th>日期</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+recs.map(r=>`<tr><td>${r.date}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'kg':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${r.status==='approved'?'✅':'⏳'}</td><td><button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button></td></tr>`).join('')+`</table></div>`;
 }
 
 async function login(){
@@ -243,9 +253,14 @@ async function login(){
 }
 async function submitRecord(){
   const w=document.getElementById('rec-weight').value,f=document.getElementById('rec-bodyfat').value,d=document.getElementById('rec-date').value,isP=document.getElementById('period-toggle').classList.contains('active');
+  const subcut=document.getElementById('rec-subcut').value;
+  const muscle=document.getElementById('rec-muscle').value;
+  const visceral=document.getElementById('rec-visceral').value;
+  const bmr=document.getElementById('rec-bmr').value;
+  const bodyage=document.getElementById('rec-bodyage').value;
   if(!w||!f||!d)return toast("請填寫數據","error");
   const btn=document.getElementById('btn-submit-rec');btn.disabled=true;btn.innerText="上傳中...";
-  await db.collection('records').add({userId:CU.id,weight:parseFloat(w),bodyFat:parseFloat(f),date:d,isPeriod:isP,status:'pending',createdAt:Date.now()});
+  await db.collection('records').add({userId:CU.id,weight:parseFloat(w),bodyFat:parseFloat(f),subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,bodyage:bodyage?parseFloat(bodyage):null,date:d,isPeriod:isP,status:'pending',createdAt:Date.now()});
   toast("送審成功");btn.disabled=false;btn.innerText="送出審核";loadUserRecords();
 }
 async function submitDiary(){const c=document.getElementById('diary-content').value;if(!c)return;await db.collection('diaries').add({userId:CU.id,content:c,date:new Date().toLocaleDateString(),createdAt:Date.now()});document.getElementById('diary-content').value='';loadUserDiaries();}
@@ -257,7 +272,17 @@ async function approveRecord(id){await db.collection('records').doc(id).update({
 async function loadPending(){const snap=await db.collection('records').where('status','==','pending').get();document.getElementById('pending-list').innerHTML=snap.empty?"目前無待審核資料":snap.docs.map(doc=>{const r=doc.data();return`<div class="lb-row"><div style="flex:1"><strong>${r.userId}</strong>：體脂 ${r.bodyFat}%，體重 ${r.weight}kg，${r.date} ${r.isPeriod?'🔴生理期':''}</div><button class="btn btn-primary" style="width:auto;padding:5px 12px" onclick="approveRecord('${doc.id}')">✓ 核准</button></div>`;}).join('');}
 async function loadAdminUserList(){const snap=await db.collection('users').get();const users=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');document.getElementById('admin-user-list').innerHTML=users.length===0?'尚無參賽者':users.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');}
 function updateAdminTargetSelect(){const sel=document.getElementById('admin-target-user');if(sel)sel.innerHTML=USERS_CACHE.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');}
-async function adminSubmitRecord(){const tid=document.getElementById('admin-target-user').value,w=document.getElementById('admin-rec-weight').value,f=document.getElementById('admin-rec-bodyfat').value,d=document.getElementById('admin-rec-date').value;if(!w||!f||!d)return toast('請填寫所有欄位','error');await db.collection('records').add({userId:tid,weight:parseFloat(w),bodyFat:parseFloat(f),date:d,status:'approved',createdAt:Date.now()});toast('已錄入');loadPublicData();}
+async function adminSubmitRecord(){
+  const tid=document.getElementById('admin-target-user').value,w=document.getElementById('admin-rec-weight').value,f=document.getElementById('admin-rec-bodyfat').value,d=document.getElementById('admin-rec-date').value;
+  const subcut=document.getElementById('admin-rec-subcut').value;
+  const muscle=document.getElementById('admin-rec-muscle').value;
+  const visceral=document.getElementById('admin-rec-visceral').value;
+  const bmr=document.getElementById('admin-rec-bmr').value;
+  const bodyage=document.getElementById('admin-rec-bodyage').value;
+  if(!w||!f||!d)return toast('請填寫所有欄位','error');
+  await db.collection('records').add({userId:tid,weight:parseFloat(w),bodyFat:parseFloat(f),subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,bodyage:bodyage?parseFloat(bodyage):null,date:d,status:'approved',createdAt:Date.now()});
+  toast('已錄入');loadPublicData();
+}
 function saveProfile(){db.collection('users').doc(CU.id).update({name:document.getElementById('profile-name').value});toast("更新成功");loadPublicData();}
 
 function userTab(t){
