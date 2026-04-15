@@ -119,7 +119,13 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <button class="tab" onclick="userTab('diary')">📔 私人日記</button>
     <button class="tab" onclick="userTab('profile')">👤 設定</button>
   </div>
-  <div id="utab-mydata"><div class="card"><h2>數據紀錄</h2><div id="user-record-list"></div></div></div>
+  <div id="utab-mydata">
+    <div class="card"><h2>數據紀錄</h2><div id="user-record-list"></div></div>
+    <div class="card" style="margin-top:0">
+      <h2>📈 我的趨勢</h2>
+      <div style="height:200px"><canvas id="my-chart-canvas"></canvas></div>
+    </div>
+  </div>
   <div id="utab-addrecord" style="display:none">
     <div class="card">
       <h2>➕ 新增測量紀錄</h2>
@@ -194,6 +200,16 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 </div>
 
 <div id="toast-el" class="toast"></div>
+
+<div id="user-chart-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000a;z-index:999;align-items:center;justify-content:center;padding:20px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:600px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
+      <div id="user-chart-title" style="font-weight:700;font-size:16px"></div>
+      <button onclick="closeUserChart()" style="background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+    <div style="height:260px"><canvas id="user-chart-canvas"></canvas></div>
+  </div>
+</div>
 
 <script>
 const firebaseConfig={apiKey:"AIzaSyD_s-anl91EMmC1TtmXNpVlyBcD7sYjzzk",authDomain:"fat-loss-game.firebaseapp.com",projectId:"fat-loss-game",storageBucket:"fat-loss-game.appspot.com",messagingSenderId:"280707290748",appId:"1:280707290748:web:aa7946aef2cc96cafe5bf9"};
@@ -283,6 +299,27 @@ async function loadUserRecords(){
     return`<tr><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'kg':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td>${canDelete?`<button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button>`:''}</td></tr>`;
   }).join('')+`</table></div>`;
   document.getElementById('user-record-list').innerHTML=renderTable(validRecs);
+  // 渲染個人趨勢圖（所有已核准紀錄）
+  const chartEl=document.getElementById('my-chart-canvas');
+  const allApp=[...recs].filter(r=>r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
+  if(chartEl){
+    if(window.myChartInst)window.myChartInst.destroy();
+    if(allApp.length>=2){
+      window.myChartInst=new Chart(chartEl.getContext('2d'),{
+        type:'line',
+        data:{
+          labels:allApp.map(r=>r.date.slice(5)),
+          datasets:[
+            {label:'體脂率 %',data:allApp.map(r=>r.bodyFat),borderColor:'#f5a623',backgroundColor:'#f5a62320',fill:true,tension:0.3,yAxisID:'y'},
+            {label:'體重 kg',data:allApp.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'},
+          ]
+        },
+        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}
+      });
+    } else {
+      chartEl.parentElement.innerHTML='<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">需要至少 2 筆紀錄才能顯示趨勢圖</div>';
+    }
+  }
 }
 
 async function login(){
@@ -348,13 +385,40 @@ async function loadPending(){
   if(snap.empty){document.getElementById('pending-list').innerHTML="目前無待審核資料";return;}
   document.getElementById('pending-list').innerHTML=snap.docs.map(doc=>{
     const r=doc.data();
+    const detail=`體脂 <strong>${r.bodyFat}%</strong>｜體重 <strong>${r.weight}kg</strong>${r.subcut!=null?`｜皮下 ${r.subcut}%`:''}${r.muscle!=null?`｜骨骼肌 ${r.muscle}kg`:''}${r.visceral!=null?`｜內臟 ${r.visceral}`:''}${r.bmr!=null?`｜基代 ${r.bmr}`:''}${r.bodyage!=null?`｜身體年齡 ${r.bodyage}`:''}${r.isPeriod?'｜🔴生理期':''}`;
     if(r.status==='delete_pending'){
-      return`<div class="lb-row"><div style="flex:1"><span style="color:var(--red);font-weight:700">🗑 刪除申請</span> <strong>${r.userId}</strong>：體脂 ${r.bodyFat}%，體重 ${r.weight}kg，${r.date}</div><button class="btn btn-primary" style="width:auto;padding:5px 12px;background:var(--red);color:#fff;margin-right:6px" onclick="approveDelete('${doc.id}')">✓ 批准刪除</button><button class="btn-red" style="background:var(--surface);color:var(--muted);border:1px solid var(--border)" onclick="rejectDelete('${doc.id}')">✗ 拒絕</button></div>`;
+      return`<div class="card" style="margin-bottom:10px;background:var(--surface)"><div style="margin-bottom:8px"><span style="color:var(--red);font-weight:700">🗑 刪除申請</span> <strong>${r.userId}</strong> · ${r.date}</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">${detail}</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="width:auto;padding:5px 14px;background:var(--red);color:#fff" onclick="approveDelete('${doc.id}')">✓ 批准刪除</button><button class="btn-red" style="background:var(--surface);color:var(--muted);border:1px solid var(--border);padding:5px 14px;border-radius:8px" onclick="rejectDelete('${doc.id}')">✗ 拒絕</button></div></div>`;
     }
-    return`<div class="lb-row"><div style="flex:1"><strong>${r.userId}</strong>：體脂 ${r.bodyFat}%，體重 ${r.weight}kg，${r.date} ${r.isPeriod?'🔴生理期':''}</div><button class="btn btn-primary" style="width:auto;padding:5px 12px;margin-right:6px" onclick="approveRecord('${doc.id}')">✓ 核准</button><button class="btn-red" onclick="rejectRecord('${doc.id}')">✗ 拒絕</button></div>`;
+    return`<div class="card" style="margin-bottom:10px;background:var(--surface)"><div style="margin-bottom:8px"><strong>${r.userId}</strong> · ${r.date}</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">${detail}</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="width:auto;padding:5px 14px" onclick="approveRecord('${doc.id}')">✓ 核准</button><button class="btn-red" style="padding:5px 14px;border-radius:8px" onclick="rejectRecord('${doc.id}')">✗ 拒絕</button></div></div>`;
   }).join('');
 }
-async function loadAdminUserList(){const snap=await db.collection('users').get();const users=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');document.getElementById('admin-user-list').innerHTML=users.length===0?'尚無參賽者':users.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');}
+async function loadAdminUserList(){
+  const snap=await db.collection('users').get();
+  const users=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
+  document.getElementById('admin-user-list').innerHTML=users.length===0?'尚無參賽者':users.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
+}
+let userChartInst=null;
+async function showUserChart(uid,name){
+  const snap=await db.collection('records').where('userId','==',uid).where('status','==','approved').get();
+  const recs=snap.docs.map(d=>d.data()).filter(r=>r.adminEntered).sort((a,b)=>a.date.localeCompare(b.date));
+  const modal=document.getElementById('user-chart-modal');
+  document.getElementById('user-chart-title').textContent=`${name} 的數據趨勢`;
+  modal.style.display='flex';
+  if(userChartInst)userChartInst.destroy();
+  const ctx=document.getElementById('user-chart-canvas').getContext('2d');
+  userChartInst=new Chart(ctx,{
+    type:'line',
+    data:{
+      labels:recs.map(r=>r.date.slice(5)),
+      datasets:[
+        {label:'體脂率 %',data:recs.map(r=>r.bodyFat),borderColor:'#f5a623',tension:0.3,yAxisID:'y'},
+        {label:'體重 kg',data:recs.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'},
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}
+  });
+}
+function closeUserChart(){document.getElementById('user-chart-modal').style.display='none';if(userChartInst){userChartInst.destroy();userChartInst=null;}}
 function updateAdminTargetSelect(){const sel=document.getElementById('admin-target-user');if(sel)sel.innerHTML=USERS_CACHE.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');}
 async function adminSubmitRecord(){
   const tid=document.getElementById('admin-target-user').value,w=document.getElementById('admin-rec-weight').value,f=document.getElementById('admin-rec-bodyfat').value,d=document.getElementById('admin-rec-date').value;
