@@ -48,8 +48,6 @@ textarea{height:80px;resize:none}
 table{width:100%;border-collapse:collapse;font-size:11px}
 th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .toast{position:fixed;bottom:22px;right:18px;z-index:9999;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;display:none;box-shadow:0 4px 12px #000}
-.checkin-btn{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:14px 10px;color:var(--text);font-size:13px;font-weight:600;cursor:pointer;transition:all 0.15s;text-align:center}
-.checkin-btn.selected{background:#f5a62320;border-color:var(--accent);color:var(--accent)}
 @media(max-width:520px){
   .grid4{grid-template-columns:1fr 1fr}
   .mobile-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
@@ -175,7 +173,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   <div class="tabs" id="user-tabs">
     <button class="tab active" onclick="userTab('mydata')">📊 我的數據</button>
     <button class="tab" onclick="userTab('addrecord')">➕ 新增測量</button>
-    <button class="tab" onclick="userTab('checkin')">✅ 每日打卡</button>
     <button class="tab" onclick="userTab('diary')">📔 私人日記</button>
     <button class="tab" onclick="userTab('profile')">👤 設定</button>
   </div>
@@ -186,27 +183,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div style="height:200px"><canvas id="my-chart-canvas"></canvas></div>
     </div>
   </div>
-  <div id="utab-checkin" style="display:none">
-    <div class="card">
-      <h2>✅ 每日打卡</h2>
-      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">今天做到了哪些？可以多選 👇</div>
-      <div id="checkin-btns" style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
-        <button class="checkin-btn" data-key="exercise" onclick="toggleCheckin(this)">💪 有運動</button>
-        <button class="checkin-btn" data-key="diet" onclick="toggleCheckin(this)">🥗 今天吃草</button>
-        <button class="checkin-btn" data-key="water" onclick="toggleCheckin(this)">💧 多喝水沒事</button>
-        <button class="checkin-btn" data-key="sleep" onclick="toggleCheckin(this)">😴 睡很飽</button>
-        <button class="checkin-btn" data-key="merit" onclick="toggleCheckin(this)" style="grid-column:1/-1">⭐ +功德</button>
-      </div>
-      <button class="btn btn-primary" onclick="submitCheckin()">打卡完成</button>
-    </div>
-    <div class="card" style="margin-top:0">
-      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
-        <h2 style="margin:0">打卡紀錄</h2>
-        <div id="streak-box" style="font-size:12px;color:var(--accent)"></div>
-      </div>
-      <div id="checkin-history"></div>
-    </div>
-  </div>
+  <div id="utab-addrecord" style="display:none">
     <div class="card">
       <h2>➕ 新增測量紀錄</h2>
       <label>測量日期</label><input type="date" id="rec-date">
@@ -373,47 +350,6 @@ const END_DATE=new Date('2026-06-24T23:59:59'), PRIZE_PER=3000, PRIZE_BACK=2000,
 const COLORS=['#f5a623','#4cde8f','#5b9cf6','#c084fc','#fb7185','#38bdf8','#a78bfa','#f472b6'];
 let CU=null, USERS_CACHE=[], publicChart=null;
 
-function toggleCheckin(btn){btn.classList.toggle('selected');}
-async function submitCheckin(){
-  const selected=[...document.querySelectorAll('.checkin-btn.selected')].map(b=>b.dataset.key);
-  if(selected.length===0)return toast('請至少選一項！','error');
-  const now=new Date();
-  const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  const existing=await db.collection('checkins').where('userId','==',CU.id).where('date','==',today).get();
-  if(!existing.empty){
-    await db.collection('checkins').doc(existing.docs[0].id).update({items:selected,updatedAt:Date.now()});
-  } else {
-    await db.collection('checkins').add({userId:CU.id,date:today,items:selected,createdAt:Date.now()});
-  }
-  toast('打卡成功 🎉');
-  document.querySelectorAll('.checkin-btn').forEach(b=>b.classList.remove('selected'));
-  loadCheckinHistory();
-}
-const CHECKIN_LABELS={exercise:'💪 有運動',diet:'🥗 今天吃草',water:'💧 多喝水沒事',sleep:'😴 睡很飽',merit:'⭐ +功德'};
-async function loadCheckinHistory(){
-  const snap=await db.collection('checkins').where('userId','==',CU.id).get();
-  const records=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.date.localeCompare(a.date));
-  // 連續打卡天數
-  let streak=0;
-  const now=new Date();
-  for(let i=0;i<30;i++){
-    const d=new Date(now);d.setDate(d.getDate()-i);
-    const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
-    if(records.find(r=>r.date===ds))streak++;
-    else break;
-  }
-  document.getElementById('streak-box').textContent=streak>0?`🔥 連續打卡 ${streak} 天`:'';
-  // 今天是否已打卡
-  const todayStr=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  const todayRec=records.find(r=>r.date===todayStr);
-  if(todayRec){
-    todayRec.items.forEach(k=>{
-      const btn=document.querySelector(`.checkin-btn[data-key="${k}"]`);
-      if(btn)btn.classList.add('selected');
-    });
-  }
-  document.getElementById('checkin-history').innerHTML=records.length===0?'<div style="color:var(--muted);font-size:12px">尚無打卡紀錄</div>':records.slice(0,14).map(r=>`<div style="padding:10px 0;border-bottom:1px solid ${COLORS[0]}11;display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;color:var(--muted)">${r.date}</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${r.items.map(k=>`<span style="background:var(--surface);border-radius:6px;padding:2px 8px;font-size:11px">${CHECKIN_LABELS[k]||k}</span>`).join('')}</div></div>`).join('');
-}
 function toggleFaq(){const m=document.getElementById('faq-modal');m.style.display=m.style.display==='none'?'flex':'none';}
 function toggleRules(){
   const c=document.getElementById('rules-content');
@@ -642,10 +578,9 @@ async function adminSubmitRecord(){
 function saveProfile(){db.collection('users').doc(CU.id).update({name:document.getElementById('profile-name').value});toast("更新成功");loadPublicData();}
 
 function userTab(t){
-  ['mydata','addrecord','checkin','diary','profile'].forEach(tab=>document.getElementById('utab-'+tab).style.display=tab===t?'block':'none');
-  document.querySelectorAll('#user-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['mydata','addrecord','checkin','diary','profile'].indexOf(t)));
+  ['mydata','addrecord','diary','profile'].forEach(tab=>document.getElementById('utab-'+tab).style.display=tab===t?'block':'none');
+  document.querySelectorAll('#user-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['mydata','addrecord','diary','profile'].indexOf(t)));
   if(t==='diary')loadUserDiaries();
-  if(t==='checkin')loadCheckinHistory();
 }
 async function loadHistory(){
   const snap=await db.collection('records').where('status','==','rejected').get();
