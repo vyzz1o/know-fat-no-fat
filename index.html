@@ -442,6 +442,7 @@ function saveProfile(){db.collection('users').doc(CU.id).update({name:document.g
 function userTab(t){
   ['mydata','addrecord','diary','profile'].forEach(tab=>document.getElementById('utab-'+tab).style.display=tab===t?'block':'none');
   document.querySelectorAll('#user-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['mydata','addrecord','diary','profile'].indexOf(t)));
+  if(t==='diary')loadUserDiaries();
 }
 async function loadHistory(){
   const snap=await db.collection('records').where('status','==','rejected').get();
