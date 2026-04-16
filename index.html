@@ -419,7 +419,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <button class="tab" onclick="adminTab('admin-add')">➕ 代錄</button>
     <button class="tab" onclick="adminTab('register')">👤 用戶管理</button>
     <button class="tab" onclick="adminTab('history')">🗂 歷史紀錄</button>
-    <button class="tab" onclick="adminTab('activity')">📊 活躍度</button>
     <button class="tab" onclick="adminTab('announce')">📢 發公告</button>
   </div>
   <div id="atab-pending"><div class="card"><h2>⏳ 待審核名單</h2><div id="pending-list"></div></div></div>
@@ -444,21 +443,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   </div>
   <div id="atab-history" style="display:none">
     <div class="card"><h2>🗂 刪除／拒絕歷史紀錄</h2><div id="history-list"></div></div>
-  </div>
-  <div id="atab-activity" style="display:none">
-    <div class="card">
-      <h2>📊 登入活躍度</h2>
-      <div style="display:flex;gap:8px;align-items:center;margin-bottom:14px;flex-wrap:wrap">
-        <label style="margin:0;font-size:12px">查看日期：</label>
-        <input type="date" id="activity-date" style="width:auto;margin:0" onchange="loadActivityLog()">
-        <button class="btn btn-ghost" style="font-size:12px;padding:5px 12px" onclick="document.getElementById('activity-date').value=getToday();loadActivityLog()">今天</button>
-      </div>
-      <div id="activity-log-list">請選擇日期</div>
-    </div>
-    <div class="card">
-      <h2>📅 近 14 天總覽</h2>
-      <div id="activity-summary"></div>
-    </div>
   </div>
   <div id="atab-announce" style="display:none">
     <div class="card">
@@ -674,8 +658,10 @@ function goDashboard(){CU.role==='admin'?showPage('admin'):showPage('user');}
 
 function logout(){
   CU=null;
+  if(notifUnsubscribe){notifUnsubscribe();notifUnsubscribe=null;}
   localStorage.removeItem('ci_user');
   localStorage.removeItem('ci_expire');
+  localStorage.removeItem('ci_last_log');
   updateNav();
   goPublic();
   toast("已登出");
@@ -926,18 +912,25 @@ function userTab(t){
   if(t==='diary')loadUserDiaries();
 }
 // ── 通知系統 ──────────────────────────────────────────────
+let notifUnsubscribe=null;
+function startNotifListener(){
+  if(!CU||CU.role==='admin')return;
+  if(notifUnsubscribe){notifUnsubscribe();notifUnsubscribe=null;}
+  notifUnsubscribe=db.collection('comments').onSnapshot(snap=>{
+    const lastRead=parseInt(localStorage.getItem('notif_last_read')||'0');
+    const unread=snap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead).length;
+    db.collection('announcements').get().then(aSnap=>{
+      const unreadA=aSnap.docs.filter(d=>d.data().createdAt>lastRead).length;
+      const total=unread+unreadA;
+      const badge=document.getElementById('notif-badge');
+      if(badge){badge.textContent=total>9?'9+':total;badge.style.display=total>0?'block':'none';}
+    });
+  });
+}
+
 async function loadNotifBadge(){
   if(!CU||CU.role==='admin')return;
-  const lastRead=parseInt(localStorage.getItem('notif_last_read')||'0');
-  const [announceSnap, commentSnap]=await Promise.all([
-    db.collection('announcements').get(),
-    db.collection('comments').get()
-  ]);
-  const unreadAnnounce=announceSnap.docs.filter(d=>d.data().createdAt>lastRead).length;
-  const unreadComment=commentSnap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead).length;
-  const total=unreadAnnounce+unreadComment;
-  const badge=document.getElementById('notif-badge');
-  if(badge){badge.textContent=total>9?'9+':total;badge.style.display=total>0?'block':'none';}
+  startNotifListener();
 }
 
 function openNotif(){
@@ -1047,11 +1040,10 @@ async function deleteAnnounce(id){
 }
 
 function adminTab(t){
-  ['pending','admin-add','register','history','activity','announce'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
-  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','activity','announce'].indexOf(t)));
+  ['pending','admin-add','register','history','announce'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
+  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','announce'].indexOf(t)));
   if(t==='admin-add')loadPublicData();
   if(t==='history')loadHistory();
-  if(t==='activity'){document.getElementById('activity-date').value=getToday();loadActivityLog();loadActivitySummary();}
   if(t==='announce')loadAnnounceHistory();
 }
 
