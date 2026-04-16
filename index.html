@@ -86,6 +86,15 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   .tab{padding:6px 10px;font-size:12px}
   .stamp-grid{grid-template-columns:repeat(7,1fr)}
 }
+.notif-bell{position:relative;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--text);font-size:16px;cursor:pointer;line-height:1;flex-shrink:0}
+.notif-badge{position:absolute;top:-5px;right:-5px;background:#f05c6e;color:#fff;border-radius:10px;font-size:9px;font-weight:800;padding:1px 5px;min-width:16px;text-align:center;display:none}
+.notif-panel{display:none;position:fixed;top:0;right:0;width:100%;max-width:360px;height:100%;background:var(--card);border-left:1px solid var(--border);z-index:998;flex-direction:column;box-shadow:-4px 0 24px #000a;overflow-y:auto}
+.notif-panel.open{display:flex}
+.notif-item{padding:12px 16px;border-bottom:1px solid #2a314830}
+.notif-item.unread{background:#f5a62310;border-left:3px solid var(--accent)}
+.notif-item.unread-c{background:#f05c6e10;border-left:3px solid #f05c6e}
+.notif-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:997;background:#0005}
+.notif-overlay.open{display:block}
 </style>
 </head>
 <body>
@@ -405,6 +414,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <button class="tab" onclick="adminTab('register')">👤 用戶管理</button>
     <button class="tab" onclick="adminTab('history')">🗂 歷史紀錄</button>
     <button class="tab" onclick="adminTab('activity')">📊 活躍度</button>
+    <button class="tab" onclick="adminTab('announce')">📢 發公告</button>
   </div>
   <div id="atab-pending"><div class="card"><h2>⏳ 待審核名單</h2><div id="pending-list"></div></div></div>
   <div id="atab-admin-add" style="display:none">
@@ -442,6 +452,20 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <div class="card">
       <h2>📅 近 14 天總覽</h2>
       <div id="activity-summary"></div>
+    </div>
+  </div>
+  <div id="atab-announce" style="display:none">
+    <div class="card">
+      <h2>📢 發送系統公告</h2>
+      <label>公告標題</label>
+      <input id="announce-title" placeholder="例：新功能上線！叫囂模組更新">
+      <label>公告內容</label>
+      <textarea id="announce-body" placeholder="詳細說明..."></textarea>
+      <button class="btn btn-primary" onclick="submitAnnounce()">發布公告 📢</button>
+    </div>
+    <div class="card">
+      <h2>📋 歷史公告</h2>
+      <div id="announce-history-list">載入中...</div>
     </div>
   </div>
   <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px;width:100%">登出管理員</button>
@@ -510,6 +534,22 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <div id="comment-list" style="margin-top:16px"></div>
   </div>
 </main>
+</div>
+
+<!-- 通知覆蓋層 -->
+<div class="notif-overlay" id="notif-overlay" onclick="closeNotif()"></div>
+<!-- 通知側邊欄 -->
+<div class="notif-panel" id="notif-panel">
+  <div style="padding:16px;border-bottom:1px solid var(--border);display:flex;justify-content:space-between;align-items:center;position:sticky;top:0;background:var(--card);z-index:1">
+    <div style="font-weight:800;font-size:15px">🔔 通知</div>
+    <div style="display:flex;gap:8px;align-items:center">
+      <button onclick="markAllRead()" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer">全部已讀</button>
+      <button onclick="closeNotif()" style="background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
+    </div>
+  </div>
+  <div id="notif-list" style="flex:1">
+    <div style="color:var(--muted);font-size:13px;padding:24px 16px;text-align:center">載入中...</div>
+  </div>
 </div>
 
 <div id="toast-el" class="toast"></div>
@@ -614,7 +654,12 @@ function goPublic(){if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubs
 function updateNav(){
   const nr=document.getElementById('nav-right');
   if(CU){
-    nr.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><button onclick="showCheckin()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--accent);font-size:16px;cursor:pointer" title="每日打卡">⭐</button><button class="btn btn-primary" style="width:auto;padding:5px 12px;font-size:11px" onclick="goDashboard()">我的後台</button></div>`;
+    nr.innerHTML=`<div style="display:flex;align-items:center;gap:8px">
+      <button onclick="showCheckin()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--accent);font-size:16px;cursor:pointer" title="每日打卡">⭐</button>
+      <button class="notif-bell" onclick="openNotif()" title="通知">🔔<span class="notif-badge" id="notif-badge"></span></button>
+      <button class="btn btn-primary" style="width:auto;padding:5px 12px;font-size:11px" onclick="goDashboard()">我的後台</button>
+    </div>`;
+    loadNotifBadge();
   } else {
     nr.innerHTML=`<button class="btn btn-ghost" style="width:auto;padding:5px 12px;font-size:11px" onclick="showPage('login')">登入</button>`;
   }
@@ -874,16 +919,134 @@ function userTab(t){
   document.querySelectorAll('#user-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['mydata','addrecord','diary','profile'].indexOf(t)));
   if(t==='diary')loadUserDiaries();
 }
+// ── 通知系統 ──────────────────────────────────────────────
+async function loadNotifBadge(){
+  if(!CU||CU.role==='admin')return;
+  const lastRead=parseInt(localStorage.getItem('notif_last_read')||'0');
+  const [announceSnap, commentSnap]=await Promise.all([
+    db.collection('announcements').get(),
+    db.collection('comments').get()
+  ]);
+  const unreadAnnounce=announceSnap.docs.filter(d=>d.data().createdAt>lastRead).length;
+  const unreadComment=commentSnap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead).length;
+  const total=unreadAnnounce+unreadComment;
+  const badge=document.getElementById('notif-badge');
+  if(badge){badge.textContent=total>9?'9+':total;badge.style.display=total>0?'block':'none';}
+}
+
+function openNotif(){
+  document.getElementById('notif-panel').classList.add('open');
+  document.getElementById('notif-overlay').classList.add('open');
+  loadNotifList();
+}
+function closeNotif(){
+  document.getElementById('notif-panel').classList.remove('open');
+  document.getElementById('notif-overlay').classList.remove('open');
+}
+async function markAllRead(){
+  localStorage.setItem('notif_last_read', Date.now().toString());
+  const badge=document.getElementById('notif-badge');
+  if(badge){badge.style.display='none';}
+  loadNotifList();
+}
+async function loadNotifList(){
+  const list=document.getElementById('notif-list');
+  list.innerHTML='<div style="color:var(--muted);font-size:12px;padding:16px;text-align:center">載入中...</div>';
+  const lastRead=parseInt(localStorage.getItem('notif_last_read')||'0');
+  const [announceSnap, commentSnap]=await Promise.all([
+    db.collection('announcements').get(),
+    db.collection('comments').get()
+  ]);
+  const items=[];
+  // 系統公告
+  announceSnap.docs.forEach(d=>{
+    const data=d.data();
+    items.push({type:'announce',ts:data.createdAt,title:data.title,body:data.body,unread:data.createdAt>lastRead});
+  });
+  // 被叫囂通知（只給當事人）
+  if(CU&&CU.role!=='admin'){
+    commentSnap.docs.forEach(d=>{
+      const data=d.data();
+      if(data.targetUid===CU.id){
+        items.push({type:'comment',ts:data.createdAt,author:data.authorName||'某人',text:data.text,unread:data.createdAt>lastRead});
+      }
+    });
+  }
+  items.sort((a,b)=>b.ts-a.ts);
+  if(items.length===0){
+    list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:24px 16px;text-align:center">目前沒有通知</div>';
+    return;
+  }
+  list.innerHTML=items.map(item=>{
+    const time=new Date(item.ts).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
+    if(item.type==='announce') return`
+      <div class="notif-item ${item.unread?'unread':''}">
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="font-size:18px;flex-shrink:0">📢</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;margin-bottom:3px">${item.title}</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5">${item.body}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:5px">${time}</div>
+          </div>
+          ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px"></div>':''}
+        </div>
+      </div>`;
+    return`
+      <div class="notif-item ${item.unread?'unread-c':''}">
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="font-size:18px;flex-shrink:0">💢</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;margin-bottom:3px">${item.author} 剛剛對你叫囂了！</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;font-style:italic">"${item.text.length>50?item.text.slice(0,50)+'...':item.text}"</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:5px">${time}</div>
+          </div>
+          ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:#f05c6e;flex-shrink:0;margin-top:4px"></div>':''}
+        </div>
+      </div>`;
+  }).join('');
+}
+
+async function submitAnnounce(){
+  const title=document.getElementById('announce-title').value.trim();
+  const body=document.getElementById('announce-body').value.trim();
+  if(!title||!body)return toast('請填寫標題和內容','error');
+  await db.collection('announcements').add({title,body,createdAt:Date.now(),authorId:'admin'});
+  document.getElementById('announce-title').value='';
+  document.getElementById('announce-body').value='';
+  toast('公告已發送！📢');
+  loadAnnounceHistory();
+}
+
+async function loadAnnounceHistory(){
+  const list=document.getElementById('announce-history-list');
+  if(!list)return;
+  const snap=await db.collection('announcements').get();
+  const items=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
+  if(items.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px">尚無公告</div>';return;}
+  list.innerHTML=items.map(item=>`
+    <div style="padding:10px 0;border-bottom:1px solid #2a314820">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start">
+        <div style="font-size:13px;font-weight:700">${item.title}</div>
+        <button onclick="deleteAnnounce('${item.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px;flex-shrink:0">✕</button>
+      </div>
+      <div style="font-size:12px;color:var(--muted);margin-top:3px">${item.body}</div>
+      <div style="font-size:10px;color:var(--muted);margin-top:4px">${new Date(item.createdAt).toLocaleDateString('zh-TW')}</div>
+    </div>`).join('');
+}
+async function deleteAnnounce(id){
+  if(!confirm('確定刪除這則公告？'))return;
+  await db.collection('announcements').doc(id).delete();
+  toast('已刪除');
+  loadAnnounceHistory();
+}
+
 function adminTab(t){
-  ['pending','admin-add','register','history','activity'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
-  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','activity'].indexOf(t)));
+  ['pending','admin-add','register','history','activity','announce'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
+  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','activity','announce'].indexOf(t)));
   if(t==='admin-add')loadPublicData();
   if(t==='history')loadHistory();
-  if(t==='activity'){
-    document.getElementById('activity-date').value=getToday();
-    loadActivityLog();
-    loadActivitySummary();
-  }
+  if(t==='activity'){document.getElementById('activity-date').value=getToday();loadActivityLog();loadActivitySummary();}
+  if(t==='announce')loadAnnounceHistory();
 }
 
 async function loadActivityLog(){
@@ -1127,16 +1290,26 @@ async function deleteComment(commentId){
       CU=JSON.parse(saved);
       updateNav();
       if(CU.role==='admin'){showPage('admin');loadPending();loadAdminUserList();}
-      else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
+      else{
+        // 記錄每次開啟網頁（每天只記一次）
+        const today=getToday();
+        const lastLog=localStorage.getItem('ci_last_log');
+        if(lastLog!==today){
+          db.collection('loginLogs').add({userId:CU.id,userName:CU.name||CU.id,date:today,ts:Date.now()});
+          localStorage.setItem('ci_last_log',today);
+        }
+        showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();
+      }
     } else {
-      // 過期或無session，清除並回首頁
       localStorage.removeItem('ci_user');
       localStorage.removeItem('ci_expire');
+      localStorage.removeItem('ci_last_log');
       goPublic();
     }
   } catch(e){
     localStorage.removeItem('ci_user');
     localStorage.removeItem('ci_expire');
+    localStorage.removeItem('ci_last_log');
     goPublic();
   }
 })();
