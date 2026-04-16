@@ -1072,35 +1072,38 @@ async function loadActivityLog(){
 
 async function loadActivitySummary(){
   const summary=document.getElementById('activity-summary');
+  if(!summary)return;
   summary.innerHTML='<div style="color:var(--muted);font-size:12px">載入中...</div>';
-  // 取近 14 天
   const days=[];
   for(let i=0;i<14;i++){
     const d=new Date();d.setDate(d.getDate()-i);
     days.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);
   }
-  const snap=await db.collection('loginLogs').get();
-  const logs=snap.docs.map(d=>d.data());
-  // 先取得所有用戶
-  const userSnap=await db.collection('users').where('role','!=','admin').get();
-  const allUsers=userSnap.docs.map(d=>({id:d.id,...d.data()}));
-  // 建立每天的登入用戶 set
+  const [logSnap, userSnap]=await Promise.all([
+    db.collection('loginLogs').get(),
+    db.collection('users').get()
+  ]);
+  const logs=logSnap.docs.map(d=>d.data());
+  const allUsers=userSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role!=='admin');
+  if(allUsers.length===0){summary.innerHTML='<div style="color:var(--muted);font-size:13px">尚無參賽者帳號</div>';return;}
   const dayMap={};
   days.forEach(d=>{dayMap[d]=new Set();});
   logs.forEach(l=>{if(dayMap[l.date])dayMap[l.date].add(l.userId);});
   summary.innerHTML=days.map(d=>{
     const active=dayMap[d];
-    const inactive=allUsers.filter(u=>!active.has(u.id));
-    const pct=allUsers.length>0?Math.round(active.size/allUsers.length*100):0;
+    const activeUsers=allUsers.filter(u=>active.has(u.id));
+    const inactiveUsers=allUsers.filter(u=>!active.has(u.id));
+    const pct=Math.round(active.size/allUsers.length*100);
     return`<div style="padding:10px 0;border-bottom:1px solid #2a314820">
       <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
         <div style="font-size:13px;font-weight:600">${d}</div>
         <div style="font-size:12px;color:var(--muted)">${active.size}/${allUsers.length} 人 (${pct}%)</div>
       </div>
       <div style="background:var(--surface);border-radius:4px;height:6px;margin-bottom:6px;overflow:hidden">
-        <div style="height:6px;border-radius:4px;background:var(--accent);width:${pct}%;transition:width 0.3s"></div>
+        <div style="height:6px;border-radius:4px;background:var(--accent);width:${pct}%"></div>
       </div>
-      ${inactive.length>0?`<div style="font-size:11px;color:var(--muted)">未登入：${inactive.map(u=>u.name||u.id).join('、')}</div>`:'<div style="font-size:11px;color:var(--green)">✓ 全員上線</div>'}
+      ${activeUsers.length>0?`<div style="font-size:11px;color:var(--green);margin-bottom:2px">✓ 有登入：${activeUsers.map(u=>u.name||u.id).join('、')}</div>`:''}
+      ${inactiveUsers.length>0?`<div style="font-size:11px;color:var(--muted)">未登入：${inactiveUsers.map(u=>u.name||u.id).join('、')}</div>`:'<div style="font-size:11px;color:var(--green)">✓ 全員上線</div>'}
     </div>`;
   }).join('');
 }
@@ -1214,13 +1217,13 @@ function renderCommentList(comments, list){
   const filtered=comments.filter(c=>c.targetUid===currentProfileUid);
   if(filtered.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有留言，來第一個留言吧！</div>';return;}
   list.innerHTML=filtered.map(c=>{
-    const canDelete=(CU&&CU.role==='admin');
+    const canDelete=CU&&(CU.role==='admin'||CU.id===c.authorId);
     const bgColors=['#1e243388','#161a2388','#252d3e88','#1a2030aa'];
     const bg=bgColors[Math.abs(c.createdAt)%bgColors.length];
     return`<div style="padding:14px 12px;margin-bottom:10px;border-radius:10px;background:${bg};border:1px solid var(--border)30;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
         <div style="font-size:11px;color:var(--muted)">${c.authorName} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
-        ${canDelete?`<button onclick="deleteComment('${c.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px">✕</button>`:''}
+        ${canDelete?`<button onclick="deleteComment('${c.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px" title="刪除">🗑</button>`:''}
       </div>
       <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%;margin-top:4px">${c.text}</div>
     </div>`;
@@ -1401,10 +1404,10 @@ async function loadJiaoTargets(){
   const grid=document.getElementById('jiao-target-grid');
   grid.innerHTML='<div style="color:var(--muted);font-size:12px">載入中...</div>';
   const [userSnap, commentSnap] = await Promise.all([
-    db.collection('users').where('role','!=','admin').get(),
+    db.collection('users').get(),
     db.collection('comments').get()
   ]);
-  const users=userSnap.docs.map(d=>({id:d.id,...d.data()}));
+  const users=userSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role!=='admin');
   USERS_CACHE=users;
 
   // 計算每個人被叫囂次數
@@ -1479,15 +1482,18 @@ function loadJiaoPersonalComments(uid){
         .filter(c=>c.targetUid===uid)
         .sort((a,b)=>b.createdAt-a.createdAt);
       if(all.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有人叫囂，來第一個！</div>';return;}
-      const canDel=CU&&CU.role==='admin';
-      list.innerHTML=all.map(c=>`
+      const canDel=CU&&(CU.role==='admin'||false);
+      list.innerHTML=all.map(c=>{
+        const canDelThis=CU&&(CU.role==='admin'||CU.id===c.authorId);
+        return`
         <div style="padding:14px 12px;margin-bottom:10px;border-radius:10px;background:#1e243388;border:1px solid var(--border)">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
             <div style="font-size:11px;color:var(--muted)">${c.authorName||'匿名'} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
-            ${canDel?`<button onclick="deleteJiaoComment('${c.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px">✕</button>`:''}
+            ${canDelThis?`<button onclick="deleteJiaoComment('${c.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px" title="刪除">🗑</button>`:''}
           </div>
           <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%">${c.text}</div>
-        </div>`).join('');
+        </div>`;
+      }).join('');
     },err=>{list.innerHTML='<div style="color:var(--red);font-size:12px">載入失敗：'+err.message+'</div>';});
 }
 
