@@ -487,7 +487,7 @@ function toggleFaq(){const m=document.getElementById('faq-modal');m.style.displa
 function toggleRules(){const c=document.getElementById('rules-content'),a=document.getElementById('rules-arrow');if(c.style.display==='none'){c.style.display='block';a.textContent='▲ 收起';}else{c.style.display='none';a.textContent='▼ 展開';}}
 function toast(msg,type='success'){const el=document.getElementById('toast-el');el.textContent=msg;el.style.background=type==='error'?'var(--red)':'var(--green)';el.style.color='#fff';el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');}
-function goPublic(){showPage('public');loadPublicData();}
+function goPublic(){if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubscribe=null;}showPage('public');loadPublicData();}
 function updateNav(){
   const nr=document.getElementById('nav-right');
   if(CU){
@@ -854,24 +854,37 @@ async function showProfile(uid, name){
   loadComments(uid);
 }
 
-async function loadComments(uid){
-  const snap=await db.collection('comments').where('targetUid','==',uid).get();
-  const comments=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
+let commentsUnsubscribe=null;
+
+function loadComments(uid){
+  // 取消舊的監聽器
+  if(commentsUnsubscribe)commentsUnsubscribe();
   const list=document.getElementById('comment-list');
   if(!list)return;
-  if(comments.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有留言，來第一個留言吧！</div>';return;}
-  list.innerHTML=comments.map(c=>{
-    const canDelete=(CU&&CU.role==='admin');
-    const bgColors=['#1e243388','#161a2388','#252d3e88','#1a2030aa'];
-    const bg=bgColors[Math.abs(c.createdAt)%bgColors.length];
-    return`<div style="padding:14px 12px;margin-bottom:10px;border-radius:10px;background:${bg};border:1px solid var(--border)30;overflow:hidden">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-        <div style="font-size:11px;color:var(--muted)">${c.authorName} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
-        ${canDelete?`<button onclick="deleteComment('${c.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px">✕</button>`:''}
-      </div>
-      <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%;margin-top:4px">${c.text}</div>
-    </div>`;
-  }).join('');
+  list.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">載入留言中...</div>';
+  // 用 onSnapshot 即時監聽，新留言自動出現不需刷新
+  commentsUnsubscribe=db.collection('comments')
+    .where('targetUid','==',uid)
+    .orderBy('createdAt','desc')
+    .onSnapshot(snap=>{
+      if(snap.empty){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有留言，來第一個留言吧！</div>';return;}
+      const comments=snap.docs.map(d=>({id:d.id,...d.data()}));
+      list.innerHTML=comments.map(c=>{
+        const canDelete=(CU&&CU.role==='admin');
+        const bgColors=['#1e243388','#161a2388','#252d3e88','#1a2030aa'];
+        const bg=bgColors[Math.abs(c.createdAt)%bgColors.length];
+        return`<div style="padding:14px 12px;margin-bottom:10px;border-radius:10px;background:${bg};border:1px solid var(--border)30;overflow:hidden">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div style="font-size:11px;color:var(--muted)">${c.authorName} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
+            ${canDelete?`<button onclick="deleteComment('${c.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px">✕</button>`:''}
+          </div>
+          <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%;margin-top:4px">${c.text}</div>
+        </div>`;
+      }).join('');
+    }, err=>{
+      console.error('comments error',err);
+      list.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px">留言載入失敗，請確認 Firebase 規則允許公開讀取</div>';
+    });
 }
 
 async function submitComment(){
