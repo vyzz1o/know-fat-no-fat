@@ -207,7 +207,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
             <div style="font-size:11px;color:var(--muted)">個人叫囂板・所有人都看得到</div>
           </div>
         </div>
-        <!-- 輸入區 -->
+        <!-- 輸入區（接回原本 comments 系統） -->
         <div id="jiao-personal-input-area">
           <textarea id="jiao-personal-text" placeholder="對這個人說點什麼... 💢"></textarea>
           <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
@@ -235,12 +235,10 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         </div>
         <div id="jiao-personal-login-hint" style="display:none;color:var(--muted);font-size:13px;padding:6px 0">請先登入才能留言</div>
       </div>
-      <!-- 個人叫囂剪貼簿 -->
-      <div class="scrap-board" id="scrap-personal-canvas" style="min-height:350px">
-        <div id="scrap-personal-empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);font-size:13px;text-align:center;pointer-events:none">
-          <div style="font-size:28px;margin-bottom:6px">💬</div>
-          還沒有留言，來第一個！
-        </div>
+      <!-- 留言列表（同原本 comments 樣式） -->
+      <div class="card">
+        <h2 style="color:#f05c6e">💢 叫囂記錄</h2>
+        <div id="jiao-comment-list"></div>
       </div>
     </div>
   </div>
@@ -1164,32 +1162,31 @@ function selectJiaoTarget(uid, name, emoji){
   const loginHint=document.getElementById('jiao-personal-login-hint');
   if(CU){inputArea.style.display='block';loginHint.style.display='none';}
   else{inputArea.style.display='none';loginHint.style.display='block';}
-  loadPersonalNotes(uid);
+  loadJiaoPersonalComments(uid);
   document.getElementById('jiao-personal-board').scrollIntoView({behavior:'smooth',block:'start'});
 }
 
-function loadPersonalNotes(uid){
+function loadJiaoPersonalComments(uid){
   if(personalUnsubscribe){personalUnsubscribe();personalUnsubscribe=null;}
-  personalUnsubscribe=db.collection('jiaoPersonal').where('targetUid','==',uid).limit(60)
+  const list=document.getElementById('jiao-comment-list');
+  if(!list)return;
+  list.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">載入中...</div>';
+  personalUnsubscribe=db.collection('comments')
     .onSnapshot(snap=>{
-      const notes=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
-      renderNoteOnCanvas('scrap-personal-canvas','scrap-personal-empty',notes);
-    },err=>{console.error('personal load err',err);toast('載入失敗：'+err.message,'error');});
-}
-
-async function submitBoardNote(){
-  if(!CU)return toast('請先登入才能留言','error');
-  const txt=document.getElementById('jiao-board-text').value.trim();
-  if(!txt)return toast('請輸入內容','error');
-  const size=parseInt(document.getElementById('jiao-board-size').value);
-  const tilt=document.getElementById('jiao-board-tilt').checked;
-  const angle=tilt?(Math.random()*30-15):0;
-  await db.collection('jiaoBoard').add({
-    text:txt, authorId:CU.id, authorName:CU.name||CU.id,
-    fontSize:size, color:selectedJiaoColor, angle:angle, createdAt:Date.now()
-  });
-  document.getElementById('jiao-board-text').value='';
-  toast('貼上去了！📌');
+      const all=snap.docs.map(d=>({id:d.id,...d.data()}))
+        .filter(c=>c.targetUid===uid)
+        .sort((a,b)=>b.createdAt-a.createdAt);
+      if(all.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有人叫囂，來第一個！</div>';return;}
+      const canDel=CU&&CU.role==='admin';
+      list.innerHTML=all.map(c=>`
+        <div style="padding:14px 12px;margin-bottom:10px;border-radius:10px;background:#1e243388;border:1px solid var(--border)">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+            <div style="font-size:11px;color:var(--muted)">${c.authorName||'匿名'} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
+            ${canDel?`<button onclick="deleteJiaoComment('${c.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px">✕</button>`:''}
+          </div>
+          <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%">${c.text}</div>
+        </div>`).join('');
+    },err=>{list.innerHTML='<div style="color:var(--red);font-size:12px">載入失敗：'+err.message+'</div>';});
 }
 
 async function submitPersonalNote(){
@@ -1199,21 +1196,29 @@ async function submitPersonalNote(){
   if(!txt)return toast('請輸入內容','error');
   const size=parseInt(document.getElementById('jiao-personal-size').value);
   const tilt=document.getElementById('jiao-personal-tilt').checked;
-  const angle=tilt?(Math.random()*30-15):0;
-  await db.collection('jiaoPersonal').add({
-    targetUid:currentJiaoTarget, authorId:CU.id, authorName:CU.name||CU.id,
-    text:txt, fontSize:size, color:selectedJiaoPersonalColor, angle:angle, createdAt:Date.now()
+  const angle=tilt?(Math.random()*20-10):0;
+  await db.collection('comments').add({
+    targetUid:currentJiaoTarget,
+    authorId:CU.id,
+    authorName:CU.name||CU.id,
+    text:txt,
+    fontSize:size,
+    color:selectedJiaoPersonalColor,
+    angle:angle,
+    createdAt:Date.now()
   });
   document.getElementById('jiao-personal-text').value='';
   toast('叫囂成功 💢');
 }
 
-async function deleteJiaoNote(id, type){
+async function deleteJiaoComment(commentId){
   if(!confirm('確定刪除這則留言？'))return;
-  const col=type==='board'?'jiaoBoard':'jiaoPersonal';
-  await db.collection(col).doc(id).delete();
+  await db.collection('comments').doc(commentId).delete();
   toast('已刪除');
 }
+
+
+
 
 function openJiaoxiao(){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
