@@ -47,6 +47,24 @@ textarea{height:80px;resize:none}
 table{width:100%;border-collapse:collapse;font-size:11px}
 th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .toast{position:fixed;bottom:22px;right:18px;z-index:9999;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;display:none;box-shadow:0 4px 12px #000}
+.two-col-home{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
+@media(max-width:520px){.two-col-home{grid-template-columns:1fr}}
+.jiao-entry{background:linear-gradient(135deg,#f05c6e18,#f05c6e05);border:1px solid #f05c6e44;border-radius:12px;padding:18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:160px;transition:all 0.2s;user-select:none}
+.jiao-entry:hover{background:linear-gradient(135deg,#f05c6e28,#f05c6e10);border-color:#f05c6e88;transform:translateY(-2px)}
+.jiao-entry-title{font-size:22px;font-weight:900;color:#f05c6e;letter-spacing:0.05em;margin-bottom:6px}
+.jiao-entry-sub{font-size:12px;color:var(--muted)}
+.scrap-board{position:relative;min-height:500px;background:repeating-linear-gradient(0deg,transparent,transparent 27px,#2a314820 28px),repeating-linear-gradient(90deg,transparent,transparent 27px,#2a314820 28px);background-color:#0d0f14;border-radius:12px;border:1px solid var(--border);overflow:hidden;margin-bottom:14px}
+.scrap-note{position:absolute;padding:10px 14px;border-radius:3px;max-width:200px;word-break:break-word;line-height:1.5;box-shadow:3px 4px 12px #0006;cursor:default;transition:box-shadow 0.2s;z-index:1}
+.scrap-note:hover{box-shadow:5px 6px 20px #000a;z-index:10}
+.scrap-note .note-author{font-size:9px;opacity:0.6;margin-top:6px;font-style:italic}
+.jiao-tabs{display:flex;gap:6px;margin-bottom:16px}
+.jiao-tab{padding:8px 18px;border-radius:8px;font-size:14px;font-weight:700;cursor:pointer;border:none;background:var(--surface);color:var(--muted);transition:all 0.15s}
+.jiao-tab.active{background:#f05c6e;color:#fff}
+.target-avatar{background:var(--surface);border:2px solid var(--border);border-radius:12px;padding:14px 10px;text-align:center;cursor:pointer;transition:all 0.15s}
+.target-avatar:hover{border-color:#f05c6e;background:#f05c6e12}
+.target-avatar.selected{border-color:#f05c6e;background:#f05c6e18}
+.target-avatar .av-name{font-size:12px;font-weight:700;margin-top:6px}
+.target-avatar .av-rank{font-size:10px;color:var(--muted)}
 .checkin-option{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px 10px;text-align:center;cursor:pointer;transition:all 0.15s;user-select:none}
 .checkin-option:active{transform:scale(0.95)}
 .checkin-option.selected{border-color:var(--accent);background:#f5a62318}
@@ -97,63 +115,182 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div style="font-size:10px;color:var(--muted)">人 × NT$3,000</div>
     </div>
   </div>
-  <div class="card" style="margin-bottom:14px">
-    <div onclick="toggleRules()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">
-      <div style="font-weight:700;font-size:15px">📋 比賽規則</div>
-      <div id="rules-arrow" style="color:var(--muted);font-size:13px">▼ 展開</div>
+  <div class="two-col-home">
+    <!-- 左：比賽規則 -->
+    <div class="card" style="margin-bottom:0">
+      <div onclick="toggleRules()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+        <div style="font-weight:700;font-size:15px">📋 比賽規則</div>
+        <div id="rules-arrow" style="color:var(--muted);font-size:13px">▼ 展開</div>
+      </div>
+      <div id="rules-content" style="display:none;margin-top:14px">
+        <div style="margin-bottom:12px">
+          <div style="color:var(--accent);font-weight:700;margin-bottom:6px">⏱ 比賽時長</div>
+          <div style="font-size:12px;color:var(--muted)">2026/04/15 — 2026/06/24（共 10 週）</div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="color:var(--accent);font-weight:700;margin-bottom:6px">📊 評分方式</div>
+          <div style="font-size:12px;line-height:1.7">
+            <div>✦ 體脂下降率 × <strong>70%</strong></div>
+            <div>✦ 體重下降率 × <strong>30%</strong></div>
+            <div style="margin-top:4px;color:var(--muted)">總分 ＝ 基礎分 × (1＋加分%)</div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="color:var(--accent);font-weight:700;margin-bottom:6px">⭐ 加分機制</div>
+          <div style="font-size:12px;line-height:1.7">
+            <div>✦ 每次皆降或持平 👉 <strong style="color:var(--green)">+10%</strong></div>
+            <div>✦ 僅 1 次回升 👉 <strong style="color:var(--green)">+5%</strong></div>
+            <div>✦ 回升 2 次以上 👉 <strong style="color:var(--muted)">不加分</strong></div>
+            <div style="margin-top:4px;color:var(--muted);font-size:11px">※ 生理期忽略｜測量日：4/15、4/29、5/13、5/27、6/10、6/24</div>
+          </div>
+        </div>
+        <div style="margin-bottom:12px">
+          <div style="color:var(--accent);font-weight:700;margin-bottom:6px">💰 公基金機制</div>
+          <div style="font-size:12px;line-height:1.7">
+            <div>✦ 每人投入 <strong>NT$3,000</strong>，退賽不退款</div>
+            <div>✦ 體脂降率 ≥ 7% 可退回 <strong style="color:var(--green)">NT$2,000</strong></div>
+            <div>🥇 第1名→60%　🥈 第2名→25%　🥉 第3名→15%</div>
+          </div>
+        </div>
+        <div>
+          <div style="color:var(--accent);font-weight:700;margin-bottom:6px">📏 測量規範</div>
+          <div style="font-size:12px;line-height:1.7;color:var(--muted)">
+            <div>✔ 同一台體脂機　✔ 到公司後測量</div>
+            <div>✔ 固定輕裝　✔ 前後條件一致</div>
+          </div>
+        </div>
+      </div>
     </div>
-    <div id="rules-content" style="display:none;margin-top:16px">
-      <div style="margin-bottom:16px">
-        <div style="color:var(--accent);font-weight:700;margin-bottom:8px">⏱ 比賽時長</div>
-        <div style="font-size:13px;color:var(--muted)">2026/04/15 — 2026/06/24（共 10 週）</div>
-      </div>
-      <div style="margin-bottom:16px">
-        <div style="color:var(--accent);font-weight:700;margin-bottom:8px">📊 評分方式</div>
-        <div style="font-size:13px;line-height:1.8">
-          <div>✦ 體脂下降率 × <strong>70%</strong></div>
-          <div>✦ 體重下降率 × <strong>30%</strong></div>
-          <div style="margin-top:6px;color:var(--muted)">總分 ＝ [（體脂降率×70%）＋（體重降率×30%）] × (1＋加分%)</div>
-        </div>
-      </div>
-      <div style="margin-bottom:16px">
-        <div style="color:var(--accent);font-weight:700;margin-bottom:8px">⭐ 加分機制（最高 +10%）</div>
-        <div style="font-size:13px;line-height:1.8">
-          <div>✦ 每次測量皆下降或持平 👉 <strong style="color:var(--green)">+10%</strong></div>
-          <div>✦ 僅 1 次回升，其餘皆下降 👉 <strong style="color:var(--green)">+5%</strong></div>
-          <div>✦ 回升 2 次以上 👉 <strong style="color:var(--muted)">不加分</strong></div>
-          <div style="margin-top:6px;color:var(--muted);font-size:12px">※ 生理期數據浮動忽略不計｜持平視為合格</div>
-          <div style="color:var(--muted);font-size:12px">※ 測量日：4/15、4/29、5/13、5/27、6/10、6/24</div>
-        </div>
-      </div>
-      <div style="margin-bottom:16px">
-        <div style="color:var(--accent);font-weight:700;margin-bottom:8px">💰 公基金機制</div>
-        <div style="font-size:13px;line-height:1.8">
-          <div>✦ 每人投入 <strong>NT$3,000</strong>，退賽不退款</div>
-          <div>✦ 體脂下降率 ≥ 7% 可退回 <strong style="color:var(--green)">NT$2,000</strong></div>
-          <div style="margin-top:6px">未達標或剩餘公基金分配：</div>
-          <div>🥇 第 1 名 → <strong>60%</strong></div>
-          <div>🥈 第 2 名 → <strong>25%</strong></div>
-          <div>🥉 第 3 名 → <strong>15%</strong></div>
-        </div>
-      </div>
-      <div>
-        <div style="color:var(--accent);font-weight:700;margin-bottom:8px">📏 測量規範</div>
-        <div style="font-size:13px;line-height:1.8;color:var(--muted)">
-          <div>✔ 同一台體脂機</div>
-          <div>✔ 到公司後測量</div>
-          <div>✔ 固定輕裝或一致穿著</div>
-          <div>✔ 前後條件一致</div>
-        </div>
+    <!-- 右：叫囂模組入口 -->
+    <div class="jiao-entry" onclick="showPage('jiaoxiao')">
+      <div style="font-size:40px;margin-bottom:8px">📣</div>
+      <div class="jiao-entry-title">It's 叫囂 Time</div>
+      <div class="jiao-entry-sub" style="margin-bottom:12px">公開嗆聲・個人留言板</div>
+      <div style="display:flex;gap:8px;justify-content:center">
+        <div style="background:#f05c6e22;color:#f05c6e;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">🗒 大剪貼簿</div>
+        <div style="background:#f05c6e22;color:#f05c6e;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">👤 個人叫囂</div>
       </div>
     </div>
   </div>
   <div class="card">
-    <h2>🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2><div style="font-size:11px;color:var(--accent);margin-bottom:10px;margin-top:-6px">💬 點擊名字可以進入主頁留言</div>
+    <h2>🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2><div style="font-size:11px;color:var(--accent);margin-bottom:10px;margin-top:-6px">💬 點擊名字可以進入個人叫囂板留言</div>
     <div id="public-lb">載入數據中...</div>
   </div>
   <div class="card">
     <h2>📈 全員體脂趨勢</h2>
     <div style="height:200px;"><canvas id="chart-public-fat"></canvas></div>
+  </div>
+</main>
+</div>
+
+<!-- 叫囂模組頁面 -->
+<div class="page" id="page-jiaoxiao">
+<main>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button onclick="goPublic()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:20px">←</button>
+    <div style="font-size:18px;font-weight:800;color:#f05c6e">📣 It's 叫囂 Time</div>
+  </div>
+  <!-- Tab 切換 -->
+  <div class="jiao-tabs">
+    <button class="jiao-tab active" id="jt-board" onclick="jiaoTab('board')">🗒 公開大剪貼簿</button>
+    <button class="jiao-tab" id="jt-personal" onclick="jiaoTab('personal')">👤 個人叫囂板</button>
+  </div>
+
+  <!-- 公開大剪貼簿 -->
+  <div id="jiao-board-section">
+    <!-- 輸入區 -->
+    <div class="card" id="jiao-input-card">
+      <div id="jiao-board-input-area">
+        <textarea id="jiao-board-text" placeholder="說點什麼...對所有人喊話！💢"></textarea>
+        <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+          <div style="font-size:12px;color:var(--muted)">大小：</div>
+          <select id="jiao-board-size" style="width:auto;margin:0;padding:4px 8px;font-size:12px">
+            <option value="12">小</option>
+            <option value="14" selected>中</option>
+            <option value="18">大</option>
+            <option value="24">超大</option>
+            <option value="32">巨大</option>
+          </select>
+          <div style="font-size:12px;color:var(--muted);margin-left:4px">顏色：</div>
+          <div style="display:flex;gap:5px;align-items:center">
+            <div class="jiao-clr selected-jclr" data-color="#e8eaf0" style="background:#e8eaf0;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid var(--accent)" onclick="selectJiaoColor(this)"></div>
+            <div class="jiao-clr" data-color="#f05c6e" style="background:#f05c6e;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoColor(this)"></div>
+            <div class="jiao-clr" data-color="#f5a623" style="background:#f5a623;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoColor(this)"></div>
+            <div class="jiao-clr" data-color="#4cde8f" style="background:#4cde8f;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoColor(this)"></div>
+            <div class="jiao-clr" data-color="#5b9cf6" style="background:#5b9cf6;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoColor(this)"></div>
+            <div class="jiao-clr" data-color="#c084fc" style="background:#c084fc;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoColor(this)"></div>
+            <div class="jiao-clr" data-color="#fb923c" style="background:#fb923c;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoColor(this)"></div>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">
+            <input type="checkbox" id="jiao-board-tilt" style="width:auto;margin:0;cursor:pointer">
+            <label for="jiao-board-tilt" style="cursor:pointer">隨機傾斜 📐</label>
+          </div>
+        </div>
+        <button class="btn btn-primary" style="background:#f05c6e" onclick="submitBoardNote()">貼上去 📌</button>
+      </div>
+      <div id="jiao-board-login-hint" style="display:none;color:var(--muted);font-size:13px;padding:6px 0">請先登入才能留言</div>
+    </div>
+    <!-- 剪貼簿畫布 -->
+    <div class="scrap-board" id="scrap-board-canvas">
+      <div id="scrap-empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);font-size:13px;text-align:center;pointer-events:none">
+        <div style="font-size:32px;margin-bottom:8px">📋</div>
+        還沒有人叫囂，搶先開砲！
+      </div>
+    </div>
+  </div>
+
+  <!-- 個人叫囂板 -->
+  <div id="jiao-personal-section" style="display:none">
+    <div class="card">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:14px">選擇要叫囂的對象：</div>
+      <div id="jiao-target-grid" style="display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-bottom:16px"></div>
+    </div>
+    <!-- 個人叫囂留言區（點選對象後顯示） -->
+    <div id="jiao-personal-board" style="display:none">
+      <div class="card" style="background:linear-gradient(135deg,#f05c6e12,#f05c6e04);border-color:#f05c6e33">
+        <div style="display:flex;align-items:center;gap:10px;margin-bottom:14px">
+          <div style="font-size:24px" id="jiao-target-emoji">👤</div>
+          <div>
+            <div id="jiao-target-name" style="font-weight:800;font-size:16px;color:#f05c6e"></div>
+            <div style="font-size:11px;color:var(--muted)">個人叫囂板・所有人都看得到</div>
+          </div>
+        </div>
+        <!-- 輸入區 -->
+        <div id="jiao-personal-input-area">
+          <textarea id="jiao-personal-text" placeholder="對這個人說點什麼... 💢"></textarea>
+          <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+            <div style="font-size:12px;color:var(--muted)">大小：</div>
+            <select id="jiao-personal-size" style="width:auto;margin:0;padding:4px 8px;font-size:12px">
+              <option value="12">小</option>
+              <option value="14" selected>中</option>
+              <option value="18">大</option>
+              <option value="24">超大</option>
+            </select>
+            <div style="font-size:12px;color:var(--muted);margin-left:4px">顏色：</div>
+            <div style="display:flex;gap:5px">
+              <div class="jiao-pclr selected-jpclr" data-color="#e8eaf0" style="background:#e8eaf0;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid var(--accent)" onclick="selectJiaoPersonalColor(this)"></div>
+              <div class="jiao-pclr" data-color="#f05c6e" style="background:#f05c6e;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoPersonalColor(this)"></div>
+              <div class="jiao-pclr" data-color="#f5a623" style="background:#f5a623;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoPersonalColor(this)"></div>
+              <div class="jiao-pclr" data-color="#4cde8f" style="background:#4cde8f;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoPersonalColor(this)"></div>
+              <div class="jiao-pclr" data-color="#5b9cf6" style="background:#5b9cf6;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoPersonalColor(this)"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">
+              <input type="checkbox" id="jiao-personal-tilt" style="width:auto;margin:0;cursor:pointer">
+              <label for="jiao-personal-tilt" style="cursor:pointer">隨機傾斜 📐</label>
+            </div>
+          </div>
+          <button class="btn btn-primary" style="background:#f05c6e" onclick="submitPersonalNote()">送出叫囂 💢</button>
+        </div>
+        <div id="jiao-personal-login-hint" style="display:none;color:var(--muted);font-size:13px;padding:6px 0">請先登入才能留言</div>
+      </div>
+      <!-- 個人叫囂剪貼簿 -->
+      <div class="scrap-board" id="scrap-personal-canvas" style="min-height:350px">
+        <div id="scrap-personal-empty" style="position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);color:var(--muted);font-size:13px;text-align:center;pointer-events:none">
+          <div style="font-size:28px;margin-bottom:6px">💬</div>
+          還沒有留言，來第一個！
+        </div>
+      </div>
+    </div>
   </div>
 </main>
 </div>
@@ -429,11 +566,22 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         <div>• 即時排行榜（依總得分排名）</div>
         <div>• 全員體脂趨勢折線圖</div>
         <div>• 點「📋 比賽規則」可展開查看完整規則</div>
+        <div>• 點「It's 叫囂 Time」進入叫囂模組</div>
+      </div>
+      <div style="color:#f05c6e;font-weight:700;margin-bottom:6px">📣 叫囂模組</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 分為「公開大剪貼簿」和「個人叫囂板」兩個區域</div>
+        <div>• <strong style="color:var(--text)">公開大剪貼簿</strong>：對所有人廣播，留言隨機散落在畫布上，可以重疊，像真的剪貼簿</div>
+        <div>• <strong style="color:var(--text)">個人叫囂板</strong>：選擇特定對象，在他的個人板上留言，所有人都看得到</div>
+        <div>• 可調整文字大小、顏色、隨機傾斜角度</div>
+        <div>• 需要登入才能留言；未登入可以觀看</div>
+        <div>• 管理員可以刪除任何留言</div>
       </div>
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">🔐 登入</div>
       <div style="color:var(--muted);margin-bottom:16px">
         <div>• 點右上角「登入」進入個人後台</div>
         <div>• 帳號密碼由管理員建立，請洽管理員取得</div>
+        <div>• 登入狀態保留 12 小時，關閉網頁不會登出</div>
       </div>
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">📊 我的數據</div>
       <div style="color:var(--muted);margin-bottom:16px">
@@ -466,6 +614,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：為什麼我的排名沒有更新？</strong><br>A：排行榜只計算管理員在測量日錄入的數據，測量日分別為 4/15、4/29、5/13、5/27、6/10、6/24。</div>
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：自己填的數據會影響排名嗎？</strong><br>A：不會，自填數據只供個人趨勢參考。</div>
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：我填錯數據怎麼辦？</strong><br>A：可以在「我的數據」點「刪」申請刪除，管理員審核後會刪除。</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：叫囂的留言可以刪嗎？</strong><br>A：只有管理員可以刪除留言，請找管理員處理。</div>
         <div><strong style="color:var(--text)">Q：退賽可以退款嗎？</strong><br>A：退賽不退款，公基金一旦投入即不退還。</div>
       </div>
     </div>
@@ -953,6 +1102,168 @@ async function deleteComment(commentId){
     goPublic();
   }
 })();
+
+// ── 叫囂模組 ──────────────────────────────────────────────
+let selectedJiaoColor='#e8eaf0';
+let selectedJiaoPersonalColor='#e8eaf0';
+let currentJiaoTarget=null;
+let boardUnsubscribe=null;
+let personalUnsubscribe=null;
+const NOTE_BG_COLORS=['#1e2433','#252d3e','#1a2030','#2a1f1f','#1a2a1f','#1f1a2a','#2a2a1a'];
+
+function jiaoTab(tab){
+  document.getElementById('jt-board').classList.toggle('active', tab==='board');
+  document.getElementById('jt-personal').classList.toggle('active', tab==='personal');
+  document.getElementById('jiao-board-section').style.display=tab==='board'?'block':'none';
+  document.getElementById('jiao-personal-section').style.display=tab==='personal'?'block':'none';
+  if(tab==='board') loadBoardNotes();
+  if(tab==='personal') loadJiaoTargets();
+}
+
+function selectJiaoColor(el){
+  document.querySelectorAll('.jiao-clr').forEach(d=>{d.style.border='2px solid transparent';});
+  el.style.border='2px solid var(--accent)';
+  selectedJiaoColor=el.dataset.color;
+}
+function selectJiaoPersonalColor(el){
+  document.querySelectorAll('.jiao-pclr').forEach(d=>{d.style.border='2px solid transparent';});
+  el.style.border='2px solid var(--accent)';
+  selectedJiaoPersonalColor=el.dataset.color;
+}
+
+function renderNoteOnCanvas(canvasId, emptyId, notes){
+  const canvas=document.getElementById(canvasId);
+  const empty=document.getElementById(emptyId);
+  // Remove old notes but keep empty placeholder
+  canvas.querySelectorAll('.scrap-note').forEach(n=>n.remove());
+  if(!notes||notes.length===0){if(empty)empty.style.display='block';return;}
+  if(empty)empty.style.display='none';
+  const W=canvas.offsetWidth||320;
+  const H=Math.max(500, notes.length*60);
+  canvas.style.minHeight=H+'px';
+  notes.forEach(note=>{
+    const el=document.createElement('div');
+    el.className='scrap-note';
+    const bgIdx=Math.abs((note.createdAt||0))%NOTE_BG_COLORS.length;
+    el.style.background=NOTE_BG_COLORS[bgIdx];
+    el.style.border='1px solid rgba(255,255,255,0.07)';
+    const maxX=Math.max(W-220,10);
+    // Use seeded random based on note id for stable positions
+    const seed=(note.createdAt||Date.now());
+    const x=((seed*9301+49297)%233280)/233280*maxX;
+    const y=((seed*6364136223846793005n||seed*1234567)%500||Math.abs(seed*0.618033)%450)+10;
+    el.style.left=x+'px';
+    el.style.top=(typeof y==='number'?y:50)+'px';
+    const angle=note.angle||0;
+    el.style.transform=`rotate(${angle}deg)`;
+    el.style.color=note.color||'#e8eaf0';
+    el.style.fontSize=(note.fontSize||14)+'px';
+    const canDel=CU&&CU.role==='admin';
+    el.innerHTML=`<div>${note.text}</div><div class="note-author">${note.authorName||'匿名'}${canDel?` <span onclick="deleteJiaoNote('${note.id}','${canvasId==='scrap-board-canvas'?'board':'personal'}')" style="cursor:pointer;color:var(--red);margin-left:6px">✕</span>`:''}</div>`;
+    canvas.appendChild(el);
+  });
+}
+
+async function loadBoardNotes(){
+  if(boardUnsubscribe){boardUnsubscribe();boardUnsubscribe=null;}
+  const canvas=document.getElementById('scrap-board-canvas');
+  // Show login hint or input
+  const inputArea=document.getElementById('jiao-board-input-area');
+  const loginHint=document.getElementById('jiao-board-login-hint');
+  if(CU){inputArea.style.display='block';loginHint.style.display='none';}
+  else{inputArea.style.display='none';loginHint.style.display='block';}
+  boardUnsubscribe=db.collection('jiaoBoard').orderBy('createdAt','desc').limit(80)
+    .onSnapshot(snap=>{
+      const notes=snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderNoteOnCanvas('scrap-board-canvas','scrap-empty',notes);
+    },err=>{console.error('board load err',err);});
+}
+
+async function loadJiaoTargets(){
+  const grid=document.getElementById('jiao-target-grid');
+  grid.innerHTML='<div style="color:var(--muted);font-size:12px">載入中...</div>';
+  const snap=await db.collection('users').where('role','!=','admin').get();
+  const users=snap.docs.map(d=>({id:d.id,...d.data()}));
+  USERS_CACHE=users;
+  const emojis=['🐷','🦆','🐸','🐨','🦊','🐯','🐼','🦁','🐻','🐮','🐰','🐹'];
+  grid.innerHTML=users.map((u,i)=>`
+    <div class="target-avatar" id="tav-${u.id}" onclick="selectJiaoTarget('${u.id}','${u.name||u.id}','${emojis[i%emojis.length]}')">
+      <div style="font-size:28px">${emojis[i%emojis.length]}</div>
+      <div class="av-name">${u.name||u.id}</div>
+    </div>`).join('');
+}
+
+function selectJiaoTarget(uid, name, emoji){
+  currentJiaoTarget=uid;
+  document.querySelectorAll('.target-avatar').forEach(a=>a.classList.remove('selected'));
+  const av=document.getElementById('tav-'+uid);
+  if(av)av.classList.add('selected');
+  document.getElementById('jiao-target-name').textContent=name;
+  document.getElementById('jiao-target-emoji').textContent=emoji;
+  document.getElementById('jiao-personal-board').style.display='block';
+  const inputArea=document.getElementById('jiao-personal-input-area');
+  const loginHint=document.getElementById('jiao-personal-login-hint');
+  if(CU){inputArea.style.display='block';loginHint.style.display='none';}
+  else{inputArea.style.display='none';loginHint.style.display='block';}
+  loadPersonalNotes(uid);
+  document.getElementById('jiao-personal-board').scrollIntoView({behavior:'smooth',block:'start'});
+}
+
+function loadPersonalNotes(uid){
+  if(personalUnsubscribe){personalUnsubscribe();personalUnsubscribe=null;}
+  personalUnsubscribe=db.collection('jiaoPersonal').where('targetUid','==',uid).orderBy('createdAt','desc').limit(60)
+    .onSnapshot(snap=>{
+      const notes=snap.docs.map(d=>({id:d.id,...d.data()}));
+      renderNoteOnCanvas('scrap-personal-canvas','scrap-personal-empty',notes);
+    },err=>{console.error('personal load err',err);});
+}
+
+async function submitBoardNote(){
+  if(!CU)return toast('請先登入才能留言','error');
+  const txt=document.getElementById('jiao-board-text').value.trim();
+  if(!txt)return toast('請輸入內容','error');
+  const size=parseInt(document.getElementById('jiao-board-size').value);
+  const tilt=document.getElementById('jiao-board-tilt').checked;
+  const angle=tilt?(Math.random()*30-15):0;
+  await db.collection('jiaoBoard').add({
+    text:txt, authorId:CU.id, authorName:CU.name||CU.id,
+    fontSize:size, color:selectedJiaoColor, angle:angle, createdAt:Date.now()
+  });
+  document.getElementById('jiao-board-text').value='';
+  toast('貼上去了！📌');
+}
+
+async function submitPersonalNote(){
+  if(!CU)return toast('請先登入才能留言','error');
+  if(!currentJiaoTarget)return toast('請先選擇對象','error');
+  const txt=document.getElementById('jiao-personal-text').value.trim();
+  if(!txt)return toast('請輸入內容','error');
+  const size=parseInt(document.getElementById('jiao-personal-size').value);
+  const tilt=document.getElementById('jiao-personal-tilt').checked;
+  const angle=tilt?(Math.random()*30-15):0;
+  await db.collection('jiaoPersonal').add({
+    targetUid:currentJiaoTarget, authorId:CU.id, authorName:CU.name||CU.id,
+    text:txt, fontSize:size, color:selectedJiaoPersonalColor, angle:angle, createdAt:Date.now()
+  });
+  document.getElementById('jiao-personal-text').value='';
+  toast('叫囂成功 💢');
+}
+
+async function deleteJiaoNote(id, type){
+  if(!confirm('確定刪除這則留言？'))return;
+  const col=type==='board'?'jiaoBoard':'jiaoPersonal';
+  await db.collection(col).doc(id).delete();
+  toast('已刪除');
+}
+
+// Override showPage to handle jiaoxiao init
+const _origShowPage=showPage;
+function showPage(id){
+  _origShowPage(id);
+  if(id==='jiaoxiao'){
+    jiaoTab('board');
+  }
+}
 </script>
 </body>
 </html>
