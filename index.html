@@ -6,7 +6,6 @@
 <title>🏆 脂己脂彼 百戰百勝</title>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
 <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
-
 <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <style>
 *{box-sizing:border-box;margin:0;padding:0}
@@ -48,13 +47,26 @@ textarea{height:80px;resize:none}
 table{width:100%;border-collapse:collapse;font-size:11px}
 th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .toast{position:fixed;bottom:22px;right:18px;z-index:9999;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;display:none;box-shadow:0 4px 12px #000}
+.checkin-option{background:var(--surface);border:2px solid var(--border);border-radius:14px;padding:16px 10px;text-align:center;cursor:pointer;transition:all 0.15s;user-select:none}
+.checkin-option:active{transform:scale(0.95)}
+.checkin-option.selected{border-color:var(--accent);background:#f5a62318}
+.checkin-option .ci-emoji{font-size:28px;margin-bottom:6px}
+.checkin-option .ci-label{font-size:12px;font-weight:600;color:var(--muted)}
+.checkin-option.selected .ci-label{color:var(--accent)}
+.checkin-option .ci-pts{font-size:10px;color:var(--muted);margin-top:2px}
+.stamp-grid{display:grid;grid-template-columns:repeat(10,1fr);gap:4px;margin:12px 0}
+.stamp-cell{aspect-ratio:1;border-radius:6px;background:var(--surface);border:1px solid var(--border);display:flex;align-items:center;justify-content:center;font-size:12px;transition:all 0.2s}
+.stamp-cell.filled{background:var(--accent);border-color:var(--accent)}
+.stamp-cell.today{border-color:var(--green);border-width:2px}
+.pts-bar{background:var(--surface);border-radius:8px;height:8px;overflow:hidden;margin:6px 0}
+.pts-fill{height:8px;border-radius:8px;background:linear-gradient(90deg,var(--accent),var(--green));transition:width 0.5s}
 @media(max-width:520px){
   .grid4{grid-template-columns:1fr 1fr}
-  .mobile-scroll{overflow-x:auto;-webkit-overflow-scrolling:touch}
   table{font-size:10px;min-width:480px}
   th,td{padding:5px 6px}
   .tabs{gap:3px}
   .tab{padding:6px 10px;font-size:12px}
+  .stamp-grid{grid-template-columns:repeat(7,1fr)}
 }
 </style>
 </head>
@@ -88,15 +100,13 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   <div class="card" style="margin-bottom:14px">
     <div onclick="toggleRules()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">
       <div style="font-weight:700;font-size:15px">📋 比賽規則</div>
-      <div id="rules-arrow" style="color:var(--muted);font-size:13px;transition:transform 0.2s">▼ 展開</div>
+      <div id="rules-arrow" style="color:var(--muted);font-size:13px">▼ 展開</div>
     </div>
     <div id="rules-content" style="display:none;margin-top:16px">
-
       <div style="margin-bottom:16px">
         <div style="color:var(--accent);font-weight:700;margin-bottom:8px">⏱ 比賽時長</div>
         <div style="font-size:13px;color:var(--muted)">2026/04/15 — 2026/06/24（共 10 週）</div>
       </div>
-
       <div style="margin-bottom:16px">
         <div style="color:var(--accent);font-weight:700;margin-bottom:8px">📊 評分方式</div>
         <div style="font-size:13px;line-height:1.8">
@@ -105,7 +115,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
           <div style="margin-top:6px;color:var(--muted)">總分 ＝ [（體脂降率×70%）＋（體重降率×30%）] × (1＋加分%)</div>
         </div>
       </div>
-
       <div style="margin-bottom:16px">
         <div style="color:var(--accent);font-weight:700;margin-bottom:8px">⭐ 加分機制（最高 +10%）</div>
         <div style="font-size:13px;line-height:1.8">
@@ -116,7 +125,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
           <div style="color:var(--muted);font-size:12px">※ 測量日：4/15、4/29、5/13、5/27、6/10、6/24</div>
         </div>
       </div>
-
       <div style="margin-bottom:16px">
         <div style="color:var(--accent);font-weight:700;margin-bottom:8px">💰 公基金機制</div>
         <div style="font-size:13px;line-height:1.8">
@@ -128,7 +136,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
           <div>🥉 第 3 名 → <strong>15%</strong></div>
         </div>
       </div>
-
       <div>
         <div style="color:var(--accent);font-weight:700;margin-bottom:8px">📏 測量規範</div>
         <div style="font-size:13px;line-height:1.8;color:var(--muted)">
@@ -138,10 +145,8 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
           <div>✔ 前後條件一致</div>
         </div>
       </div>
-
     </div>
   </div>
-
   <div class="card">
     <h2>🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2>
     <div id="public-lb">載入數據中...</div>
@@ -149,7 +154,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   <div class="card">
     <h2>📈 全員體脂趨勢</h2>
     <div style="height:200px;"><canvas id="chart-public-fat"></canvas></div>
-    <div id="chart-legend" style="display:flex;flex-wrap:wrap;gap:10px;margin-top:10px;font-size:11px"></div>
   </div>
 </main>
 </div>
@@ -197,7 +201,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div class="period-btn" id="period-toggle" onclick="this.classList.toggle('active')">
         <span>🩸</span> 生理期中 (不列入穩定下降加分判斷)
       </div>
-
       <button class="btn btn-primary" id="btn-submit-rec" onclick="submitRecord()">儲存紀錄</button>
     </div>
   </div>
@@ -218,6 +221,84 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <div class="card"><h2>👤 設定</h2><label>顯示暱稱</label><input id="profile-name"><button class="btn btn-primary" onclick="saveProfile()">更新資料</button></div>
   </div>
   <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px;width:100%">安全登出</button>
+</main>
+</div>
+
+<!-- 打卡頁面 -->
+<div class="page" id="page-checkin">
+<main>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button onclick="goDashboard()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:20px">←</button>
+    <div style="font-size:18px;font-weight:800">⭐ 每日打卡</div>
+  </div>
+  <div class="card" style="background:linear-gradient(135deg,#f5a62318,#f5a62305);border-color:#f5a62333">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:12px">
+      <div>
+        <div style="font-size:11px;color:var(--muted)">累積功德值</div>
+        <div id="ci-total-pts" style="font-size:36px;font-weight:800;color:var(--accent)">0</div>
+      </div>
+      <div style="text-align:right">
+        <div style="font-size:11px;color:var(--muted)">連續打卡</div>
+        <div style="display:flex;align-items:baseline;gap:4px;justify-content:flex-end">
+          <div id="ci-streak" style="font-size:36px;font-weight:800;color:var(--green)">0</div>
+          <div style="font-size:13px;color:var(--muted)">天 🔥</div>
+        </div>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:4px">本週進度</div>
+    <div class="pts-bar"><div id="ci-week-bar" class="pts-fill" style="width:0%"></div></div>
+    <div id="ci-week-label" style="font-size:10px;color:var(--muted);text-align:right">0/7 天</div>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:14px">
+      <h2 style="margin:0">今天做到了？</h2>
+      <div id="ci-today-badge" style="font-size:11px"></div>
+    </div>
+    <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-bottom:16px">
+      <div class="checkin-option" data-key="exercise" data-pts="3" onclick="toggleCi(this)">
+        <div class="ci-emoji">💪</div>
+        <div class="ci-label">有運動</div>
+        <div class="ci-pts">+3 功德</div>
+      </div>
+      <div class="checkin-option" data-key="diet" data-pts="2" onclick="toggleCi(this)">
+        <div class="ci-emoji">🥗</div>
+        <div class="ci-label">今天吃草</div>
+        <div class="ci-pts">+2 功德</div>
+      </div>
+      <div class="checkin-option" data-key="water" data-pts="1" onclick="toggleCi(this)">
+        <div class="ci-emoji">💧</div>
+        <div class="ci-label">多喝水沒事</div>
+        <div class="ci-pts">+1 功德</div>
+      </div>
+      <div class="checkin-option" data-key="sleep" data-pts="2" onclick="toggleCi(this)">
+        <div class="ci-emoji">😴</div>
+        <div class="ci-label">睡很飽</div>
+        <div class="ci-pts">+2 功德</div>
+      </div>
+      <div class="checkin-option" data-key="merit" data-pts="1" onclick="toggleCi(this)" style="grid-column:2/4">
+        <div class="ci-emoji">⭐</div>
+        <div class="ci-label">+功德</div>
+        <div class="ci-pts">+1 功德</div>
+      </div>
+    </div>
+    <button class="btn btn-primary" onclick="submitCheckin()">打卡完成 🎉</button>
+  </div>
+  <div class="card">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <h2 style="margin:0">📅 10 週集點卡</h2>
+      <div style="font-size:11px;color:var(--muted)">每天打卡填一格</div>
+    </div>
+    <div class="stamp-grid" id="stamp-grid"></div>
+    <div style="display:flex;gap:16px;margin-top:8px;font-size:11px;color:var(--muted)">
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;border-radius:3px;background:var(--accent)"></div> 已打卡</div>
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;border-radius:3px;background:var(--surface);border:2px solid var(--green)"></div> 今天</div>
+      <div style="display:flex;align-items:center;gap:4px"><div style="width:12px;height:12px;border-radius:3px;background:var(--surface);border:1px solid var(--border)"></div> 未打卡</div>
+    </div>
+  </div>
+  <div class="card">
+    <h2>打卡紀錄</h2>
+    <div id="checkin-history"></div>
+  </div>
 </main>
 </div>
 
@@ -268,19 +349,15 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   </div>
 </div>
 
-<!-- FAQ 浮動按鈕 -->
 <button onclick="toggleFaq()" style="position:fixed;bottom:24px;right:24px;width:44px;height:44px;border-radius:50%;background:var(--accent);color:#000;font-weight:800;font-size:18px;border:none;cursor:pointer;box-shadow:0 4px 16px #0006;z-index:998">?</button>
 
-<!-- FAQ Modal -->
 <div id="faq-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000a;z-index:997;align-items:flex-end;justify-content:center;padding:0">
   <div style="background:var(--card);border:1px solid var(--border);border-radius:16px 16px 0 0;padding:24px;width:100%;max-width:600px;max-height:80vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:20px">
       <div style="font-weight:800;font-size:16px">❓ 常見問題 &amp; 使用說明</div>
       <button onclick="toggleFaq()" style="background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
     </div>
-
     <div style="font-size:13px;line-height:1.8">
-
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">🏠 首頁</div>
       <div style="color:var(--muted);margin-bottom:16px">
         <div>• 顯示比賽結束倒數計時和下次測量日提醒</div>
@@ -289,13 +366,11 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         <div>• 全員體脂趨勢折線圖</div>
         <div>• 點「📋 比賽規則」可展開查看完整規則</div>
       </div>
-
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">🔐 登入</div>
       <div style="color:var(--muted);margin-bottom:16px">
         <div>• 點右上角「登入」進入個人後台</div>
         <div>• 帳號密碼由管理員建立，請洽管理員取得</div>
       </div>
-
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">📊 我的數據</div>
       <div style="color:var(--muted);margin-bottom:16px">
         <div>• 顯示目標體脂、當前降幅、穩定加分與總評分</div>
@@ -303,41 +378,32 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         <div>• 個人體脂率和體重趨勢折線圖</div>
         <div>• 可申請刪除已有紀錄（需管理員審核）</div>
       </div>
-
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">➕ 新增測量</div>
       <div style="color:var(--muted);margin-bottom:16px">
         <div>• 自行填入體重、體脂等數據，立即儲存</div>
         <div>• <strong style="color:var(--text)">注意：自填數據僅供個人參考，不納入計分和排行榜</strong></div>
         <div>• 計分用的官方數據由管理員在測量日統一錄入</div>
-        <div>• 可標記生理期，生理期數據不納入加分計算</div>
       </div>
-
+      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">⭐ 每日打卡</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 登入後點右上角「⭐」進入打卡頁面</div>
+        <div>• 每天選擇完成的項目累積功德值</div>
+        <div>• 集點卡顯示 10 週每日打卡紀錄</div>
+        <div>• 純娛樂性質，不影響比賽計分</div>
+      </div>
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">📔 私人日記</div>
       <div style="color:var(--muted);margin-bottom:16px">
         <div>• 記錄每天的心得、飲食、運動等內容</div>
         <div>• 只有自己看得到，完全私人</div>
         <div>• 可用日期範圍篩選歷史日記</div>
       </div>
-
-      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">👤 設定</div>
-      <div style="color:var(--muted);margin-bottom:16px">
-        <div>• 可修改顯示暱稱（排行榜上顯示的名字）</div>
-      </div>
-
-      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">📈 我的趨勢圖</div>
-      <div style="color:var(--muted);margin-bottom:16px">
-        <div>• 在「我的數據」頁面下方可查看個人體脂率和體重折線圖</div>
-        <div>• 納入所有已核准的數據（管理員錄入 + 本人填的）</div>
-      </div>
-
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">❓ 常見問題</div>
       <div style="color:var(--muted)">
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：為什麼我的排名沒有更新？</strong><br>A：排行榜只計算管理員在測量日錄入的數據，測量日分別為 4/15、4/29、5/13、5/27、6/10、6/24。</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：自己填的數據會影響排名嗎？</strong><br>A：不會，自填數據只供個人趨勢參考，排名和計分只用管理員錄入的數據。</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：我填錯數據怎麼辦？</strong><br>A：可以在「我的數據」點「刪」申請刪除，管理員審核後會刪除。若是計分紀錄填錯，請直接聯絡管理員。</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：自己填的數據會影響排名嗎？</strong><br>A：不會，自填數據只供個人趨勢參考。</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：我填錯數據怎麼辦？</strong><br>A：可以在「我的數據」點「刪」申請刪除，管理員審核後會刪除。</div>
         <div><strong style="color:var(--text)">Q：退賽可以退款嗎？</strong><br>A：退賽不退款，公基金一旦投入即不退還。</div>
       </div>
-
     </div>
   </div>
 </div>
@@ -346,36 +412,37 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 const firebaseConfig={apiKey:"AIzaSyD_s-anl91EMmC1TtmXNpVlyBcD7sYjzzk",authDomain:"fat-loss-game.firebaseapp.com",projectId:"fat-loss-game",storageBucket:"fat-loss-game.appspot.com",messagingSenderId:"280707290748",appId:"1:280707290748:web:aa7946aef2cc96cafe5bf9"};
 firebase.initializeApp(firebaseConfig);
 const db=firebase.firestore();
-const END_DATE=new Date('2026-06-24T23:59:59'), PRIZE_PER=3000, PRIZE_BACK=2000, RATE_GOAL=0.07;
+const END_DATE=new Date('2026-06-24T23:59:59'),PRIZE_PER=3000,PRIZE_BACK=2000,RATE_GOAL=0.07;
+const RACE_START=new Date('2026-04-15T00:00:00');
 const COLORS=['#f5a623','#4cde8f','#5b9cf6','#c084fc','#fb7185','#38bdf8','#a78bfa','#f472b6'];
-let CU=null, USERS_CACHE=[], publicChart=null;
+let CU=null,USERS_CACHE=[],publicChart=null;
 
+function getToday(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
 function toggleFaq(){const m=document.getElementById('faq-modal');m.style.display=m.style.display==='none'?'flex':'none';}
-function toggleRules(){
-  const c=document.getElementById('rules-content');
-  const a=document.getElementById('rules-arrow');
-  if(c.style.display==='none'){c.style.display='block';a.textContent='▲ 收起';}
-  else{c.style.display='none';a.textContent='▼ 展開';}
-}
+function toggleRules(){const c=document.getElementById('rules-content'),a=document.getElementById('rules-arrow');if(c.style.display==='none'){c.style.display='block';a.textContent='▲ 收起';}else{c.style.display='none';a.textContent='▼ 展開';}}
 function toast(msg,type='success'){const el=document.getElementById('toast-el');el.textContent=msg;el.style.background=type==='error'?'var(--red)':'var(--green)';el.style.color='#fff';el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');}
 function goPublic(){showPage('public');loadPublicData();}
-function updateNav(){const nr=document.getElementById('nav-right');nr.innerHTML=CU?`<button class="btn btn-primary" style="width:auto;padding:5px 12px;font-size:11px" onclick="goDashboard()">我的後台</button>`:`<button class="btn btn-ghost" style="width:auto;padding:5px 12px;font-size:11px" onclick="showPage('login')">登入</button>`;}
+function updateNav(){
+  const nr=document.getElementById('nav-right');
+  if(CU){
+    nr.innerHTML=`<div style="display:flex;align-items:center;gap:8px"><button onclick="showCheckin()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--accent);font-size:16px;cursor:pointer" title="每日打卡">⭐</button><button class="btn btn-primary" style="width:auto;padding:5px 12px;font-size:11px" onclick="goDashboard()">我的後台</button></div>`;
+  } else {
+    nr.innerHTML=`<button class="btn btn-ghost" style="width:auto;padding:5px 12px;font-size:11px" onclick="showPage('login')">登入</button>`;
+  }
+}
 function goDashboard(){CU.role==='admin'?showPage('admin'):showPage('user');}
-function logout(){CU=null;updateNav();goPublic();toast("已登出");}
+function logout(){CU=null;localStorage.removeItem('ci_user');updateNav();goPublic();toast("已登出");}
 
 function calculateFullStats(recs){
-  if(recs.length<2) return {fatRate:0,weightRate:0,bonus:0,total:0,isWinner:false};
+  if(recs.length<2)return{fatRate:0,weightRate:0,bonus:0,total:0,isWinner:false};
   const start=recs[0],last=recs[recs.length-1];
-  const fRate=(start.bodyFat-last.bodyFat)/start.bodyFat;
-  const wRate=(start.weight-last.weight)/start.weight;
+  const fRate=(start.bodyFat-last.bodyFat)/start.bodyFat,wRate=(start.weight-last.weight)/start.weight;
   const nonPeriod=recs.filter(r=>!r.isPeriod);
   let upCount=0;
   if(nonPeriod.length>=2){for(let i=1;i<nonPeriod.length;i++){if(nonPeriod[i].bodyFat>nonPeriod[i-1].bodyFat)upCount++;}}
   const bonus=(upCount===0)?0.10:(upCount===1?0.05:0);
-  const total=((fRate*0.7)+(wRate*0.3))*(1+bonus);
-  const isWinner=fRate>=RATE_GOAL;
-  return{fatRate:fRate*100,weightRate:wRate*100,bonus:bonus*100,total:total*100,isWinner};
+  return{fatRate:fRate*100,weightRate:wRate*100,bonus:bonus*100,total:((fRate*0.7)+(wRate*0.3))*(1+bonus)*100,isWinner:fRate>=RATE_GOAL};
 }
 
 async function loadPublicData(){
@@ -385,35 +452,21 @@ async function loadPublicData(){
     USERS_CACHE=currentUsers;
     document.getElementById('prize-count').textContent=currentUsers.length;
     const rSnap=await db.collection('records').where('status','==','approved').get();
-    const allRecords={}, adminRecords={};
-    rSnap.docs.forEach(d=>{
-      const r=d.data();
-      if(!allRecords[r.userId])allRecords[r.userId]=[];
-      allRecords[r.userId].push(r);
-      if(r.adminEntered){
-        if(!adminRecords[r.userId])adminRecords[r.userId]=[];
-        adminRecords[r.userId].push(r);
-      }
-    });
+    const adminRecords={};
+    rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
     Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
     let winners=0;
     const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
-    const finalAmount=(currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK);
-    document.getElementById('prize-amount').textContent=`NT$ ${finalAmount.toLocaleString()}`;
+    document.getElementById('prize-amount').textContent=`NT$ ${((currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK)).toLocaleString()}`;
     document.getElementById('public-lb').innerHTML=rows.map((u,i)=>{
-      const maxScore=rows[0]?Math.max(rows[0].score,0.01):1;
-      const barW=Math.max((u.score/maxScore)*100,0);
+      const maxScore=rows[0]?Math.max(rows[0].score,0.01):1,barW=Math.max((u.score/maxScore)*100,0);
       return`<div class="lb-row"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div>${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`;
     }).join('');
-    renderTrendChart(rows);
+    const ctx=document.getElementById('chart-public-fat').getContext('2d');if(publicChart)publicChart.destroy();
+    const maxLen=Math.max(...rows.map(r=>r.history.length),0);
+    if(maxLen>0)publicChart=new Chart(ctx,{type:'line',data:{labels:Array.from({length:maxLen},(_,i)=>`T${i+1}`),datasets:rows.map((u,i)=>({label:u.name,data:u.history,borderColor:COLORS[i%COLORS.length],tension:0.3}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
     if(CU&&CU.role==='admin')updateAdminTargetSelect();
   }catch(e){console.error(e);}
-}
-
-function renderTrendChart(rows){
-  const ctx=document.getElementById('chart-public-fat').getContext('2d');if(publicChart)publicChart.destroy();
-  const maxLen=Math.max(...rows.map(r=>r.history.length),0);
-  publicChart=new Chart(ctx,{type:'line',data:{labels:Array.from({length:maxLen},(_,i)=>`T${i+1}`),datasets:rows.map((u,i)=>({label:u.name,data:u.history,borderColor:COLORS[i%COLORS.length],tension:0.3}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
 }
 
 async function loadUserRecords(){
@@ -421,39 +474,25 @@ async function loadUserRecords(){
   const snap=await db.collection('records').where('userId','==',CU.id).get();
   const recs=snap.docs.map(doc=>({id:doc.id,...doc.data()})).sort((a,b)=>b.date.localeCompare(a.date));
   const app=[...recs].filter(r=>r.adminEntered&&r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
-  const gBox=document.getElementById('user-goal-box');
-  const sBar=document.getElementById('user-score-bar');
+  const gBox=document.getElementById('user-goal-box'),sBar=document.getElementById('user-score-bar');
   if(app.length>0){
-    const s=calculateFullStats(app);
-    const f=app[0],target=(f.bodyFat*(1-RATE_GOAL)).toFixed(1);
+    const s=calculateFullStats(app),f=app[0],target=(f.bodyFat*(1-RATE_GOAL)).toFixed(1);
     gBox.innerHTML=`<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div></div><div>${s.isWinner?'✅ 已達標':'進行中'}</div></div>`;
     sBar.innerHTML=`<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
   }
-  const validRecs = recs.filter(r=>r.status==='approved'||r.status==='delete_pending');
-  const renderTable = (list) => list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px 0">尚無紀錄</div>':`<div style="overflow-x:auto"><table><tr><th>日期</th><th>來源</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
+  const validRecs=recs.filter(r=>r.status==='approved'||r.status==='delete_pending');
+  const renderTable=(list)=>list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px 0">尚無紀錄</div>':`<div style="overflow-x:auto"><table><tr><th>日期</th><th>來源</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
     const src=r.adminEntered?`<span style="color:var(--accent);font-size:11px">管理員</span>`:`<span style="color:var(--muted);font-size:11px">本人</span>`;
     const statusTxt=r.status==='approved'?'✅':r.status==='delete_pending'?'🗑待刪除':'⏳';
-    const canDelete=r.status==='approved';
-    return`<tr><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'kg':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td>${canDelete?`<button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button>`:''}</td></tr>`;
+    return`<tr><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'kg':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td>${r.status==='approved'?`<button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button>`:''}</td></tr>`;
   }).join('')+`</table></div>`;
   document.getElementById('user-record-list').innerHTML=renderTable(validRecs);
-  // 渲染個人趨勢圖（所有已核准紀錄）
   const chartEl=document.getElementById('my-chart-canvas');
   const allApp=[...recs].filter(r=>r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
   if(chartEl){
     if(window.myChartInst)window.myChartInst.destroy();
     if(allApp.length>=2){
-      window.myChartInst=new Chart(chartEl.getContext('2d'),{
-        type:'line',
-        data:{
-          labels:allApp.map(r=>r.date.slice(5)),
-          datasets:[
-            {label:'體脂率 %',data:allApp.map(r=>r.bodyFat),borderColor:'#f5a623',backgroundColor:'#f5a62320',fill:true,tension:0.3,yAxisID:'y'},
-            {label:'體重 kg',data:allApp.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'},
-          ]
-        },
-        options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}
-      });
+      window.myChartInst=new Chart(chartEl.getContext('2d'),{type:'line',data:{labels:allApp.map(r=>r.date.slice(5)),datasets:[{label:'體脂率 %',data:allApp.map(r=>r.bodyFat),borderColor:'#f5a623',backgroundColor:'#f5a62320',fill:true,tension:0.3,yAxisID:'y'},{label:'體重 kg',data:allApp.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}});
     } else {
       chartEl.parentElement.innerHTML='<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">需要至少 2 筆紀錄才能顯示趨勢圖</div>';
     }
@@ -462,64 +501,79 @@ async function loadUserRecords(){
 
 async function login(){
   const id=document.getElementById('login-id').value.trim(),pw=document.getElementById('login-pw').value;
-  if(id==='knowfatnofat'&&pw==='knowfatnofat2026'){CU={id:'admin',role:'admin'};updateNav();showPage('admin');loadPending();loadAdminUserList();return;}
+  if(id==='knowfatnofat'&&pw==='knowfatnofat2026'){CU={id:'admin',role:'admin'};localStorage.setItem('ci_user',JSON.stringify(CU));updateNav();showPage('admin');loadPending();loadAdminUserList();return;}
   const snap=await db.collection('users').doc(id).get();
-  if(snap.exists&&snap.data().password===pw){CU={id,...snap.data()};updateNav();showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
+  if(snap.exists&&snap.data().password===pw){CU={id,...snap.data()};localStorage.setItem('ci_user',JSON.stringify(CU));updateNav();showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
   else toast('帳號或密碼錯誤','error');
 }
 async function submitRecord(){
   const w=document.getElementById('rec-weight').value,f=document.getElementById('rec-bodyfat').value,d=document.getElementById('rec-date').value,isP=document.getElementById('period-toggle').classList.contains('active');
-  const subcut=document.getElementById('rec-subcut').value;
-  const muscle=document.getElementById('rec-muscle').value;
-  const visceral=document.getElementById('rec-visceral').value;
-  const bmr=document.getElementById('rec-bmr').value;
-  const bodyage=document.getElementById('rec-bodyage').value;
+  const subcut=document.getElementById('rec-subcut').value,muscle=document.getElementById('rec-muscle').value,visceral=document.getElementById('rec-visceral').value,bmr=document.getElementById('rec-bmr').value,bodyage=document.getElementById('rec-bodyage').value;
   if(!w||!f||!d)return toast("請填寫數據","error");
   const btn=document.getElementById('btn-submit-rec');btn.disabled=true;btn.innerText="儲存中...";
   await db.collection('records').add({userId:CU.id,weight:parseFloat(w),bodyFat:parseFloat(f),subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,bodyage:bodyage?parseFloat(bodyage):null,date:d,isPeriod:isP,status:'approved',adminEntered:false,createdAt:Date.now()});
   toast("個人紀錄已儲存！");btn.disabled=false;btn.innerText="儲存紀錄";loadUserRecords();
 }
+async function deleteRecord(id){if(!confirm("確定申請刪除？需管理員審核後才會正式刪除。"))return;await db.collection('records').doc(id).update({status:'delete_pending'});toast("已送出刪除申請");loadUserRecords();}
 async function submitDiary(){
-  const c=document.getElementById('diary-content').value;
-  if(!c)return;
-  const today=new Date().toISOString().split('T')[0];
-  await db.collection('diaries').add({userId:CU.id,content:c,date:today,createdAt:Date.now()});
-  toast('日記已儲存！');
-  document.getElementById('diary-content').value='';
-  loadUserDiaries();
+  const c=document.getElementById('diary-content').value;if(!c)return;
+  await db.collection('diaries').add({userId:CU.id,content:c,date:getToday(),createdAt:Date.now()});
+  toast('日記已儲存！');document.getElementById('diary-content').value='';loadUserDiaries();
 }
 let ALL_DIARIES=[];
 async function loadUserDiaries(){
-  try {
-    const snap=await db.collection('diaries').where('userId','==',CU.id).get();
-    ALL_DIARIES=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
-    renderDiaries(ALL_DIARIES);
-  } catch(e) {
-    console.error('日記載入失敗',e);
-    toast('日記載入失敗','error');
+  try{const snap=await db.collection('diaries').where('userId','==',CU.id).get();ALL_DIARIES=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);renderDiaries(ALL_DIARIES);}catch(e){toast('日記載入失敗','error');}
+}
+function renderDiaries(list){document.getElementById('diary-list').innerHTML=list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px">尚無日記</div>':list.map(d=>`<div class="card" style="font-size:12px;margin-top:10px"><div style="color:var(--muted);margin-bottom:4px">${d.date}</div>${d.content}</div>`).join('');}
+function filterDiaries(){const s=document.getElementById('diary-filter-start').value,e=document.getElementById('diary-filter-end').value;renderDiaries(ALL_DIARIES.filter(d=>(!s||d.date>=s)&&(!e||d.date<=e)));}
+function clearDiaryFilter(){document.getElementById('diary-filter-start').value='';document.getElementById('diary-filter-end').value='';renderDiaries(ALL_DIARIES);}
+
+// ── 打卡系統 ──────────────────────────────────────────
+const CI_OPTS={exercise:3,diet:2,water:1,sleep:2,merit:1};
+const CI_LABELS={exercise:'💪 有運動',diet:'🥗 今天吃草',water:'💧 多喝水沒事',sleep:'😴 睡很飽',merit:'⭐ +功德'};
+function showCheckin(){showPage('checkin');loadCheckinPage();}
+function toggleCi(el){el.classList.toggle('selected');}
+async function submitCheckin(){
+  const selected=[...document.querySelectorAll('.checkin-option.selected')].map(b=>b.dataset.key);
+  if(selected.length===0)return toast('請至少選一項！','error');
+  const today=getToday(),pts=selected.reduce((sum,k)=>sum+(CI_OPTS[k]||0),0);
+  const existing=await db.collection('checkins').where('userId','==',CU.id).where('date','==',today).get();
+  if(!existing.empty){await db.collection('checkins').doc(existing.docs[0].id).update({items:selected,pts,updatedAt:Date.now()});}
+  else{await db.collection('checkins').add({userId:CU.id,date:today,items:selected,pts,createdAt:Date.now()});}
+  toast(`打卡成功！+${pts} 功德 🎉`);loadCheckinPage();
+}
+async function loadCheckinPage(){
+  const snap=await db.collection('checkins').where('userId','==',CU.id).get();
+  const records=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.date.localeCompare(a.date));
+  const today=getToday();
+  document.getElementById('ci-total-pts').textContent=records.reduce((sum,r)=>sum+(r.pts||0),0);
+  let streak=0;
+  for(let i=0;i<70;i++){const d=new Date();d.setDate(d.getDate()-i);const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;if(records.find(r=>r.date===ds))streak++;else break;}
+  document.getElementById('ci-streak').textContent=streak;
+  const weekDays=[];for(let i=6;i>=0;i--){const d=new Date();d.setDate(d.getDate()-i);weekDays.push(`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`);}
+  const weekChecked=weekDays.filter(d=>records.find(r=>r.date===d)).length;
+  document.getElementById('ci-week-bar').style.width=`${(weekChecked/7)*100}%`;
+  document.getElementById('ci-week-label').textContent=`${weekChecked}/7 天`;
+  const todayRec=records.find(r=>r.date===today);
+  document.querySelectorAll('.checkin-option').forEach(b=>b.classList.remove('selected'));
+  if(todayRec){todayRec.items.forEach(k=>{const b=document.querySelector(`.checkin-option[data-key="${k}"]`);if(b)b.classList.add('selected');});document.getElementById('ci-today-badge').innerHTML=`<span style="color:var(--green)">✅ 今日已打卡</span>`;}
+  else{document.getElementById('ci-today-badge').textContent='';}
+  const grid=document.getElementById('stamp-grid');grid.innerHTML='';
+  for(let i=0;i<70;i++){
+    const d=new Date(RACE_START);d.setDate(d.getDate()+i);
+    const ds=`${d.getFullYear()}-${String(d.getMonth()+1).padStart(2,'0')}-${String(d.getDate()).padStart(2,'0')}`;
+    const checked=records.find(r=>r.date===ds),isToday=ds===today,isFuture=ds>today;
+    const cell=document.createElement('div');
+    cell.className='stamp-cell'+(checked?' filled':'')+(isToday?' today':'');
+    cell.title=ds;
+    if(checked)cell.textContent='⭐';
+    else if(isToday)cell.textContent='📍';
+    else if(isFuture)cell.style.opacity='0.3';
+    grid.appendChild(cell);
   }
+  document.getElementById('checkin-history').innerHTML=records.length===0?'<div style="color:var(--muted);font-size:12px">尚無打卡紀錄</div>':records.slice(0,20).map(r=>`<div style="padding:10px 0;border-bottom:1px solid #2a314820;display:flex;justify-content:space-between;align-items:center"><div style="font-size:12px;color:var(--muted)">${r.date}</div><div style="display:flex;gap:6px;flex-wrap:wrap;justify-content:flex-end">${(r.items||[]).map(k=>`<span style="background:var(--surface);border-radius:6px;padding:2px 8px;font-size:11px">${CI_LABELS[k]||k}</span>`).join('')}<span style="color:var(--accent);font-size:11px;font-weight:700">+${r.pts||0}</span></div></div>`).join('');
 }
-function renderDiaries(list){
-  document.getElementById('diary-list').innerHTML=list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px">尚無日記</div>':list.map(d=>`<div class="card" style="font-size:12px;margin-top:10px"><div style="color:var(--muted);margin-bottom:4px">${d.date}</div>${d.content}</div>`).join('');
-}
-function filterDiaries(){
-  const s=document.getElementById('diary-filter-start').value;
-  const e=document.getElementById('diary-filter-end').value;
-  const filtered=ALL_DIARIES.filter(d=>{
-    if(s&&d.date<s)return false;
-    if(e&&d.date>e)return false;
-    return true;
-  });
-  renderDiaries(filtered);
-}
-function clearDiaryFilter(){
-  document.getElementById('diary-filter-start').value='';
-  document.getElementById('diary-filter-end').value='';
-  renderDiaries(ALL_DIARIES);
-}
-async function registerUser(){const id=document.getElementById('reg-id').value.trim(),n=document.getElementById('reg-name').value.trim(),p=document.getElementById('reg-pw').value;if(!id||!n||!p)return toast('請填寫所有欄位','error');await db.collection('users').doc(id).set({name:n,password:p,role:'user'});toast(`${n} 已建立`);loadAdminUserList();loadPublicData();}
-async function deleteUser(id){if(!confirm("確定刪除？"))return;await db.collection('users').doc(id).delete();loadAdminUserList();loadPublicData();}
-async function deleteRecord(id){if(!confirm("確定申請刪除？需管理員審核後才會正式刪除。"))return;await db.collection('records').doc(id).update({status:'delete_pending'});toast("已送出刪除申請，等待管理員審核");loadUserRecords();}
+
 async function approveRecord(id){await db.collection('records').doc(id).update({status:'approved'});loadPending();loadPublicData();}
 async function rejectRecord(id){await db.collection('records').doc(id).update({status:'rejected'});loadPending();toast("已拒絕");}
 async function approveDelete(id){await db.collection('records').doc(id).update({status:'rejected',deletedAt:Date.now()});loadPending();loadPublicData();toast("已批准刪除");}
@@ -530,9 +584,7 @@ async function loadPending(){
   document.getElementById('pending-list').innerHTML=snap.docs.map(doc=>{
     const r=doc.data();
     const detail=`體脂 <strong>${r.bodyFat}%</strong>｜體重 <strong>${r.weight}kg</strong>${r.subcut!=null?`｜皮下 ${r.subcut}%`:''}${r.muscle!=null?`｜骨骼肌 ${r.muscle}kg`:''}${r.visceral!=null?`｜內臟 ${r.visceral}`:''}${r.bmr!=null?`｜基代 ${r.bmr}`:''}${r.bodyage!=null?`｜身體年齡 ${r.bodyage}`:''}${r.isPeriod?'｜🔴生理期':''}`;
-    if(r.status==='delete_pending'){
-      return`<div class="card" style="margin-bottom:10px;background:var(--surface)"><div style="margin-bottom:8px"><span style="color:var(--red);font-weight:700">🗑 刪除申請</span> <strong>${r.userId}</strong> · ${r.date}</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">${detail}</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="width:auto;padding:5px 14px;background:var(--red);color:#fff" onclick="approveDelete('${doc.id}')">✓ 批准刪除</button><button class="btn-red" style="background:var(--surface);color:var(--muted);border:1px solid var(--border);padding:5px 14px;border-radius:8px" onclick="rejectDelete('${doc.id}')">✗ 拒絕</button></div></div>`;
-    }
+    if(r.status==='delete_pending')return`<div class="card" style="margin-bottom:10px;background:var(--surface)"><div style="margin-bottom:8px"><span style="color:var(--red);font-weight:700">🗑 刪除申請</span> <strong>${r.userId}</strong> · ${r.date}</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">${detail}</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="width:auto;padding:5px 14px;background:var(--red);color:#fff" onclick="approveDelete('${doc.id}')">✓ 批准刪除</button><button class="btn-red" style="padding:5px 14px;border-radius:8px;background:var(--surface);color:var(--muted);border:1px solid var(--border)" onclick="rejectDelete('${doc.id}')">✗ 拒絕</button></div></div>`;
     return`<div class="card" style="margin-bottom:10px;background:var(--surface)"><div style="margin-bottom:8px"><strong>${r.userId}</strong> · ${r.date}</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">${detail}</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="width:auto;padding:5px 14px" onclick="approveRecord('${doc.id}')">✓ 核准</button><button class="btn-red" style="padding:5px 14px;border-radius:8px" onclick="rejectRecord('${doc.id}')">✗ 拒絕</button></div></div>`;
   }).join('');
 }
@@ -545,48 +597,32 @@ let userChartInst=null;
 async function showUserChart(uid,name){
   const snap=await db.collection('records').where('userId','==',uid).where('status','==','approved').get();
   const recs=snap.docs.map(d=>d.data()).filter(r=>r.adminEntered).sort((a,b)=>a.date.localeCompare(b.date));
-  const modal=document.getElementById('user-chart-modal');
   document.getElementById('user-chart-title').textContent=`${name} 的數據趨勢`;
-  modal.style.display='flex';
+  document.getElementById('user-chart-modal').style.display='flex';
   if(userChartInst)userChartInst.destroy();
-  const ctx=document.getElementById('user-chart-canvas').getContext('2d');
-  userChartInst=new Chart(ctx,{
-    type:'line',
-    data:{
-      labels:recs.map(r=>r.date.slice(5)),
-      datasets:[
-        {label:'體脂率 %',data:recs.map(r=>r.bodyFat),borderColor:'#f5a623',tension:0.3,yAxisID:'y'},
-        {label:'體重 kg',data:recs.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'},
-      ]
-    },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}
-  });
+  userChartInst=new Chart(document.getElementById('user-chart-canvas').getContext('2d'),{type:'line',data:{labels:recs.map(r=>r.date.slice(5)),datasets:[{label:'體脂率 %',data:recs.map(r=>r.bodyFat),borderColor:'#f5a623',tension:0.3,yAxisID:'y'},{label:'體重 kg',data:recs.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}});
 }
 function closeUserChart(){document.getElementById('user-chart-modal').style.display='none';if(userChartInst){userChartInst.destroy();userChartInst=null;}}
+async function registerUser(){const id=document.getElementById('reg-id').value.trim(),n=document.getElementById('reg-name').value.trim(),p=document.getElementById('reg-pw').value;if(!id||!n||!p)return toast('請填寫所有欄位','error');await db.collection('users').doc(id).set({name:n,password:p,role:'user'});toast(`${n} 已建立`);loadAdminUserList();loadPublicData();}
+async function deleteUser(id){if(!confirm("確定刪除？"))return;await db.collection('users').doc(id).delete();loadAdminUserList();loadPublicData();}
 function updateAdminTargetSelect(){const sel=document.getElementById('admin-target-user');if(sel)sel.innerHTML=USERS_CACHE.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');}
 async function adminSubmitRecord(){
   const tid=document.getElementById('admin-target-user').value,w=document.getElementById('admin-rec-weight').value,f=document.getElementById('admin-rec-bodyfat').value,d=document.getElementById('admin-rec-date').value;
-  const subcut=document.getElementById('admin-rec-subcut').value;
-  const muscle=document.getElementById('admin-rec-muscle').value;
-  const visceral=document.getElementById('admin-rec-visceral').value;
-  const bmr=document.getElementById('admin-rec-bmr').value;
-  const bodyage=document.getElementById('admin-rec-bodyage').value;
+  const subcut=document.getElementById('admin-rec-subcut').value,muscle=document.getElementById('admin-rec-muscle').value,visceral=document.getElementById('admin-rec-visceral').value,bmr=document.getElementById('admin-rec-bmr').value,bodyage=document.getElementById('admin-rec-bodyage').value;
   if(!w||!f||!d)return toast('請填寫所有欄位','error');
   await db.collection('records').add({userId:tid,weight:parseFloat(w),bodyFat:parseFloat(f),subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,bodyage:bodyage?parseFloat(bodyage):null,date:d,status:'approved',adminEntered:true,createdAt:Date.now()});
   toast('已錄入');loadPublicData();
 }
 function saveProfile(){db.collection('users').doc(CU.id).update({name:document.getElementById('profile-name').value});toast("更新成功");loadPublicData();}
-
+async function loadHistory(){
+  const snap=await db.collection('records').where('status','==','rejected').get();
+  if(snap.empty){document.getElementById('history-list').innerHTML='<div style="color:var(--muted);font-size:13px">目前沒有歷史紀錄</div>';return;}
+  document.getElementById('history-list').innerHTML=`<div style="overflow-x:auto"><table><tr><th>用戶</th><th>日期</th><th>體重</th><th>體脂</th><th>來源</th><th>原因</th></tr>`+snap.docs.map(d=>{const r=d.data();return`<tr><td>${r.userId}</td><td>${r.date}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.adminEntered?'管理員':'本人'}</td><td style="color:var(--red)">${r.deletedAt?'已刪除':'已拒絕'}</td></tr>`;}).join('')+`</table></div>`;
+}
 function userTab(t){
   ['mydata','addrecord','diary','profile'].forEach(tab=>document.getElementById('utab-'+tab).style.display=tab===t?'block':'none');
   document.querySelectorAll('#user-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['mydata','addrecord','diary','profile'].indexOf(t)));
   if(t==='diary')loadUserDiaries();
-}
-async function loadHistory(){
-  const snap=await db.collection('records').where('status','==','rejected').get();
-  if(snap.empty){document.getElementById('history-list').innerHTML='<div style="color:var(--muted);font-size:13px">目前沒有歷史紀錄</div>';return;}
-  const docs=snap.docs.map(d=>({id:d.id,...d.data()}));
-  document.getElementById('history-list').innerHTML=`<div style="overflow-x:auto"><table><tr><th>用戶</th><th>日期</th><th>體重</th><th>體脂</th><th>來源</th><th>原因</th></tr>`+docs.map(r=>`<tr><td>${r.userId}</td><td>${r.date}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.adminEntered?'管理員':'本人'}</td><td style="color:var(--red)">${r.deletedAt?'已刪除':'已拒絕'}</td></tr>`).join('')+`</table></div>`;
 }
 function adminTab(t){
   ['pending','admin-add','register','history'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
@@ -594,32 +630,35 @@ function adminTab(t){
   if(t==='admin-add')loadPublicData();
   if(t==='history')loadHistory();
 }
-
 const MEASURE_DATES=['2026-04-15','2026-04-29','2026-05-13','2026-05-27','2026-06-10','2026-06-24'];
-function getNextMeasure(){
-  const now=new Date();
-  const today=`${now.getFullYear()}-${String(now.getMonth()+1).padStart(2,'0')}-${String(now.getDate()).padStart(2,'0')}`;
-  const next=MEASURE_DATES.find(d=>d>=today);
-  return{next:next||null, today};
-}
 function tick(){
   const diff=END_DATE-new Date();
   if(diff<0){document.getElementById('countdown-display').innerHTML='<div style="color:var(--accent);font-weight:800">比賽已結束！</div>';return;}
   const d=Math.floor(diff/86400000),h=Math.floor((diff%86400000)/3600000),m=Math.floor((diff%3600000)/60000),s=Math.floor((diff%60000)/1000);
   document.getElementById('countdown-display').innerHTML=[['天',d],['時',h],['分',m],['秒',s]].map(([u,v])=>`<div class="countdown-unit"><div class="countdown-num">${String(v).padStart(2,'0')}</div><div class="countdown-lbl">${u}</div></div>`).join('');
-  const {next,today}=getNextMeasure();
-  const box=document.getElementById('next-measure-box');
+  const today=getToday(),next=MEASURE_DATES.find(d=>d>=today)||null,box=document.getElementById('next-measure-box');
   if(box){
     if(!next){box.innerHTML='所有測量日已完成 🎉';return;}
-    if(next===today){
-      box.innerHTML=`<span style="color:var(--green);font-weight:700">📏 今天是測量日！記得量體脂！</span>`;
-    } else {
-      const diffDays=Math.round((new Date(next+'T00:00:00')-new Date(today+'T00:00:00'))/(86400000));
-      box.innerHTML=`📏 下次測量日：<strong style="color:var(--accent)">${next}</strong>（還有 ${diffDays} 天）`;
-    }
+    if(next===today)box.innerHTML=`<span style="color:var(--green);font-weight:700">📏 今天是測量日！記得量體脂！</span>`;
+    else{const diffDays=Math.round((new Date(next+'T00:00:00')-new Date(today+'T00:00:00'))/86400000);box.innerHTML=`📏 下次測量日：<strong style="color:var(--accent)">${next}</strong>（還有 ${diffDays} 天）`;}
   }
 }
-setInterval(tick,1000);tick();goPublic();
+setInterval(tick,1000);tick();
+
+// 自動恢復登入狀態
+(async function restoreSession(){
+  try{
+    const saved=localStorage.getItem('ci_user');
+    if(saved){
+      CU=JSON.parse(saved);
+      updateNav();
+      if(CU.role==='admin'){showPage('admin');loadPending();loadAdminUserList();}
+      else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
+    } else {
+      goPublic();
+    }
+  } catch(e){goPublic();}
+})();
 </script>
 </body>
 </html>
