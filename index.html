@@ -148,7 +148,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     </div>
   </div>
   <div class="card">
-    <h2>🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2>
+    <h2>🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2><div style="font-size:11px;color:var(--accent);margin-bottom:10px;margin-top:-6px">💬 點擊名字可以進入主頁留言</div>
     <div id="public-lb">載入數據中...</div>
   </div>
   <div class="card">
@@ -533,7 +533,7 @@ async function loadPublicData(){
     document.getElementById('prize-amount').textContent=`NT$ ${((currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK)).toLocaleString()}`;
     document.getElementById('public-lb').innerHTML=rows.map((u,i)=>{
       const maxScore=rows[0]?Math.max(rows[0].score,0.01):1,barW=Math.max((u.score/maxScore)*100,0);
-      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div style="font-weight:600">${u.name} <span style="font-size:11px;color:var(--muted)">→ 主頁</span></div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`;
+      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div style="font-weight:600">${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`;
     }).join('');
     const ctx=document.getElementById('chart-public-fat').getContext('2d');if(publicChart)publicChart.destroy();
     const maxLen=Math.max(...rows.map(r=>r.history.length),0);
