@@ -1131,35 +1131,42 @@ function selectJiaoPersonalColor(el){
   selectedJiaoPersonalColor=el.dataset.color;
 }
 
+function seededRandom(seed){
+  let s=seed%2147483647;
+  if(s<=0)s+=2147483646;
+  s=s*16807%2147483647;
+  return(s-1)/2147483646;
+}
+
 function renderNoteOnCanvas(canvasId, emptyId, notes){
   const canvas=document.getElementById(canvasId);
   const empty=document.getElementById(emptyId);
-  // Remove old notes but keep empty placeholder
   canvas.querySelectorAll('.scrap-note').forEach(n=>n.remove());
   if(!notes||notes.length===0){if(empty)empty.style.display='block';return;}
   if(empty)empty.style.display='none';
   const W=canvas.offsetWidth||320;
-  const H=Math.max(500, notes.length*60);
+  const H=Math.max(500, notes.length*80);
   canvas.style.minHeight=H+'px';
-  notes.forEach(note=>{
+  notes.forEach((note,idx)=>{
     const el=document.createElement('div');
     el.className='scrap-note';
-    const bgIdx=Math.abs((note.createdAt||0))%NOTE_BG_COLORS.length;
+    const seed=Math.abs(note.createdAt||idx*999999);
+    const bgIdx=seed%NOTE_BG_COLORS.length;
     el.style.background=NOTE_BG_COLORS[bgIdx];
     el.style.border='1px solid rgba(255,255,255,0.07)';
     const maxX=Math.max(W-220,10);
-    // Use seeded random based on note id for stable positions
-    const seed=(note.createdAt||Date.now());
-    const x=((seed*9301+49297)%233280)/233280*maxX;
-    const y=((seed*6364136223846793005n||seed*1234567)%500||Math.abs(seed*0.618033)%450)+10;
+    const rx=seededRandom(seed);
+    const ry=seededRandom(seed+1);
+    const x=rx*maxX;
+    const y=ry*(H-80)+10;
     el.style.left=x+'px';
-    el.style.top=(typeof y==='number'?y:50)+'px';
-    const angle=note.angle||0;
-    el.style.transform=`rotate(${angle}deg)`;
+    el.style.top=y+'px';
+    el.style.transform=`rotate(${note.angle||0}deg)`;
     el.style.color=note.color||'#e8eaf0';
     el.style.fontSize=(note.fontSize||14)+'px';
     const canDel=CU&&CU.role==='admin';
-    el.innerHTML=`<div>${note.text}</div><div class="note-author">${note.authorName||'匿名'}${canDel?` <span onclick="deleteJiaoNote('${note.id}','${canvasId==='scrap-board-canvas'?'board':'personal'}')" style="cursor:pointer;color:var(--red);margin-left:6px">✕</span>`:''}</div>`;
+    const type=canvasId==='scrap-board-canvas'?'board':'personal';
+    el.innerHTML=`<div>${note.text}</div><div class="note-author">${note.authorName||'匿名'}${canDel?` <span onclick="deleteJiaoNote('${note.id}','${type}')" style="cursor:pointer;color:var(--red);margin-left:6px">✕</span>`:''}</div>`;
     canvas.appendChild(el);
   });
 }
@@ -1172,11 +1179,11 @@ async function loadBoardNotes(){
   const loginHint=document.getElementById('jiao-board-login-hint');
   if(CU){inputArea.style.display='block';loginHint.style.display='none';}
   else{inputArea.style.display='none';loginHint.style.display='block';}
-  boardUnsubscribe=db.collection('jiaoBoard').orderBy('createdAt','desc').limit(80)
+  boardUnsubscribe=db.collection('jiaoBoard').limit(80)
     .onSnapshot(snap=>{
-      const notes=snap.docs.map(d=>({id:d.id,...d.data()}));
+      const notes=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
       renderNoteOnCanvas('scrap-board-canvas','scrap-empty',notes);
-    },err=>{console.error('board load err',err);});
+    },err=>{console.error('board load err',err);toast('載入失敗：'+err.message,'error');});
 }
 
 async function loadJiaoTargets(){
@@ -1211,11 +1218,11 @@ function selectJiaoTarget(uid, name, emoji){
 
 function loadPersonalNotes(uid){
   if(personalUnsubscribe){personalUnsubscribe();personalUnsubscribe=null;}
-  personalUnsubscribe=db.collection('jiaoPersonal').where('targetUid','==',uid).orderBy('createdAt','desc').limit(60)
+  personalUnsubscribe=db.collection('jiaoPersonal').where('targetUid','==',uid).limit(60)
     .onSnapshot(snap=>{
-      const notes=snap.docs.map(d=>({id:d.id,...d.data()}));
+      const notes=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>(b.createdAt||0)-(a.createdAt||0));
       renderNoteOnCanvas('scrap-personal-canvas','scrap-personal-empty',notes);
-    },err=>{console.error('personal load err',err);});
+    },err=>{console.error('personal load err',err);toast('載入失敗：'+err.message,'error');});
 }
 
 async function submitBoardNote(){
