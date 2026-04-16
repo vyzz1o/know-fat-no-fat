@@ -493,7 +493,15 @@ async function loadUserRecords(){
   const renderTable=(list)=>list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px 0">尚無紀錄</div>':`<div style="overflow-x:auto"><table><tr><th>日期</th><th>來源</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
     const src=r.adminEntered?`<span style="color:var(--accent);font-size:11px">管理員</span>`:`<span style="color:var(--muted);font-size:11px">本人</span>`;
     const statusTxt=r.status==='approved'?'✅':r.status==='delete_pending'?'🗑待刪除':'⏳';
-    return`<tr><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'kg':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td>${r.status==='approved'?`<button class="btn-red" onclick="deleteRecord('${r.id}')">刪</button>`:''}</td></tr>`;
+    let ops='';
+    if(r.status==='approved'){
+      if(r.adminEntered){
+        ops=`<button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',true)">申請刪除</button>`;
+      } else {
+        ops=`<button style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="editSelfRecord('${r.id}')">編輯</button><button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',false)">刪除</button>`;
+      }
+    }
+    return`<tr><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'kg':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>`;
   }).join('')+`</table></div>`;
   document.getElementById('user-record-list').innerHTML=renderTable(validRecs);
   const chartEl=document.getElementById('my-chart-canvas');
@@ -535,7 +543,38 @@ async function submitRecord(){
   await db.collection('records').add({userId:CU.id,weight:parseFloat(w),bodyFat:parseFloat(f),subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,bodyage:bodyage?parseFloat(bodyage):null,date:d,isPeriod:isP,status:'approved',adminEntered:false,createdAt:Date.now()});
   toast("個人紀錄已儲存！");btn.disabled=false;btn.innerText="儲存紀錄";loadUserRecords();
 }
-async function deleteRecord(id){if(!confirm("確定申請刪除？需管理員審核後才會正式刪除。"))return;await db.collection('records').doc(id).update({status:'delete_pending'});toast("已送出刪除申請");loadUserRecords();}
+async function deleteRecord(id, adminEntered){
+  if(adminEntered){
+    if(!confirm("確定申請刪除管理員紀錄？需管理員審核後才會正式刪除。"))return;
+    await db.collection('records').doc(id).update({status:'delete_pending'});
+    toast("已送出刪除申請，等待管理員審核");
+  } else {
+    if(!confirm("確定直接刪除這筆自填紀錄？"))return;
+    await db.collection('records').doc(id).delete();
+    toast("已刪除");
+  }
+  loadUserRecords();
+}
+async function editSelfRecord(id){
+  const snap=await db.collection('records').doc(id).get();
+  if(!snap.exists)return;
+  const r=snap.data();
+  const w=prompt("體重 (kg)：",r.weight);if(w===null)return;
+  const f=prompt("體脂 (%)：",r.bodyFat);if(f===null)return;
+  const sc=prompt("皮下脂肪率 (%)：",r.subcut??'');
+  const mu=prompt("骨骼肌 (kg)：",r.muscle??'');
+  const vi=prompt("內臟脂肪程度：",r.visceral??'');
+  const bm=prompt("基礎代謝量 (kcal)：",r.bmr??'');
+  const ba=prompt("身體年齡：",r.bodyage??'');
+  if(!w||!f)return toast("體重和體脂為必填","error");
+  await db.collection('records').doc(id).update({
+    weight:parseFloat(w),bodyFat:parseFloat(f),
+    subcut:sc?parseFloat(sc):null,muscle:mu?parseFloat(mu):null,
+    visceral:vi?parseFloat(vi):null,bmr:bm?parseFloat(bm):null,
+    bodyage:ba?parseFloat(ba):null,updatedAt:Date.now()
+  });
+  toast("已更新！");loadUserRecords();
+}
 async function submitDiary(){
   const c=document.getElementById('diary-content').value;if(!c)return;
   await db.collection('diaries').add({userId:CU.id,content:c,date:getToday(),createdAt:Date.now()});
