@@ -865,10 +865,9 @@ function loadComments(uid){
   // 用 onSnapshot 即時監聽，新留言自動出現不需刷新
   commentsUnsubscribe=db.collection('comments')
     .where('targetUid','==',uid)
-    .orderBy('createdAt','desc')
     .onSnapshot(snap=>{
       if(snap.empty){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有留言，來第一個留言吧！</div>';return;}
-      const comments=snap.docs.map(d=>({id:d.id,...d.data()}));
+      const comments=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
       list.innerHTML=comments.map(c=>{
         const canDelete=(CU&&CU.role==='admin');
         const bgColors=['#1e243388','#161a2388','#252d3e88','#1a2030aa'];
