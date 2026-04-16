@@ -860,33 +860,36 @@ async function showProfile(uid, name){
 
 let commentsUnsubscribe=null;
 
+function renderCommentList(comments, list){
+  const filtered=comments.filter(c=>c.targetUid===currentProfileUid);
+  if(filtered.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有留言，來第一個留言吧！</div>';return;}
+  list.innerHTML=filtered.map(c=>{
+    const canDelete=(CU&&CU.role==='admin');
+    const bgColors=['#1e243388','#161a2388','#252d3e88','#1a2030aa'];
+    const bg=bgColors[Math.abs(c.createdAt)%bgColors.length];
+    return`<div style="padding:14px 12px;margin-bottom:10px;border-radius:10px;background:${bg};border:1px solid var(--border)30;overflow:hidden">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div style="font-size:11px;color:var(--muted)">${c.authorName} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
+        ${canDelete?`<button onclick="deleteComment('${c.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px">✕</button>`:''}
+      </div>
+      <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%;margin-top:4px">${c.text}</div>
+    </div>`;
+  }).join('');
+}
+
 function loadComments(uid){
-  // 取消舊的監聽器
   if(commentsUnsubscribe)commentsUnsubscribe();
   const list=document.getElementById('comment-list');
   if(!list)return;
   list.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">載入留言中...</div>';
-  // 用 onSnapshot 即時監聽，新留言自動出現不需刷新
+  // 撈全部再在前端用 targetUid 過濾，避免 Firestore index 問題
   commentsUnsubscribe=db.collection('comments')
-    .where('targetUid','==',uid)
     .onSnapshot(snap=>{
-      if(snap.empty){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有留言，來第一個留言吧！</div>';return;}
-      const comments=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
-      list.innerHTML=comments.map(c=>{
-        const canDelete=(CU&&CU.role==='admin');
-        const bgColors=['#1e243388','#161a2388','#252d3e88','#1a2030aa'];
-        const bg=bgColors[Math.abs(c.createdAt)%bgColors.length];
-        return`<div style="padding:14px 12px;margin-bottom:10px;border-radius:10px;background:${bg};border:1px solid var(--border)30;overflow:hidden">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
-            <div style="font-size:11px;color:var(--muted)">${c.authorName} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
-            ${canDelete?`<button onclick="deleteComment('${c.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px">✕</button>`:''}
-          </div>
-          <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%;margin-top:4px">${c.text}</div>
-        </div>`;
-      }).join('');
+      const all=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
+      renderCommentList(all, list);
     }, err=>{
       console.error('comments error',err);
-      list.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px">留言載入失敗，請確認 Firebase 規則允許公開讀取</div>';
+      list.innerHTML='<div style="color:var(--red);font-size:12px;padding:8px">留言載入失敗：'+err.message+'</div>';
     });
 }
 
