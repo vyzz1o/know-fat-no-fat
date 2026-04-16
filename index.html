@@ -357,28 +357,41 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <h2>💬 留言板 <span style="font-size:11px;color:var(--muted);font-weight:400">（公開，所有人都看得到）</span></h2>
     <!-- 留言輸入區（需登入） -->
     <div id="comment-input-area">
-      <textarea id="comment-text" placeholder="留下你的加油打氣或垃圾話..."></textarea>
-      <!-- 樣式工具列 -->
+      <textarea id="comment-text" placeholder="愛要大聲說 or ㄏㄚˋ! 輸贏時間"></textarea>
+      <!-- 工具列 -->
       <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
-        <div style="font-size:12px;color:var(--muted)">字體大小：</div>
-        <select id="comment-size" style="width:auto;margin:0;padding:4px 8px;font-size:12px">
+        <div style="font-size:12px;color:var(--muted)">大小：</div>
+        <select id="comment-size" style="width:auto;margin:0;padding:4px 8px;font-size:12px" onchange="updateCommentPreview()">
           <option value="12">小</option>
           <option value="14" selected>中</option>
           <option value="18">大</option>
           <option value="24">超大</option>
         </select>
-        <div style="font-size:12px;color:var(--muted);margin-left:8px">顏色：</div>
-        <div style="display:flex;gap:6px">
-          <div class="color-dot" data-color="#e8eaf0" style="background:#e8eaf0;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid var(--accent)" onclick="selectColor(this)"></div>
-          <div class="color-dot" data-color="#f5a623" style="background:#f5a623;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectColor(this)"></div>
-          <div class="color-dot" data-color="#4cde8f" style="background:#4cde8f;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectColor(this)"></div>
-          <div class="color-dot" data-color="#f05c6e" style="background:#f05c6e;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectColor(this)"></div>
-          <div class="color-dot" data-color="#5b9cf6" style="background:#5b9cf6;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectColor(this)"></div>
-          <div class="color-dot" data-color="#c084fc" style="background:#c084fc;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectColor(this)"></div>
+        <div style="font-size:12px;color:var(--muted);margin-left:4px">顏色：</div>
+        <div style="display:flex;gap:5px;align-items:center">
+          <div class="clr-dot selected-clr" data-color="#e8eaf0" style="background:#e8eaf0;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid var(--accent);flex-shrink:0" onclick="selectCommentColor(this)"></div>
+          <div class="clr-dot" data-color="#f5a623" style="background:#f5a623;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0" onclick="selectCommentColor(this)"></div>
+          <div class="clr-dot" data-color="#4cde8f" style="background:#4cde8f;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0" onclick="selectCommentColor(this)"></div>
+          <div class="clr-dot" data-color="#f05c6e" style="background:#f05c6e;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0" onclick="selectCommentColor(this)"></div>
+          <div class="clr-dot" data-color="#5b9cf6" style="background:#5b9cf6;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0" onclick="selectCommentColor(this)"></div>
+          <div class="clr-dot" data-color="#c084fc" style="background:#c084fc;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0" onclick="selectCommentColor(this)"></div>
+          <div class="clr-dot" data-color="#fb923c" style="background:#fb923c;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent;flex-shrink:0" onclick="selectCommentColor(this)"></div>
+        </div>
+        <button type="button" onclick="toggleEmojiPicker()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:4px 10px;color:var(--text);font-size:14px;cursor:pointer">😊</button>
+        <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">
+          <input type="checkbox" id="comment-tilt" style="width:auto;margin:0;cursor:pointer" onchange="updateCommentPreview()">
+          <label for="comment-tilt" style="cursor:pointer;color:var(--muted)">隨機傾斜 📐</label>
+        </div>
+      </div>
+      <!-- Emoji 選擇器 -->
+      <div id="emoji-picker" style="display:none;background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:10px;margin-bottom:10px;max-height:160px;overflow-y:auto">
+        <div style="font-size:10px;color:var(--muted);margin-bottom:6px">點擊插入 Emoji</div>
+        <div style="display:flex;flex-wrap:wrap;gap:2px;font-size:20px">
+          <span onclick="insertEmoji('💪')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">💪</span><span onclick="insertEmoji('🔥')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🔥</span><span onclick="insertEmoji('🥗')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🥗</span><span onclick="insertEmoji('💧')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">💧</span><span onclick="insertEmoji('😴')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">😴</span><span onclick="insertEmoji('⭐')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">⭐</span><span onclick="insertEmoji('🏆')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🏆</span><span onclick="insertEmoji('🥇')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🥇</span><span onclick="insertEmoji('🥈')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🥈</span><span onclick="insertEmoji('🥉')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🥉</span><span onclick="insertEmoji('😤')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">😤</span><span onclick="insertEmoji('💀')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">💀</span><span onclick="insertEmoji('👊')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">👊</span><span onclick="insertEmoji('🫡')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🫡</span><span onclick="insertEmoji('🤣')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🤣</span><span onclick="insertEmoji('😭')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">😭</span><span onclick="insertEmoji('😂')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">😂</span><span onclick="insertEmoji('🙏')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🙏</span><span onclick="insertEmoji('❤️')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">❤️</span><span onclick="insertEmoji('💚')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">💚</span><span onclick="insertEmoji('💛')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">💛</span><span onclick="insertEmoji('💙')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">💙</span><span onclick="insertEmoji('🎉')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🎉</span><span onclick="insertEmoji('🎊')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🎊</span><span onclick="insertEmoji('✨')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">✨</span><span onclick="insertEmoji('💯')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">💯</span><span onclick="insertEmoji('👍')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">👍</span><span onclick="insertEmoji('👎')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">👎</span><span onclick="insertEmoji('🍎')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🍎</span><span onclick="insertEmoji('🥦')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🥦</span><span onclick="insertEmoji('🥑')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🥑</span><span onclick="insertEmoji('🍗')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🍗</span><span onclick="insertEmoji('🍚')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🍚</span><span onclick="insertEmoji('🍜')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🍜</span><span onclick="insertEmoji('🏃')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🏃</span><span onclick="insertEmoji('🚴')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🚴</span><span onclick="insertEmoji('🧘')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🧘</span><span onclick="insertEmoji('🏋️')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🏋️</span><span onclick="insertEmoji('😅')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">😅</span><span onclick="insertEmoji('🥵')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🥵</span><span onclick="insertEmoji('🤢')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🤢</span><span onclick="insertEmoji('😩')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">😩</span><span onclick="insertEmoji('🫠')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🫠</span><span onclick="insertEmoji('🤡')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🤡</span><span onclick="insertEmoji('👻')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">👻</span><span onclick="insertEmoji('💩')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">💩</span><span onclick="insertEmoji('🐷')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🐷</span><span onclick="insertEmoji('🐮')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🐮</span><span onclick="insertEmoji('🐔')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🐔</span><span onclick="insertEmoji('🐟')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🐟</span><span onclick="insertEmoji('🥚')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🥚</span><span onclick="insertEmoji('🧀')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🧀</span><span onclick="insertEmoji('🧈')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🧈</span><span onclick="insertEmoji('🍫')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🍫</span><span onclick="insertEmoji('🍕')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🍕</span><span onclick="insertEmoji('🍔')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🍔</span><span onclick="insertEmoji('🍟')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🍟</span><span onclick="insertEmoji('🧋')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🧋</span><span onclick="insertEmoji('🍺')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🍺</span><span onclick="insertEmoji('🥂')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🥂</span><span onclick="insertEmoji('😇')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">😇</span><span onclick="insertEmoji('🤭')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🤭</span><span onclick="insertEmoji('🫶')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🫶</span><span onclick="insertEmoji('💅')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">💅</span><span onclick="insertEmoji('🪄')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🪄</span><span onclick="insertEmoji('🔮')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🔮</span><span onclick="insertEmoji('🎯')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🎯</span><span onclick="insertEmoji('🎲')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🎲</span><span onclick="insertEmoji('🃏')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🃏</span><span onclick="insertEmoji('🎮')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🎮</span><span onclick="insertEmoji('🌙')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🌙</span><span onclick="insertEmoji('🌞')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🌞</span><span onclick="insertEmoji('🌈')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🌈</span><span onclick="insertEmoji('☁️')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">☁️</span><span onclick="insertEmoji('⛅')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">⛅</span><span onclick="insertEmoji('🌊')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🌊</span><span onclick="insertEmoji('🌸')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🌸</span><span onclick="insertEmoji('🌺')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🌺</span><span onclick="insertEmoji('🍀')" style="cursor:pointer;padding:2px;border-radius:4px;display:inline-block" onmouseover="this.style.background='var(--border)'" onmouseout="this.style.background=''">🍀</span>
         </div>
       </div>
       <!-- 預覽 -->
-      <div id="comment-preview" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;min-height:36px;font-size:14px;word-break:break-word">預覽...</div>
+      <div id="comment-preview" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:14px;margin-bottom:10px;min-height:48px;font-size:14px;word-break:break-word;color:var(--text);text-align:center;transition:all 0.2s">預覽...</div>
       <button class="btn btn-primary" onclick="submitComment()">送出留言 💬</button>
     </div>
     <div id="comment-login-hint" style="display:none;color:var(--muted);font-size:13px;padding:10px 0">請先登入才能留言</div>
@@ -759,22 +772,45 @@ setInterval(tick,1000);tick();
 
 // ── 個人主頁 & 留言板 ──────────────────────────────────
 let profileChartInst=null;
-let selectedCommentColor='#e8eaf0';
 let currentProfileUid=null;
+let selectedCommentColor='#e8eaf0';
 
-function selectColor(el){
-  document.querySelectorAll('.color-dot').forEach(d=>d.style.border='2px solid transparent');
+function selectCommentColor(el){
+  document.querySelectorAll('.clr-dot').forEach(d=>d.style.border='2px solid transparent');
   el.style.border='2px solid var(--accent)';
   selectedCommentColor=el.dataset.color;
   updateCommentPreview();
 }
 
+function toggleEmojiPicker(){
+  const p=document.getElementById('emoji-picker');
+  p.style.display=p.style.display==='none'?'block':'none';
+}
+
+function insertEmoji(emoji){
+  const ta=document.getElementById('comment-text');
+  if(!ta)return;
+  const start=ta.selectionStart,end=ta.selectionEnd;
+  ta.value=ta.value.slice(0,start)+emoji+ta.value.slice(end);
+  ta.selectionStart=ta.selectionEnd=start+emoji.length;
+  ta.focus();
+  updateCommentPreview();
+}
+
 function updateCommentPreview(){
   const txt=document.getElementById('comment-text').value||'預覽...';
-  const size=document.getElementById('comment-size').value;
+  const size=document.getElementById('comment-size')?document.getElementById('comment-size').value:14;
+  const tilt=document.getElementById('comment-tilt')?document.getElementById('comment-tilt').checked:false;
   const prev=document.getElementById('comment-preview');
-  if(prev){prev.style.fontSize=size+'px';prev.style.color=selectedCommentColor;prev.textContent=txt;}
+  if(prev){
+    prev.style.fontSize=size+'px';
+    prev.style.color=selectedCommentColor;
+    prev.style.transform=tilt?`rotate(${(Math.random()*10-5).toFixed(1)}deg)`:'none';
+    prev.textContent=txt;
+  }
 }
+
+function randomAngle(){return(Math.random()*14-7).toFixed(2);}
 
 async function showProfile(uid, name){
   currentProfileUid=uid;
@@ -790,8 +826,8 @@ async function showProfile(uid, name){
   // Bind preview listeners
   const txt=document.getElementById('comment-text');
   const sz=document.getElementById('comment-size');
-  if(txt)txt.oninput=updateCommentPreview;
-  if(sz)sz.onchange=updateCommentPreview;
+  if(txt){txt.oninput=updateCommentPreview;}
+  if(sz){sz.onchange=updateCommentPreview;}
 
   // Load score
   const rSnap=await db.collection('records').where('userId','==',uid).where('status','==','approved').where('adminEntered','==',true).get();
@@ -825,13 +861,15 @@ async function loadComments(uid){
   if(!list)return;
   if(comments.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有留言，來第一個留言吧！</div>';return;}
   list.innerHTML=comments.map(c=>{
-    const canDelete=(CU&&(CU.id===c.authorId||CU.role==='admin'));
-    return`<div style="padding:12px 0;border-bottom:1px solid var(--border)20">
+    const canDelete=(CU&&CU.role==='admin');
+    const bgColors=['#1e243388','#161a2388','#252d3e88','#1a2030aa'];
+    const bg=bgColors[Math.abs(c.createdAt)%bgColors.length];
+    return`<div style="padding:14px 12px;margin-bottom:10px;border-radius:10px;background:${bg};border:1px solid var(--border)30;overflow:hidden">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
         <div style="font-size:11px;color:var(--muted)">${c.authorName} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
         ${canDelete?`<button onclick="deleteComment('${c.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px">✕</button>`:''}
       </div>
-      <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6">${c.text}</div>
+      <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%;margin-top:4px">${c.text}</div>
     </div>`;
   }).join('');
 }
@@ -841,6 +879,8 @@ async function submitComment(){
   const txt=document.getElementById('comment-text').value.trim();
   if(!txt)return toast('請輸入留言內容','error');
   const size=parseInt(document.getElementById('comment-size').value);
+  const tilt=document.getElementById('comment-tilt').checked;
+  const angle=tilt?parseFloat(randomAngle()):0;
   await db.collection('comments').add({
     targetUid:currentProfileUid,
     authorId:CU.id,
@@ -848,6 +888,7 @@ async function submitComment(){
     text:txt,
     fontSize:size,
     color:selectedCommentColor,
+    angle:angle,
     createdAt:Date.now()
   });
   document.getElementById('comment-text').value='';
