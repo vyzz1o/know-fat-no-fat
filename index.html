@@ -162,7 +162,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       </div>
     </div>
     <!-- 右：叫囂模組入口 -->
-    <div class="jiao-entry" onclick="showPage('jiaoxiao')">
+    <div class="jiao-entry" onclick="openJiaoxiao()">
       <div style="font-size:40px;margin-bottom:8px">📣</div>
       <div class="jiao-entry-title">It's 叫囂 Time</div>
       <div class="jiao-entry-sub" style="margin-bottom:12px">公開嗆聲・個人留言板</div>
@@ -1256,13 +1256,10 @@ async function deleteJiaoNote(id, type){
   toast('已刪除');
 }
 
-// Override showPage to handle jiaoxiao init
-const _origShowPage=showPage;
-function showPage(id){
-  _origShowPage(id);
-  if(id==='jiaoxiao'){
-    jiaoTab('board');
-  }
+function openJiaoxiao(){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-jiaoxiao').classList.add('active');
+  jiaoTab('board');
 }
 </script>
 </body>
