@@ -337,6 +337,57 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 </main>
 </div>
 
+
+<!-- 個人主頁 -->
+<div class="page" id="page-profile">
+<main>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button onclick="goPublic()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:20px">←</button>
+    <div id="profile-page-title" style="font-size:18px;font-weight:800"></div>
+  </div>
+  <!-- 成績卡 -->
+  <div id="profile-score-card"></div>
+  <!-- 趨勢圖 -->
+  <div class="card">
+    <h2>📈 體脂趨勢</h2>
+    <div style="height:180px"><canvas id="profile-chart-canvas"></canvas></div>
+  </div>
+  <!-- 留言板 -->
+  <div class="card">
+    <h2>💬 留言板 <span style="font-size:11px;color:var(--muted);font-weight:400">（公開，所有人都看得到）</span></h2>
+    <!-- 留言輸入區（需登入） -->
+    <div id="comment-input-area">
+      <textarea id="comment-text" placeholder="留下你的加油打氣或垃圾話..."></textarea>
+      <!-- 樣式工具列 -->
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px">
+        <div style="font-size:12px;color:var(--muted)">字體大小：</div>
+        <select id="comment-size" style="width:auto;margin:0;padding:4px 8px;font-size:12px">
+          <option value="12">小</option>
+          <option value="14" selected>中</option>
+          <option value="18">大</option>
+          <option value="24">超大</option>
+        </select>
+        <div style="font-size:12px;color:var(--muted);margin-left:8px">顏色：</div>
+        <div style="display:flex;gap:6px">
+          <div class="color-dot" data-color="#e8eaf0" style="background:#e8eaf0;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid var(--accent)" onclick="selectColor(this)"></div>
+          <div class="color-dot" data-color="#f5a623" style="background:#f5a623;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectColor(this)"></div>
+          <div class="color-dot" data-color="#4cde8f" style="background:#4cde8f;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectColor(this)"></div>
+          <div class="color-dot" data-color="#f05c6e" style="background:#f05c6e;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectColor(this)"></div>
+          <div class="color-dot" data-color="#5b9cf6" style="background:#5b9cf6;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectColor(this)"></div>
+          <div class="color-dot" data-color="#c084fc" style="background:#c084fc;width:20px;height:20px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectColor(this)"></div>
+        </div>
+      </div>
+      <!-- 預覽 -->
+      <div id="comment-preview" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px;margin-bottom:10px;min-height:36px;font-size:14px;word-break:break-word">預覽...</div>
+      <button class="btn btn-primary" onclick="submitComment()">送出留言 💬</button>
+    </div>
+    <div id="comment-login-hint" style="display:none;color:var(--muted);font-size:13px;padding:10px 0">請先登入才能留言</div>
+    <!-- 留言列表 -->
+    <div id="comment-list" style="margin-top:16px"></div>
+  </div>
+</main>
+</div>
+
 <div id="toast-el" class="toast"></div>
 
 <div id="user-chart-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000a;z-index:999;align-items:center;justify-content:center;padding:20px">
@@ -469,7 +520,7 @@ async function loadPublicData(){
     document.getElementById('prize-amount').textContent=`NT$ ${((currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK)).toLocaleString()}`;
     document.getElementById('public-lb').innerHTML=rows.map((u,i)=>{
       const maxScore=rows[0]?Math.max(rows[0].score,0.01):1,barW=Math.max((u.score/maxScore)*100,0);
-      return`<div class="lb-row"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div>${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`;
+      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div style="font-weight:600">${u.name} <span style="font-size:11px;color:var(--muted)">→ 主頁</span></div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`;
     }).join('');
     const ctx=document.getElementById('chart-public-fat').getContext('2d');if(publicChart)publicChart.destroy();
     const maxLen=Math.max(...rows.map(r=>r.history.length),0);
@@ -704,6 +755,113 @@ function tick(){
   }
 }
 setInterval(tick,1000);tick();
+
+
+// ── 個人主頁 & 留言板 ──────────────────────────────────
+let profileChartInst=null;
+let selectedCommentColor='#e8eaf0';
+let currentProfileUid=null;
+
+function selectColor(el){
+  document.querySelectorAll('.color-dot').forEach(d=>d.style.border='2px solid transparent');
+  el.style.border='2px solid var(--accent)';
+  selectedCommentColor=el.dataset.color;
+  updateCommentPreview();
+}
+
+function updateCommentPreview(){
+  const txt=document.getElementById('comment-text').value||'預覽...';
+  const size=document.getElementById('comment-size').value;
+  const prev=document.getElementById('comment-preview');
+  if(prev){prev.style.fontSize=size+'px';prev.style.color=selectedCommentColor;prev.textContent=txt;}
+}
+
+async function showProfile(uid, name){
+  currentProfileUid=uid;
+  document.getElementById('profile-page-title').textContent=`${name} 的主頁`;
+  showPage('profile');
+
+  // Show/hide comment input based on login
+  const inputArea=document.getElementById('comment-input-area');
+  const loginHint=document.getElementById('comment-login-hint');
+  if(CU){inputArea.style.display='block';loginHint.style.display='none';}
+  else{inputArea.style.display='none';loginHint.style.display='block';}
+
+  // Bind preview listeners
+  const txt=document.getElementById('comment-text');
+  const sz=document.getElementById('comment-size');
+  if(txt)txt.oninput=updateCommentPreview;
+  if(sz)sz.onchange=updateCommentPreview;
+
+  // Load score
+  const rSnap=await db.collection('records').where('userId','==',uid).where('status','==','approved').where('adminEntered','==',true).get();
+  const recs=rSnap.docs.map(d=>d.data()).sort((a,b)=>a.date.localeCompare(b.date));
+  const s=calculateFullStats(recs);
+  document.getElementById('profile-score-card').innerHTML=`
+    <div class="grid4" style="margin-bottom:14px">
+      <div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div>
+      <div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div>
+      <div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div>
+      <div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div>
+    </div>`;
+
+  // Chart
+  const chartEl=document.getElementById('profile-chart-canvas');
+  if(profileChartInst)profileChartInst.destroy();
+  if(recs.length>=2){
+    profileChartInst=new Chart(chartEl.getContext('2d'),{type:'line',data:{labels:recs.map(r=>r.date.slice(5)),datasets:[{label:'體脂率 %',data:recs.map(r=>r.bodyFat),borderColor:'#f5a623',backgroundColor:'#f5a62320',fill:true,tension:0.3,yAxisID:'y'},{label:'體重 kg',data:recs.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}});
+  } else {
+    chartEl.parentElement.innerHTML='<div style="color:var(--muted);font-size:12px;padding:16px;text-align:center">尚無足夠數據顯示趨勢圖</div>';
+  }
+
+  // Load comments
+  loadComments(uid);
+}
+
+async function loadComments(uid){
+  const snap=await db.collection('comments').where('targetUid','==',uid).get();
+  const comments=snap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
+  const list=document.getElementById('comment-list');
+  if(!list)return;
+  if(comments.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有留言，來第一個留言吧！</div>';return;}
+  list.innerHTML=comments.map(c=>{
+    const canDelete=(CU&&(CU.id===c.authorId||CU.role==='admin'));
+    return`<div style="padding:12px 0;border-bottom:1px solid var(--border)20">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:6px">
+        <div style="font-size:11px;color:var(--muted)">${c.authorName} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
+        ${canDelete?`<button onclick="deleteComment('${c.id}')" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px">✕</button>`:''}
+      </div>
+      <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6">${c.text}</div>
+    </div>`;
+  }).join('');
+}
+
+async function submitComment(){
+  if(!CU)return toast('請先登入','error');
+  const txt=document.getElementById('comment-text').value.trim();
+  if(!txt)return toast('請輸入留言內容','error');
+  const size=parseInt(document.getElementById('comment-size').value);
+  await db.collection('comments').add({
+    targetUid:currentProfileUid,
+    authorId:CU.id,
+    authorName:CU.name||CU.id,
+    text:txt,
+    fontSize:size,
+    color:selectedCommentColor,
+    createdAt:Date.now()
+  });
+  document.getElementById('comment-text').value='';
+  document.getElementById('comment-preview').textContent='預覽...';
+  toast('留言成功！💬');
+  loadComments(currentProfileUid);
+}
+
+async function deleteComment(commentId){
+  if(!confirm('確定刪除這則留言？'))return;
+  await db.collection('comments').doc(commentId).delete();
+  toast('已刪除');
+  loadComments(currentProfileUid);
+}
 
 // ── 自動恢復登入（含 12 小時過期檢查）──
 (async function restoreSession(){
