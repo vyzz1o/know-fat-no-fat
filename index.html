@@ -236,16 +236,22 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
               <option value="24">超大</option>
             </select>
             <div style="font-size:12px;color:var(--muted);margin-left:4px">顏色：</div>
-            <div style="display:flex;gap:5px">
-              <div class="jiao-pclr selected-jpclr" data-color="#e8eaf0" style="background:#e8eaf0;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid var(--accent)" onclick="selectJiaoPersonalColor(this)"></div>
-              <div class="jiao-pclr" data-color="#f05c6e" style="background:#f05c6e;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoPersonalColor(this)"></div>
-              <div class="jiao-pclr" data-color="#f5a623" style="background:#f5a623;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoPersonalColor(this)"></div>
-              <div class="jiao-pclr" data-color="#4cde8f" style="background:#4cde8f;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoPersonalColor(this)"></div>
-              <div class="jiao-pclr" data-color="#5b9cf6" style="background:#5b9cf6;width:18px;height:18px;border-radius:50%;cursor:pointer;border:2px solid transparent" onclick="selectJiaoPersonalColor(this)"></div>
+            <div style="display:flex;gap:6px;align-items:center;flex-wrap:wrap">
+              <div class="jiao-pclr selected-jpclr" data-color="#e8eaf0" style="background:#e8eaf0;width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid var(--accent);box-shadow:0 0 0 1px #fff2" onclick="selectJiaoPersonalColor(this)" title="白"></div>
+              <div class="jiao-pclr" data-color="#f05c6e" style="background:#f05c6e;width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px #fff2" onclick="selectJiaoPersonalColor(this)" title="紅"></div>
+              <div class="jiao-pclr" data-color="#fb923c" style="background:#fb923c;width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px #fff2" onclick="selectJiaoPersonalColor(this)" title="橘"></div>
+              <div class="jiao-pclr" data-color="#fde047" style="background:#fde047;width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px #fff2" onclick="selectJiaoPersonalColor(this)" title="黃"></div>
+              <div class="jiao-pclr" data-color="#4cde8f" style="background:#4cde8f;width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px #fff2" onclick="selectJiaoPersonalColor(this)" title="綠"></div>
+              <div class="jiao-pclr" data-color="#5b9cf6" style="background:#5b9cf6;width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px #fff2" onclick="selectJiaoPersonalColor(this)" title="藍"></div>
+              <div class="jiao-pclr" data-color="#c084fc" style="background:#c084fc;width:22px;height:22px;border-radius:50%;cursor:pointer;border:2px solid transparent;box-shadow:0 0 0 1px #fff2" onclick="selectJiaoPersonalColor(this)" title="紫"></div>
+            </div>
+            <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">
+              <input type="checkbox" id="jiao-personal-bold" style="width:auto;margin:0;cursor:pointer">
+              <label for="jiao-personal-bold" style="cursor:pointer;font-weight:700">粗體 B</label>
             </div>
             <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)">
               <input type="checkbox" id="jiao-personal-tilt" style="width:auto;margin:0;cursor:pointer">
-              <label for="jiao-personal-tilt" style="cursor:pointer">隨機傾斜 📐</label>
+              <label for="jiao-personal-tilt" style="cursor:pointer">傾斜 📐</label>
             </div>
           </div>
           <button class="btn btn-primary" style="background:#f05c6e" onclick="submitPersonalNote()">送出叫囂 💢</button>
@@ -1225,7 +1231,7 @@ function renderCommentList(comments, list){
         <div style="font-size:11px;color:var(--muted)">${c.authorName} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
         ${canDelete?`<button onclick="deleteComment('${c.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px" title="刪除">🗑</button>`:''}
       </div>
-      <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%;margin-top:4px">${c.text}</div>
+      <div style="font-size:${c.fontSize||14}px;font-weight:${c.bold?'800':'400'};color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%;margin-top:4px">${c.text}</div>
     </div>`;
   }).join('');
 }
@@ -1491,7 +1497,7 @@ function loadJiaoPersonalComments(uid){
             <div style="font-size:11px;color:var(--muted)">${c.authorName||'匿名'} · ${new Date(c.createdAt).toLocaleDateString('zh-TW')}</div>
             ${canDelThis?`<button onclick="deleteJiaoComment('${c.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:14px;padding:0 4px" title="刪除">🗑</button>`:''}
           </div>
-          <div style="font-size:${c.fontSize||14}px;color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%">${c.text}</div>
+          <div style="font-size:${c.fontSize||14}px;font-weight:${c.bold?'800':'400'};color:${c.color||'var(--text)'};word-break:break-word;line-height:1.6;transform:rotate(${c.angle||0}deg);display:inline-block;max-width:100%">${c.text}</div>
         </div>`;
       }).join('');
     },err=>{list.innerHTML='<div style="color:var(--red);font-size:12px">載入失敗：'+err.message+'</div>';});
@@ -1504,6 +1510,7 @@ async function submitPersonalNote(){
   if(!txt)return toast('請輸入內容','error');
   const size=parseInt(document.getElementById('jiao-personal-size').value);
   const tilt=document.getElementById('jiao-personal-tilt').checked;
+  const bold=document.getElementById('jiao-personal-bold').checked;
   const angle=tilt?(Math.random()*20-10):0;
   await db.collection('comments').add({
     targetUid:currentJiaoTarget,
@@ -1513,6 +1520,7 @@ async function submitPersonalNote(){
     fontSize:size,
     color:selectedJiaoPersonalColor,
     angle:angle,
+    bold:bold,
     createdAt:Date.now()
   });
   document.getElementById('jiao-personal-text').value='';
