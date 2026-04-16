@@ -415,6 +415,7 @@ const db=firebase.firestore();
 const END_DATE=new Date('2026-06-24T23:59:59'),PRIZE_PER=3000,PRIZE_BACK=2000,RATE_GOAL=0.07;
 const RACE_START=new Date('2026-04-15T00:00:00');
 const COLORS=['#f5a623','#4cde8f','#5b9cf6','#c084fc','#fb7185','#38bdf8','#a78bfa','#f472b6'];
+const SESSION_DURATION = 12 * 60 * 60 * 1000; // 12小時
 let CU=null,USERS_CACHE=[],publicChart=null;
 
 function getToday(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
@@ -432,7 +433,15 @@ function updateNav(){
   }
 }
 function goDashboard(){CU.role==='admin'?showPage('admin'):showPage('user');}
-function logout(){CU=null;localStorage.removeItem('ci_user');updateNav();goPublic();toast("已登出");}
+
+function logout(){
+  CU=null;
+  localStorage.removeItem('ci_user');
+  localStorage.removeItem('ci_expire');
+  updateNav();
+  goPublic();
+  toast("已登出");
+}
 
 function calculateFullStats(recs){
   if(recs.length<2)return{fatRate:0,weightRate:0,bonus:0,total:0,isWinner:false};
@@ -501,11 +510,23 @@ async function loadUserRecords(){
 
 async function login(){
   const id=document.getElementById('login-id').value.trim(),pw=document.getElementById('login-pw').value;
-  if(id==='knowfatnofat'&&pw==='knowfatnofat2026'){CU={id:'admin',role:'admin'};localStorage.setItem('ci_user',JSON.stringify(CU));updateNav();showPage('admin');loadPending();loadAdminUserList();return;}
+  if(id==='knowfatnofat'&&pw==='knowfatnofat2026'){
+    CU={id:'admin',role:'admin'};
+    localStorage.setItem('ci_user',JSON.stringify(CU));
+    localStorage.setItem('ci_expire', Date.now() + SESSION_DURATION);
+    updateNav();showPage('admin');loadPending();loadAdminUserList();return;
+  }
   const snap=await db.collection('users').doc(id).get();
-  if(snap.exists&&snap.data().password===pw){CU={id,...snap.data()};localStorage.setItem('ci_user',JSON.stringify(CU));updateNav();showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
-  else toast('帳號或密碼錯誤','error');
+  if(snap.exists&&snap.data().password===pw){
+    CU={id,...snap.data()};
+    localStorage.setItem('ci_user',JSON.stringify(CU));
+    localStorage.setItem('ci_expire', Date.now() + SESSION_DURATION);
+    updateNav();showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();
+  } else {
+    toast('帳號或密碼錯誤','error');
+  }
 }
+
 async function submitRecord(){
   const w=document.getElementById('rec-weight').value,f=document.getElementById('rec-bodyfat').value,d=document.getElementById('rec-date').value,isP=document.getElementById('period-toggle').classList.contains('active');
   const subcut=document.getElementById('rec-subcut').value,muscle=document.getElementById('rec-muscle').value,visceral=document.getElementById('rec-visceral').value,bmr=document.getElementById('rec-bmr').value,bodyage=document.getElementById('rec-bodyage').value;
@@ -645,19 +666,27 @@ function tick(){
 }
 setInterval(tick,1000);tick();
 
-// 自動恢復登入狀態
+// ── 自動恢復登入（含 12 小時過期檢查）──
 (async function restoreSession(){
   try{
     const saved=localStorage.getItem('ci_user');
-    if(saved){
+    const expire=localStorage.getItem('ci_expire');
+    if(saved && expire && Date.now() < parseInt(expire)){
       CU=JSON.parse(saved);
       updateNav();
       if(CU.role==='admin'){showPage('admin');loadPending();loadAdminUserList();}
       else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
     } else {
+      // 過期或無session，清除並回首頁
+      localStorage.removeItem('ci_user');
+      localStorage.removeItem('ci_expire');
       goPublic();
     }
-  } catch(e){goPublic();}
+  } catch(e){
+    localStorage.removeItem('ci_user');
+    localStorage.removeItem('ci_expire');
+    goPublic();
+  }
 })();
 </script>
 </body>
