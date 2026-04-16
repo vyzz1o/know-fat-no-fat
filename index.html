@@ -890,10 +890,11 @@ async function submitComment(){
   if(!CU)return toast('請先登入','error');
   const txt=document.getElementById('comment-text').value.trim();
   if(!txt)return toast('請輸入留言內容','error');
+  if(!currentProfileUid){toast('錯誤：找不到目標用戶','error');console.error('currentProfileUid is',currentProfileUid);return;}
   const size=parseInt(document.getElementById('comment-size').value);
   const tilt=document.getElementById('comment-tilt').checked;
   const angle=tilt?parseFloat(randomAngle()):0;
-  await db.collection('comments').add({
+  const payload={
     targetUid:currentProfileUid,
     authorId:CU.id,
     authorName:CU.name||CU.id,
@@ -902,11 +903,18 @@ async function submitComment(){
     color:selectedCommentColor,
     angle:angle,
     createdAt:Date.now()
-  });
-  document.getElementById('comment-text').value='';
-  document.getElementById('comment-preview').textContent='預覽...';
-  toast('留言成功！💬');
-  loadComments(currentProfileUid);
+  };
+  console.log('送出留言，targetUid=',currentProfileUid,'payload=',payload);
+  try{
+    await db.collection('comments').add(payload);
+    document.getElementById('comment-text').value='';
+    document.getElementById('comment-preview').textContent='預覽...';
+    toast('留言成功！💬');
+    loadComments(currentProfileUid);
+  }catch(e){
+    console.error('留言寫入失敗',e);
+    toast('留言失敗：'+e.message,'error');
+  }
 }
 
 async function deleteComment(commentId){
