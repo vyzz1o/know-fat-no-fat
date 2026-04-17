@@ -913,19 +913,30 @@ function userTab(t){
 }
 // ── 通知系統 ──────────────────────────────────────────────
 let notifUnsubscribe=null;
+let notifInitialized=false;
 function startNotifListener(){
   if(!CU||CU.role==='admin')return;
   if(notifUnsubscribe){notifUnsubscribe();notifUnsubscribe=null;}
+  notifInitialized=false;
   notifUnsubscribe=db.collection('comments').onSnapshot(snap=>{
     const lastRead=parseInt(localStorage.getItem('notif_last_read')||'0');
-    const unread=snap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead).length;
+    const myComments=snap.docs.filter(d=>d.data().targetUid===CU.id);
+    const unread=myComments.filter(d=>d.data().createdAt>lastRead).length;
+    // 如果是初始化之後又有新留言，跳出 toast 提醒
+    if(notifInitialized && unread>0){
+      const newest=myComments.sort((a,b)=>b.data().createdAt-a.data().createdAt)[0];
+      if(newest&&newest.data().createdAt>lastRead){
+        toast(`💢 ${newest.data().authorName||'有人'} 剛剛對你叫囂了！`);
+      }
+    }
+    notifInitialized=true;
     db.collection('announcements').get().then(aSnap=>{
       const unreadA=aSnap.docs.filter(d=>d.data().createdAt>lastRead).length;
       const total=unread+unreadA;
       const badge=document.getElementById('notif-badge');
       if(badge){badge.textContent=total>9?'9+':total;badge.style.display=total>0?'block':'none';}
     });
-  });
+  },err=>{console.error('notif listener error',err);});
 }
 
 async function loadNotifBadge(){
