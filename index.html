@@ -311,7 +311,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <label>體重 (kg)</label><input type="number" step="0.1" id="rec-weight">
       <label>體脂 (%)</label><input type="number" step="0.1" id="rec-bodyfat">
       <label>皮下脂肪率 (%)</label><input type="number" step="0.1" id="rec-subcut">
-      <label>骨骼肌 (kg)</label><input type="number" step="0.1" id="rec-muscle">
+      <label>骨骼肌 (%)</label><input type="number" step="0.1" id="rec-muscle">
       <label>內臟脂肪程度</label><input type="number" step="1" id="rec-visceral">
       <label>基礎代謝量 (kcal)</label><input type="number" step="1" id="rec-bmr">
       <label>身體年齡</label><input type="number" step="1" id="rec-bodyage">
@@ -385,7 +385,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <label>體重 (kg)</label><input type="number" step="0.1" id="spec-rec-weight">
       <label>體脂 (%)</label><input type="number" step="0.1" id="spec-rec-bodyfat">
       <label>皮下脂肪率 (%)</label><input type="number" step="0.1" id="spec-rec-subcut">
-      <label>骨骼肌 (kg)</label><input type="number" step="0.1" id="spec-rec-muscle">
+      <label>骨骼肌 (%)</label><input type="number" step="0.1" id="spec-rec-muscle">
       <label>內臟脂肪程度</label><input type="number" step="1" id="spec-rec-visceral">
       <label>基礎代謝量 (kcal)</label><input type="number" step="1" id="spec-rec-bmr">
       <label>身體年齡</label><input type="number" step="1" id="spec-rec-bodyage">
@@ -510,7 +510,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <input type="number" step="0.1" id="admin-rec-weight" placeholder="體重 (kg)">
       <input type="number" step="0.1" id="admin-rec-bodyfat" placeholder="體脂 (%)">
       <input type="number" step="0.1" id="admin-rec-subcut" placeholder="皮下脂肪率 (%)">
-      <input type="number" step="0.1" id="admin-rec-muscle" placeholder="骨骼肌 (kg)">
+      <input type="number" step="0.1" id="admin-rec-muscle" placeholder="骨骼肌 (%)">
       <input type="number" step="1" id="admin-rec-visceral" placeholder="內臟脂肪程度">
       <input type="number" step="1" id="admin-rec-bmr" placeholder="基礎代謝量 (kcal)">
       <input type="number" step="1" id="admin-rec-bodyage" placeholder="身體年齡">
@@ -920,7 +920,7 @@ async function editSelfRecord(id){
   const w=prompt("體重 (kg)：",r.weight);if(w===null)return;
   const f=prompt("體脂 (%)：",r.bodyFat);if(f===null)return;
   const sc=prompt("皮下脂肪率 (%)：",r.subcut??'');
-  const mu=prompt("骨骼肌 (kg)：",r.muscle??'');
+  const mu=prompt("骨骼肌 (%)：",r.muscle??'');
   const vi=prompt("內臟脂肪程度：",r.visceral??'');
   const bm=prompt("基礎代謝量 (kcal)：",r.bmr??'');
   const ba=prompt("身體年齡：",r.bodyage??'');
@@ -1001,7 +1001,7 @@ async function loadPending(){
   if(snap.empty){document.getElementById('pending-list').innerHTML="目前無待審核資料";return;}
   document.getElementById('pending-list').innerHTML=snap.docs.map(doc=>{
     const r=doc.data();
-    const detail=`體脂 <strong>${r.bodyFat}%</strong>｜體重 <strong>${r.weight}kg</strong>${r.subcut!=null?`｜皮下 ${r.subcut}%`:''}${r.muscle!=null?`｜骨骼肌 ${r.muscle}kg`:''}${r.visceral!=null?`｜內臟 ${r.visceral}`:''}${r.bmr!=null?`｜基代 ${r.bmr}`:''}${r.bodyage!=null?`｜身體年齡 ${r.bodyage}`:''}${r.isPeriod?'｜🔴生理期':''}`;
+    const detail=`體脂 <strong>${r.bodyFat}%</strong>｜體重 <strong>${r.weight}kg</strong>${r.subcut!=null?`｜皮下 ${r.subcut}%`:''}${r.muscle!=null?`｜骨骼肌 ${r.muscle}%`:''}${r.visceral!=null?`｜內臟 ${r.visceral}`:''}${r.bmr!=null?`｜基代 ${r.bmr}`:''}${r.bodyage!=null?`｜身體年齡 ${r.bodyage}`:''}${r.isPeriod?'｜🔴生理期':''}`;
     if(r.status==='delete_pending')return`<div class="card" style="margin-bottom:10px;background:var(--surface)"><div style="margin-bottom:8px"><span style="color:var(--red);font-weight:700">🗑 刪除申請</span> <strong>${r.userId}</strong> · ${r.date}</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">${detail}</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="width:auto;padding:5px 14px;background:var(--red);color:#fff" onclick="approveDelete('${doc.id}')">✓ 批准刪除</button><button class="btn-red" style="padding:5px 14px;border-radius:8px;background:var(--surface);color:var(--muted);border:1px solid var(--border)" onclick="rejectDelete('${doc.id}')">✗ 拒絕</button></div></div>`;
     return`<div class="card" style="margin-bottom:10px;background:var(--surface)"><div style="margin-bottom:8px"><strong>${r.userId}</strong> · ${r.date}</div><div style="font-size:12px;color:var(--muted);margin-bottom:10px">${detail}</div><div style="display:flex;gap:8px"><button class="btn btn-primary" style="width:auto;padding:5px 14px" onclick="approveRecord('${doc.id}')">✓ 核准</button><button class="btn-red" style="padding:5px 14px;border-radius:8px" onclick="rejectRecord('${doc.id}')">✗ 拒絕</button></div></div>`;
   }).join('');
@@ -1693,7 +1693,7 @@ async function loadSpectatorRecords(){
   const snap=await db.collection('records').get();
   const recs=snap.docs.map(d=>d.data()).filter(r=>r.userId===CU.id).sort((a,b)=>a.date.localeCompare(b.date));
   if(recs.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px">尚無數據，去輸入第一筆吧！</div>';return;}
-  list.innerHTML=`<div style="overflow-x:auto"><table><tr><th>日期</th><th>體重</th><th>體脂率</th><th>骨骼肌</th><th>基代</th></tr>${recs.map(r=>`<tr><td>${r.date}</td><td>${r.weight||'-'}kg</td><td>${r.bodyFat||'-'}%</td><td>${r.muscle||'-'}kg</td><td>${r.bmr||'-'}</td></tr>`).join('')}</table></div>`;
+  list.innerHTML=`<div style="overflow-x:auto"><table><tr><th>日期</th><th>體重</th><th>體脂率</th><th>骨骼肌</th><th>基代</th></tr>${recs.map(r=>`<tr><td>${r.date}</td><td>${r.weight||'-'}kg</td><td>${r.bodyFat||'-'}%</td><td>${r.muscle||'-'}%</td><td>${r.bmr||'-'}</td></tr>`).join('')}</table></div>`;
   // 畫趨勢圖
   if(recs.length>=2){
     const ctx=document.getElementById('spectator-chart-canvas');
