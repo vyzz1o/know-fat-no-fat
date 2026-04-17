@@ -547,9 +547,9 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <div class="card">
       <h2>😊 Emoji 選擇器</h2>
       <div style="font-size:12px;color:var(--muted);margin-bottom:10px">點擊 Emoji 套用給選中的用戶</div>
-      <div id="emoji-current-target" style="font-size:13px;color:var(--accent);font-weight:700;margin-bottom:10px"></div>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:24px;line-height:1">
-        🐷 🦆 🐸 🐨 🦊 🐯 🐼 🦁 🐻 🐮 🐰 🐹 🐭 🐱 🐶 🐺 🦝 🐗 🐴 🦄 🐔 🐧 🐦 🦅 🦆 🦉 🦇 🐺 🐗 🐛 🦋 🐌 🐜 🐝 🪲 🐞 🦗 🦂 🐢 🐍 🦎 🦖 🦕 🐊 🐸 🐲 🌵 🎃 👻 💀 🤡 👽 🤖 🎯 🔥 💥 ⚡ 🌈 🍕 🍔 🍩 🍦 🎂 🏆 🥇 💪 🦾 🧠 👁 👅 🫀 🦷 🦴 🫁
+      <div id="emoji-current-target" style="font-size:13px;color:var(--accent);font-weight:700;margin-bottom:10px;min-height:20px"></div>
+      <div id="emoji-picker-grid" style="display:flex;flex-wrap:wrap;gap:4px">
+        <!-- 由 JS 產生 -->
       </div>
     </div>
   </div>
@@ -1222,6 +1222,7 @@ async function loadNotifList(){
 // ── Emoji 管理 ──────────────────────────────────────────────
 let emojiTargetId=null;
 const DEFAULT_EMOJIS=['🐷','🦆','🐸','🐨','🦊','🐯','🐼','🦁','🐻','🐮','🐰','🐹','🐭','🐱','🐶','🐺'];
+const ALL_EMOJIS=['🐷','🦆','🐸','🐨','🦊','🐯','🐼','🦁','🐻','🐮','🐰','🐹','🐭','🐱','🐶','🐺','🦝','🐴','🦄','🐔','🐧','🦅','🦉','🦇','🐛','🦋','🐌','🐜','🐝','🐞','🦗','🦂','🐢','🐍','🦎','🦖','🦕','🐊','🐲','🌵','🎃','👻','💀','🤡','👽','🤖','🎯','🔥','💥','⚡','🌈','🍕','🍔','🍩','🍦','🎂','🏆','🥇','💪','🦾','🧠','👁','👅','🦷','🦴'];
 
 async function loadEmojiAssign(){
   const list=document.getElementById('emoji-assign-list');
@@ -1245,33 +1246,31 @@ async function loadEmojiAssign(){
     </div>`;
   }).join('');
 
-  // 綁定 Emoji 選擇器點擊事件
-  const picker=document.querySelector('#atab-emoji .card:nth-child(2) div:last-child');
-  if(picker){
-    picker.onclick=async(e)=>{
-      const emoji=[...e.target.textContent.trim()][0];
-      if(!emoji||!emojiTargetId)return;
-      await db.collection('userEmojis').doc(emojiTargetId).set({emoji});
-      toast(`已更新！`);
-      document.getElementById('emoji-current-target').textContent='';
-      emojiTargetId=null;
-      loadEmojiAssign();
-    };
+  // 產生 Emoji 選擇器按鈕
+  const grid=document.getElementById('emoji-picker-grid');
+  if(grid){
+    grid.innerHTML=ALL_EMOJIS.map(e=>
+      `<button onclick="applyEmoji('${e}')" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:6px;font-size:22px;cursor:pointer;line-height:1;transition:background 0.1s" onmouseover="this.style.background='var(--card)'" onmouseout="this.style.background='var(--surface)'">${e}</button>`
+    ).join('');
   }
 }
 
-function selectEmojiTarget(uid,name){
+function selectEmojiTarget(uid, name){
   emojiTargetId=uid;
-  document.getElementById('emoji-current-target').textContent=`正在為 ${name} 選擇 Emoji，點擊下方任一個套用`;
-  document.querySelector('#atab-emoji .card:nth-child(2)').scrollIntoView({behavior:'smooth'});
+  const target=document.getElementById('emoji-current-target');
+  if(target)target.textContent=`👇 正在為「${name}」選擇，點下方 Emoji 套用`;
+  const pickerCard=document.getElementById('emoji-picker-grid');
+  if(pickerCard)pickerCard.closest('.card').scrollIntoView({behavior:'smooth'});
 }
 
-async function getUserEmoji(uid, index){
-  try{
-    const snap=await db.collection('userEmojis').doc(uid).get();
-    if(snap.exists)return snap.data().emoji;
-  }catch(e){}
-  return DEFAULT_EMOJIS[index%DEFAULT_EMOJIS.length];
+async function applyEmoji(emoji){
+  if(!emojiTargetId){toast('請先點「更換」選擇要更改的人','error');return;}
+  await db.collection('userEmojis').doc(emojiTargetId).set({emoji});
+  toast(`✅ 已更新為 ${emoji}`);
+  const target=document.getElementById('emoji-current-target');
+  if(target)target.textContent='';
+  emojiTargetId=null;
+  loadEmojiAssign();
 }
 
 async function submitAnnounce(){
