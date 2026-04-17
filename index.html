@@ -1060,6 +1060,10 @@ window.debugNotif=async function(){
   console.log('全部 comments 數量:', snap.docs.length);
   const mine=snap.docs.filter(d=>d.data().targetUid===CU?.id);
   console.log('我的 comments:', mine.map(d=>d.data()));
+  const sSnap=await db.collection('spectatorNotifs').get();
+  console.log('全部 spectatorNotifs:', sSnap.docs.map(d=>({id:d.id,...d.data()})));
+  const wSnap=await db.collection('watchRequests').get();
+  console.log('全部 watchRequests:', wSnap.docs.map(d=>({id:d.id,...d.data()})));
   console.log('notifUnsubscribe:', notifUnsubscribe);
   console.log('notifInitialized:', notifInitialized);
 };
@@ -1739,19 +1743,24 @@ async function loadWatchRequestsForPlayers(){
 async function respondWatch(reqId, status){
   const reqSnap=await db.collection('watchRequests').doc(reqId).get();
   const req=reqSnap.data();
+  console.log('respondWatch req data:', req);
   await db.collection('watchRequests').doc(reqId).update({status});
-  // 通知監視者結果
-  if(req){
-    await db.collection('spectatorNotifs').add({
+  if(req&&req.spectatorId){
+    const notifData={
       targetUid:req.spectatorId,
       type:'watchResponse',
       playerName:CU.name||CU.id,
       playerId:CU.id,
       status,
       createdAt:Date.now()
-    });
+    };
+    console.log('寫入 spectatorNotifs:', notifData);
+    await db.collection('spectatorNotifs').add(notifData);
+    toast(status==='approved'?'已同意申請，通知已送出':'已拒絕申請');
+  } else {
+    console.error('找不到 spectatorId，req=', req);
+    toast(status==='approved'?'已同意申請':'已拒絕申請');
   }
-  toast(status==='approved'?'已同意申請':'已拒絕申請');
   loadWatchRequestsForPlayers();
 }
 
