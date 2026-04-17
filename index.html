@@ -1091,9 +1091,10 @@ async function loadNotifList(){
   const list=document.getElementById('notif-list');
   list.innerHTML='<div style="color:var(--muted);font-size:12px;padding:16px;text-align:center">載入中...</div>';
   const lastRead=parseInt(localStorage.getItem('notif_last_read')||'0');
-  const [announceSnap, commentSnap]=await Promise.all([
+  const [announceSnap, commentSnap, playerNotifSnap]=await Promise.all([
     db.collection('announcements').get(),
-    db.collection('comments').get()
+    db.collection('comments').get(),
+    db.collection('playerNotifs').get()
   ]);
   const items=[];
   // 系統公告
@@ -1101,12 +1102,21 @@ async function loadNotifList(){
     const data=d.data();
     items.push({type:'announce',ts:data.createdAt,title:data.title,body:data.body,unread:data.createdAt>lastRead});
   });
-  // 被叫囂通知（只給當事人）
+  // 被叫囂通知
   if(CU&&CU.role!=='admin'){
     commentSnap.docs.forEach(d=>{
       const data=d.data();
       if(data.targetUid===CU.id){
         items.push({type:'comment',ts:data.createdAt,author:data.authorName||'某人',text:data.text,unread:data.createdAt>lastRead});
+      }
+    });
+  }
+  // 監視者申請觀看通知（只給選手）
+  if(CU&&CU.role==='user'){
+    playerNotifSnap.docs.forEach(d=>{
+      const data=d.data();
+      if(data.targetUid===CU.id&&data.type==='watchRequest'){
+        items.push({type:'watchRequest',ts:data.createdAt,spectatorName:data.spectatorName||'某人',unread:data.createdAt>lastRead});
       }
     });
   }
@@ -1124,6 +1134,18 @@ async function loadNotifList(){
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700;margin-bottom:3px">${item.title}</div>
             <div style="font-size:12px;color:var(--muted);line-height:1.5">${item.body}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:5px">${time}</div>
+          </div>
+          ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px"></div>':''}
+        </div>
+      </div>`;
+    if(item.type==='watchRequest') return`
+      <div class="notif-item ${item.unread?'unread':''}">
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="font-size:18px;flex-shrink:0">👀</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;margin-bottom:3px">${item.spectatorName} 申請查看你的數據</div>
+            <div style="font-size:12px;color:var(--muted)">前往「我的後台 → 設定」同意或拒絕</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${time}</div>
           </div>
           ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px"></div>':''}
