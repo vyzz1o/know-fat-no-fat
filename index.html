@@ -1693,7 +1693,7 @@ async function loadSpectatorWatchPage(){
     if(!req)btn=`<button class="btn btn-primary" style="width:auto;padding:4px 12px;font-size:12px" onclick="requestWatch('${p.id}','${p.name}')">申請查看</button>`;
     else if(req.status==='pending')btn=`<span style="color:var(--muted);font-size:12px">⏳ 等待同意</span>`;
     else if(req.status==='approved')btn=`<span style="color:var(--green);font-size:12px">✅ 已獲授權</span>`;
-    else btn=`<button class="btn btn-primary" style="width:auto;padding:4px 12px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--muted)" onclick="requestWatch('${p.id}','${p.name}')">重新申請</button>`;
+    else btn=`<button class="btn btn-primary" style="width:auto;padding:4px 12px;font-size:12px;background:#f5a62333;border:1px solid var(--accent);color:var(--accent)" onclick="requestWatch('${p.id}','${p.name}')">🔄 重新申請</button>`;
     return`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #2a314820">
       <div style="font-size:13px;font-weight:600">${p.name}</div>${btn}</div>`;
   }).join('');
