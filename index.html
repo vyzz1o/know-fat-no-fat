@@ -49,7 +49,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .toast{position:fixed;bottom:22px;right:18px;z-index:9999;border-radius:10px;padding:11px 18px;font-size:13px;font-weight:700;display:none;box-shadow:0 4px 12px #000}
 .two-col-home{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-bottom:14px}
 @media(max-width:520px){.two-col-home{grid-template-columns:1fr}}
-.jiao-entry{background:linear-gradient(135deg,#f05c6e18,#f05c6e05);border:1px solid #f05c6e44;border-radius:12px;padding:18px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:160px;transition:all 0.2s;user-select:none}
+.jiao-entry{background:linear-gradient(135deg,#f05c6e18,#f05c6e05);border:1px solid #f05c6e44;border-radius:12px;padding:14px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:120px;transition:all 0.2s;user-select:none}
 .jiao-entry:hover{background:linear-gradient(135deg,#f05c6e28,#f05c6e10);border-color:#f05c6e88;transform:translateY(-2px)}
 .jiao-entry-title{font-size:22px;font-weight:900;color:#f05c6e;letter-spacing:0.05em;margin-bottom:6px}
 .jiao-entry-sub{font-size:12px;color:var(--muted)}
@@ -176,14 +176,22 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         </div>
       </div>
     </div>
-    <!-- 右：叫囂模組入口 -->
-    <div class="jiao-entry" onclick="openJiaoxiao()">
-      <div style="font-size:40px;margin-bottom:8px">📣</div>
-      <div class="jiao-entry-title">It's 叫囂 Time</div>
-      <div class="jiao-entry-sub" style="margin-bottom:12px">選人・開嗆・公開留言</div>
-      <div style="display:flex;gap:8px;justify-content:center">
-        <div style="background:#f05c6e22;color:#f05c6e;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">👤 個人叫囂板</div>
-        <div style="background:#f05c6e22;color:#f05c6e;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700">公開・所有人看得到</div>
+    <!-- 右：兩個入口並排 -->
+    <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:0">
+      <!-- 叫囂入口 -->
+      <div class="jiao-entry" onclick="openJiaoxiao()" style="min-height:120px;flex:1">
+        <div style="font-size:32px;margin-bottom:6px">📣</div>
+        <div class="jiao-entry-title" style="font-size:18px">It's 叫囂 Time</div>
+        <div class="jiao-entry-sub">選人・開嗆・公開留言</div>
+      </div>
+      <!-- QA 入口 -->
+      <div onclick="openQaPage()" style="background:linear-gradient(135deg,#5b9cf618,#5b9cf605);border:1px solid #5b9cf644;border-radius:12px;padding:16px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:120px;flex:1;transition:all 0.2s;user-select:none" onmouseover="this.style.background='linear-gradient(135deg,#5b9cf628,#5b9cf610)'" onmouseout="this.style.background='linear-gradient(135deg,#5b9cf618,#5b9cf605)'">
+        <div style="font-size:32px;font-weight:900;color:#5b9cf6;letter-spacing:-2px;margin-bottom:4px">QA</div>
+        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">提問・回覆・@某人</div>
+        <div style="display:flex;gap:6px;justify-content:center">
+          <div style="background:#5b9cf622;color:#5b9cf6;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">🐭 匿名</div>
+          <div style="background:#5b9cf622;color:#5b9cf6;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">@ 標記</div>
+        </div>
       </div>
     </div>
   </div>
@@ -202,28 +210,40 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       </div>
     </div>
   </div>
-  <!-- QA 專區 -->
-  <div class="card">
-    <h2>🙋 大家來問問 <span style="font-size:11px;color:var(--muted);font-weight:400">匿名或公開都可以</span></h2>
-    <div id="qa-input-area" style="display:none">
+  <!-- QA 預覽（點入口進完整頁面） -->
+</main>
+</div>
+<!-- QA 頁面 -->
+<div class="page" id="page-qa">
+<main>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button onclick="goPublic()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:20px">←</button>
+    <div style="font-size:28px;font-weight:900;color:#5b9cf6;letter-spacing:-2px">QA</div>
+    <div style="font-size:12px;color:var(--muted);margin-left:2px">提問・回覆・@某人</div>
+  </div>
+  <!-- 輸入區 -->
+  <div class="card" id="qa-input-card">
+    <div id="qa-input-area">
       <div style="position:relative">
         <textarea id="qa-text" placeholder="輸入你的問題... 輸入 @ 可以標記某人" oninput="handleQaMention(this,'qa-mention-dropdown')" onkeydown="handleMentionKey(event,'qa-mention-dropdown','qa-text')"></textarea>
         <div id="qa-mention-dropdown" class="mention-dropdown" style="display:none"></div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
         <div style="display:flex;gap:8px">
           <button id="qa-mode-public" class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px" onclick="setQaMode('public')">👤 公開提問</button>
           <button id="qa-mode-anon" class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--muted)" onclick="setQaMode('anon')">🐭 小老鼠</button>
         </div>
         <div id="qa-mode-hint" style="font-size:11px;color:var(--muted)">公開提問，所有人看得到你的名字</div>
       </div>
-      <button class="btn btn-primary" onclick="submitQa()">送出問題 🙋</button>
+      <button class="btn btn-primary" style="background:#5b9cf6" onclick="submitQa()">送出問題 🙋</button>
     </div>
     <div id="qa-login-hint" style="color:var(--muted);font-size:13px;padding:6px 0;display:none">請先登入才能提問</div>
-    <div id="qa-list" style="margin-top:14px">載入中...</div>
   </div>
+  <!-- 問題列表 -->
+  <div id="qa-list">載入中...</div>
 </main>
 </div>
+
 <div class="page" id="page-jiaoxiao">
 <main>
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
@@ -576,6 +596,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <label>點擊通知後導向</label>
       <select id="announce-link" style="margin-bottom:10px">
         <option value="">無（只看不跳轉）</option>
+        <option value="qa">🙋 QA 專區</option>
         <option value="checkin">⭐ 每日打卡</option>
         <option value="diary">📔 私人日記</option>
         <option value="jiaoxiao">📣 叫囂模組</option>
@@ -774,6 +795,15 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         <div>• 選手同意後，監視者會收到通知，並可在「申請觀看」頁查看完整數據</div>
         <div>• 監視者的數據不會出現在排行榜</div>
       </div>
+      <div style="color:#5b9cf6;font-weight:700;margin-bottom:6px">🙋 QA 專區</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 首頁點「QA」進入，任何人可以提問、所有人可以回覆</div>
+        <div>• 👤 公開提問：名字公開顯示</div>
+        <div>• 🐭 小老鼠：匿名提問，其他人看不到你是誰（管理員看得到）</div>
+        <div>• 輸入 <strong style="color:var(--text)">@</strong> 會跳出人名選單，選擇後自動標記</div>
+        <div>• 被 @ 的人會收到鈴鐺通知</div>
+        <div>• 自己的回覆可以自己刪；管理員可以刪除任何內容</div>
+      </div>
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">❓ 常見問題</div>
       <div style="color:var(--muted)">
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：為什麼我的排名沒有更新？</strong><br>A：排行榜只計算管理員在測量日錄入的數據，測量日分別為 4/15、4/29、5/13、5/27、6/10、6/24。</div>
@@ -781,6 +811,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：我填錯數據怎麼辦？</strong><br>A：可以在「我的數據」點「刪」申請刪除，管理員審核後會刪除。</div>
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：叫囂的留言可以刪嗎？</strong><br>A：自己發的留言可以自己刪，管理員也可以刪除任何留言。</div>
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：監視者申請看數據，選手在哪裡同意？</strong><br>A：選手在「我的後台 → 設定」最下方可以看到申請，按同意或拒絕。</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：QA 匿名提問，管理員看得到是誰嗎？</strong><br>A：看得到，管理員後台會顯示真實名字加上（匿名）標註。</div>
         <div><strong style="color:var(--text)">Q：退賽可以退款嗎？</strong><br>A：退賽不退款，公基金一旦投入即不退還。</div>
       </div>
     </div>
@@ -1417,11 +1448,7 @@ function markItemRead(){
 
 function notifGoQa(){
   closeNotif();
-  goPublic();
-  setTimeout(()=>{
-    const qaEl=document.getElementById('qa-list');
-    if(qaEl)qaEl.scrollIntoView({behavior:'smooth'});
-  },500);
+  openQaPage();
 }
 
 function notifGoAnnounce(link){
@@ -1429,6 +1456,7 @@ function notifGoAnnounce(link){
   if(!link)return;
   if(link==='checkin'){showCheckin();return;}
   if(link==='jiaoxiao'){openJiaoxiao();return;}
+  if(link==='qa'){openQaPage();return;}
   if(CU.role==='spectator'){
     showPage('spectator');
     if(link==='diary')setTimeout(()=>spectatorTab('diary'),100);
@@ -1690,6 +1718,12 @@ async function loadQaList(isAdmin=false){
       </div>`:'<div style="font-size:11px;color:var(--muted);margin-top:8px">登入後才能回覆</div>'}
     </div>`;
   }).join('');
+}
+
+function openQaPage(){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-qa').classList.add('active');
+  initQaSection();
 }
 
 async function initQaSection(){
