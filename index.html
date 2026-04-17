@@ -785,6 +785,7 @@ function goDashboard(){
 function logout(){
   CU=null;
   if(notifUnsubscribe){notifUnsubscribe();notifUnsubscribe=null;}
+  if(spectatorNotifUnsubscribe){spectatorNotifUnsubscribe();spectatorNotifUnsubscribe=null;}
   localStorage.removeItem('ci_user');
   localStorage.removeItem('ci_expire');
   localStorage.removeItem('ci_last_log');
@@ -1013,7 +1014,7 @@ async function loadAdminUserList(){
   const spectators=all.filter(u=>u.role==='spectator');
   document.getElementById('admin-user-list').innerHTML=players.length===0?'尚無參賽者':players.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
   const specList=document.getElementById('admin-spectator-list');
-  if(specList)specList.innerHTML=spectators.length===0?'尚無監視者':spectators.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span> <span style="color:#5b9cf6;font-size:11px">👀 監視者</span></div><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
+  if(specList)specList.innerHTML=spectators.length===0?'尚無監視者':spectators.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span> <span style="color:#5b9cf6;font-size:11px">👀 監視者</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
 }
 async function registerUser(){
   const id=document.getElementById('reg-id').value.trim(),n=document.getElementById('reg-name').value.trim(),p=document.getElementById('reg-pw').value,role=document.getElementById('reg-role').value;
@@ -1023,12 +1024,32 @@ async function registerUser(){
   loadAdminUserList();loadPublicData();
 }
 async function showUserChart(uid,name){
-  const snap=await db.collection('records').where('userId','==',uid).where('status','==','approved').get();
-  const recs=snap.docs.map(d=>d.data()).filter(r=>r.adminEntered).sort((a,b)=>a.date.localeCompare(b.date));
+  const snap=await db.collection('records').get();
+  const allRecs=snap.docs.map(d=>d.data()).filter(r=>r.userId===uid&&r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
+  const adminRecs=allRecs.filter(r=>r.adminEntered);
+  const recs=adminRecs.length>=2?adminRecs:allRecs; // 優先用官方數據，不夠就用全部
   document.getElementById('user-chart-title').textContent=`${name} 的數據趨勢`;
   document.getElementById('user-chart-modal').style.display='flex';
   if(userChartInst)userChartInst.destroy();
-  userChartInst=new Chart(document.getElementById('user-chart-canvas').getContext('2d'),{type:'line',data:{labels:recs.map(r=>r.date.slice(5)),datasets:[{label:'體脂率 %',data:recs.map(r=>r.bodyFat),borderColor:'#f5a623',tension:0.3,yAxisID:'y'},{label:'體重 kg',data:recs.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}});
+  const canvas=document.getElementById('user-chart-canvas');
+  if(recs.length<2){
+    canvas.style.display='none';
+    canvas.parentElement.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">尚無足夠數據（需至少 2 筆）</div>';
+    return;
+  }
+  canvas.style.display='block';
+  userChartInst=new Chart(canvas.getContext('2d'),{
+    type:'line',
+    data:{
+      labels:recs.map(r=>r.date.slice(5)),
+      datasets:[
+        {label:'體脂率 %',data:recs.map(r=>r.bodyFat),borderColor:'#f5a623',tension:0.3,yAxisID:'y'},
+        {label:'體重 kg',data:recs.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'},
+        {label:'骨骼肌 %',data:recs.map(r=>r.muscle||null),borderColor:'#4cde8f',tension:0.3,yAxisID:'y',borderDash:[4,4]}
+      ]
+    },
+    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}
+  });
 }
 function closeUserChart(){document.getElementById('user-chart-modal').style.display='none';if(userChartInst){userChartInst.destroy();userChartInst=null;}}
 async function deleteUser(id){if(!confirm("確定刪除？"))return;await db.collection('users').doc(id).delete();loadAdminUserList();loadPublicData();}
@@ -1128,10 +1149,38 @@ window.debugNotif=async function(){
   console.log('notifUnsubscribe:', notifUnsubscribe);
   console.log('notifInitialized:', notifInitialized);
 };
+let spectatorNotifUnsubscribe=null;
+
 function startNotifListener(){
   if(!CU||CU.role==='admin')return;
   if(notifUnsubscribe){notifUnsubscribe();notifUnsubscribe=null;}
+  if(spectatorNotifUnsubscribe){spectatorNotifUnsubscribe();spectatorNotifUnsubscribe=null;}
   notifInitialized=false;
+
+  // 監視者：額外監聽 spectatorNotifs，有新通知立刻亮燈
+  if(CU.role==='spectator'){
+    spectatorNotifUnsubscribe=db.collection('spectatorNotifs').onSnapshot(snap=>{
+      const lastRead=parseInt(localStorage.getItem('notif_last_read')||'0');
+      const mine=snap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead);
+      if(mine.length>0){
+        const newest=mine.sort((a,b)=>b.data().createdAt-a.data().createdAt)[0];
+        const data=newest.data();
+        if(data.status==='approved'){
+          toast(`✅ ${data.playerName} 同意了你的申請！`);
+        } else {
+          toast(`❌ ${data.playerName} 拒絕了你的申請`);
+        }
+      }
+      // 更新紅點
+      db.collection('announcements').get().then(aSnap=>{
+        const unreadA=aSnap.docs.filter(d=>d.data().createdAt>lastRead).length;
+        const unreadS=mine.length;
+        const badge=document.getElementById('notif-badge');
+        if(badge){badge.textContent=(unreadA+unreadS)>9?'9+':(unreadA+unreadS);badge.style.display=(unreadA+unreadS)>0?'block':'none';}
+      });
+    },err=>{console.error('spectatorNotif listener error',err);});
+  }
+
   notifUnsubscribe=db.collection('comments').onSnapshot(snap=>{
     const lastRead=parseInt(localStorage.getItem('notif_last_read')||'0');
     const myComments=snap.docs.filter(d=>d.data().targetUid===CU.id);
@@ -1229,7 +1278,7 @@ async function loadNotifList(){
   list.innerHTML=items.map(item=>{
     const time=new Date(item.ts).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
     if(item.type==='announce') return`
-      <div class="notif-item ${item.unread?'unread':''}">
+      <div class="notif-item ${item.unread?'unread':''}" onclick="markItemRead()" style="cursor:default">
         <div style="display:flex;gap:8px;align-items:flex-start">
           <div style="font-size:18px;flex-shrink:0">📢</div>
           <div style="flex:1">
@@ -1241,44 +1290,85 @@ async function loadNotifList(){
         </div>
       </div>`;
     if(item.type==='watchResponse') return`
-      <div class="notif-item ${item.unread?'unread':''}">
+      <div class="notif-item ${item.unread?'unread':''}" onclick="notifGoWatch();markItemRead()" style="cursor:pointer">
         <div style="display:flex;gap:8px;align-items:flex-start">
           <div style="font-size:18px;flex-shrink:0">${item.status==='approved'?'✅':item.status==='revoked'?'🚫':'❌'}</div>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700;margin-bottom:3px">
               ${item.status==='approved'?`${item.playerName} 同意了你的申請！`:item.status==='revoked'?`${item.playerName} 撤銷了你的查看權限`:`${item.playerName} 拒絕了你的申請`}
             </div>
-            <div style="font-size:12px;color:var(--muted)">${item.status==='approved'?'前往「申請觀看」可查看完整數據':item.status==='revoked'?'授權已被撤銷，可重新申請':'可重新前往叫囂模組申請'}</div>
+            <div style="font-size:12px;color:var(--muted)">${item.status==='approved'?'點此前往查看數據 →':item.status==='revoked'?'授權已被撤銷，可重新申請':'可重新申請'}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${time}</div>
           </div>
           ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:4px"></div>':''}
         </div>
       </div>`;
     if(item.type==='watchRequest') return`
-      <div class="notif-item ${item.unread?'unread':''}">
+      <div class="notif-item ${item.unread?'unread':''}" onclick="notifGoProfile();markItemRead()" style="cursor:pointer">
         <div style="display:flex;gap:8px;align-items:flex-start">
           <div style="font-size:18px;flex-shrink:0">👀</div>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700;margin-bottom:3px">${item.spectatorName} 申請查看你的數據</div>
-            <div style="font-size:12px;color:var(--muted)">前往「我的後台 → 設定」同意或拒絕</div>
+            <div style="font-size:12px;color:var(--muted)">點此前往設定頁面同意或拒絕 →</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${time}</div>
           </div>
           ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px"></div>':''}
         </div>
       </div>`;
+    const targetUid=item.targetUid||'';
+    const authorName=item.author||'';
     return`
-      <div class="notif-item ${item.unread?'unread-c':''}">
+      <div class="notif-item ${item.unread?'unread-c':''}" onclick="notifGoJiao('${targetUid}','${authorName}');markItemRead()" style="cursor:pointer">
         <div style="display:flex;gap:8px;align-items:flex-start">
           <div style="font-size:18px;flex-shrink:0">💢</div>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700;margin-bottom:3px">${item.author} 剛剛對你叫囂了！</div>
             <div style="font-size:12px;color:var(--muted);line-height:1.5;font-style:italic">"${item.text.length>50?item.text.slice(0,50)+'...':item.text}"</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:5px">${time}</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:5px">${time} · 點此查看 →</div>
           </div>
           ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:#f05c6e;flex-shrink:0;margin-top:4px"></div>':''}
         </div>
       </div>`;
   }).join('');
+}
+
+function markItemRead(){
+  localStorage.setItem('notif_last_read', Date.now().toString());
+  const badge=document.getElementById('notif-badge');
+  if(badge)badge.style.display='none';
+  // 移除所有未讀標記樣式
+  document.querySelectorAll('.notif-item.unread,.notif-item.unread-c').forEach(el=>{
+    el.classList.remove('unread','unread-c');
+    const dot=el.querySelector('div[style*="border-radius:50%"]');
+    if(dot)dot.style.display='none';
+  });
+}
+
+function notifGoJiao(targetUid, authorName){
+  closeNotif();
+  openJiaoxiao();
+  // 等頁面載入後自動選中被叫囂的對象（自己）
+  setTimeout(()=>{
+    jiaoTab('personal');
+    if(CU&&CU.id){
+      const emojis=DEFAULT_EMOJIS;
+      selectJiaoTarget(CU.id, CU.name||CU.id, emojis[0]);
+    }
+  }, 300);
+}
+
+function notifGoWatch(){
+  closeNotif();
+  if(CU.role==='spectator'){
+    showPage('spectator');
+    setTimeout(()=>spectatorTab('watch'), 100);
+  }
+}
+
+function notifGoProfile(){
+  closeNotif();
+  showPage('user');
+  setTimeout(()=>userTab('profile'), 100);
 }
 
 // ── Emoji 管理 ──────────────────────────────────────────────
