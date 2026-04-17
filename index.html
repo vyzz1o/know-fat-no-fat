@@ -329,6 +329,73 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   </div>
   <div id="utab-profile" style="display:none">
     <div class="card"><h2>👤 設定</h2><label>顯示暱稱</label><input id="profile-name"><button class="btn btn-primary" onclick="saveProfile()">更新資料</button></div>
+    <div class="card">
+      <h2>👀 監視者申請</h2>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">以下監視者申請查看你的詳細數據</div>
+      <div id="watch-request-list">載入中...</div>
+    </div>
+  </div>
+  <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px;width:100%">安全登出</button>
+</main>
+</div>
+
+<!-- 監視者後台 -->
+<div class="page" id="page-spectator">
+<main>
+  <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:14px">
+    <div>
+      <div style="font-size:16px;font-weight:800" id="spectator-name-title">👀 監視者後台</div>
+      <div style="font-size:11px;color:var(--muted)">不參賽・純觀戰・可叫囂</div>
+    </div>
+  </div>
+  <div class="tabs" id="spectator-tabs">
+    <button class="tab active" onclick="spectatorTab('mydata')">📊 我的數據</button>
+    <button class="tab" onclick="spectatorTab('addrecord')">➕ 輸入數據</button>
+    <button class="tab" onclick="spectatorTab('watch')">🔍 申請觀看</button>
+    <button class="tab" onclick="spectatorTab('diary')">📔 日記</button>
+  </div>
+  <!-- 我的數據 -->
+  <div id="stab-mydata">
+    <div style="background:#5b9cf618;border:1px solid #5b9cf633;border-radius:10px;padding:12px 16px;margin-bottom:14px;font-size:12px;color:var(--muted)">
+      👀 你是監視者，數據僅供個人參考，不計入比賽排名
+    </div>
+    <div class="card"><h2>我的數據紀錄</h2><div id="spectator-record-list">載入中...</div></div>
+    <div class="card">
+      <h2>📈 我的趨勢</h2>
+      <div style="height:200px"><canvas id="spectator-chart-canvas"></canvas></div>
+    </div>
+  </div>
+  <!-- 輸入數據 -->
+  <div id="stab-addrecord" style="display:none">
+    <div class="card">
+      <h2>➕ 輸入個人數據</h2>
+      <label>測量日期</label><input type="date" id="spec-rec-date">
+      <label>體重 (kg)</label><input type="number" step="0.1" id="spec-rec-weight">
+      <label>體脂 (%)</label><input type="number" step="0.1" id="spec-rec-bodyfat">
+      <label>皮下脂肪率 (%)</label><input type="number" step="0.1" id="spec-rec-subcut">
+      <label>骨骼肌 (kg)</label><input type="number" step="0.1" id="spec-rec-muscle">
+      <label>內臟脂肪程度</label><input type="number" step="1" id="spec-rec-visceral">
+      <label>基礎代謝量 (kcal)</label><input type="number" step="1" id="spec-rec-bmr">
+      <label>身體年齡</label><input type="number" step="1" id="spec-rec-bodyage">
+      <button class="btn btn-primary" onclick="submitSpectatorRecord()">儲存</button>
+    </div>
+  </div>
+  <!-- 申請觀看 -->
+  <div id="stab-watch" style="display:none">
+    <div class="card">
+      <h2>🔍 申請查看選手詳細數據</h2>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:14px">選手同意後才能查看他們的詳細數據</div>
+      <div id="spectator-player-list"></div>
+    </div>
+    <div class="card">
+      <h2>✅ 已獲授權的選手</h2>
+      <div id="spectator-approved-list">載入中...</div>
+    </div>
+  </div>
+  <!-- 日記 -->
+  <div id="stab-diary" style="display:none">
+    <div class="card"><h2>📔 私人日記</h2><textarea id="spec-diary-content" placeholder="紀錄內容..."></textarea><button class="btn btn-primary" onclick="submitSpectatorDiary()">儲存</button></div>
+    <div id="spectator-diary-list"></div>
   </div>
   <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px;width:100%">安全登出</button>
 </main>
@@ -438,8 +505,20 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     </div>
   </div>
   <div id="atab-register" style="display:none">
-    <div class="card"><h2>➕ 建立帳號</h2><input id="reg-id" placeholder="ID"><input id="reg-name" placeholder="暱稱"><input id="reg-pw" placeholder="密碼"><button class="btn btn-primary" onclick="registerUser()">建立</button></div>
+    <div class="card">
+      <h2>➕ 建立帳號</h2>
+      <input id="reg-id" placeholder="ID">
+      <input id="reg-name" placeholder="暱稱">
+      <input id="reg-pw" placeholder="密碼">
+      <label>角色</label>
+      <select id="reg-role" style="margin-bottom:10px">
+        <option value="user">🏃 選手（參加比賽）</option>
+        <option value="spectator">👀 監視者（不參賽）</option>
+      </select>
+      <button class="btn btn-primary" onclick="registerUser()">建立</button>
+    </div>
     <div class="card"><h2>👥 參賽者清單</h2><div id="admin-user-list"></div></div>
+    <div class="card"><h2>👀 監視者清單</h2><div id="admin-spectator-list"></div></div>
   </div>
   <div id="atab-history" style="display:none">
     <div class="card"><h2>🗂 刪除／拒絕歷史紀錄</h2><div id="history-list"></div></div>
@@ -647,14 +726,18 @@ function updateNav(){
     nr.innerHTML=`<div style="display:flex;align-items:center;gap:8px">
       <button onclick="showCheckin()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--accent);font-size:16px;cursor:pointer" title="每日打卡">⭐</button>
       <button class="notif-bell" onclick="openNotif()" title="通知">🔔<span class="notif-badge" id="notif-badge"></span></button>
-      <button class="btn btn-primary" style="width:auto;padding:5px 12px;font-size:11px" onclick="goDashboard()">我的後台</button>
+      <button class="btn btn-primary" style="width:auto;padding:5px 14px;font-size:12px" onclick="goDashboard()">👤 ${CU.name||CU.id}</button>
     </div>`;
     loadNotifBadge();
   } else {
     nr.innerHTML=`<button class="btn btn-ghost" style="width:auto;padding:5px 12px;font-size:11px" onclick="showPage('login')">登入</button>`;
   }
 }
-function goDashboard(){CU.role==='admin'?showPage('admin'):showPage('user');}
+function goDashboard(){
+  if(CU.role==='admin')showPage('admin');
+  else if(CU.role==='spectator'){showPage('spectator');loadSpectatorPage();}
+  else showPage('user');
+}
 
 function logout(){
   CU=null;
@@ -686,7 +769,7 @@ async function loadPublicData(){
     document.getElementById('prize-count').textContent=currentUsers.length;
     const rSnap=await db.collection('records').where('status','==','approved').get();
     const adminRecords={};
-    rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
+    rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered&&!r.isSpectator){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
     Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
     let winners=0;
     const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
@@ -753,10 +836,11 @@ async function login(){
     CU={id,...snap.data()};
     localStorage.setItem('ci_user',JSON.stringify(CU));
     localStorage.setItem('ci_expire', Date.now() + SESSION_DURATION);
-    // 記錄登入紀錄
     const today=getToday();
     db.collection('loginLogs').add({userId:CU.id,userName:CU.name||CU.id,date:today,ts:Date.now()});
-    updateNav();showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();
+    updateNav();
+    if(CU.role==='spectator'){showPage('spectator');loadSpectatorPage();}
+    else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
   } else {
     toast('帳號或密碼錯誤','error');
   }
@@ -877,10 +961,20 @@ async function loadPending(){
 }
 async function loadAdminUserList(){
   const snap=await db.collection('users').get();
-  const users=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
-  document.getElementById('admin-user-list').innerHTML=users.length===0?'尚無參賽者':users.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
+  const all=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role!=='admin');
+  const players=all.filter(u=>u.role==='user');
+  const spectators=all.filter(u=>u.role==='spectator');
+  document.getElementById('admin-user-list').innerHTML=players.length===0?'尚無參賽者':players.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
+  const specList=document.getElementById('admin-spectator-list');
+  if(specList)specList.innerHTML=spectators.length===0?'尚無監視者':spectators.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span> <span style="color:#5b9cf6;font-size:11px">👀 監視者</span></div><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
 }
-let userChartInst=null;
+async function registerUser(){
+  const id=document.getElementById('reg-id').value.trim(),n=document.getElementById('reg-name').value.trim(),p=document.getElementById('reg-pw').value,role=document.getElementById('reg-role').value;
+  if(!id||!n||!p)return toast('請填寫所有欄位','error');
+  await db.collection('users').doc(id).set({name:n,password:p,role});
+  toast(`${n} 已建立（${role==='spectator'?'監視者':'選手'}）`);
+  loadAdminUserList();loadPublicData();
+}
 async function showUserChart(uid,name){
   const snap=await db.collection('records').where('userId','==',uid).where('status','==','approved').get();
   const recs=snap.docs.map(d=>d.data()).filter(r=>r.adminEntered).sort((a,b)=>a.date.localeCompare(b.date));
@@ -890,15 +984,32 @@ async function showUserChart(uid,name){
   userChartInst=new Chart(document.getElementById('user-chart-canvas').getContext('2d'),{type:'line',data:{labels:recs.map(r=>r.date.slice(5)),datasets:[{label:'體脂率 %',data:recs.map(r=>r.bodyFat),borderColor:'#f5a623',tension:0.3,yAxisID:'y'},{label:'體重 kg',data:recs.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}});
 }
 function closeUserChart(){document.getElementById('user-chart-modal').style.display='none';if(userChartInst){userChartInst.destroy();userChartInst=null;}}
-async function registerUser(){const id=document.getElementById('reg-id').value.trim(),n=document.getElementById('reg-name').value.trim(),p=document.getElementById('reg-pw').value;if(!id||!n||!p)return toast('請填寫所有欄位','error');await db.collection('users').doc(id).set({name:n,password:p,role:'user'});toast(`${n} 已建立`);loadAdminUserList();loadPublicData();}
 async function deleteUser(id){if(!confirm("確定刪除？"))return;await db.collection('users').doc(id).delete();loadAdminUserList();loadPublicData();}
-function updateAdminTargetSelect(){const sel=document.getElementById('admin-target-user');if(sel)sel.innerHTML=USERS_CACHE.map(u=>`<option value="${u.id}">${u.name}</option>`).join('');}
+function updateAdminTargetSelect(){
+  const sel=document.getElementById('admin-target-user');
+  if(!sel)return;
+  const players=USERS_CACHE.filter(u=>u.role==='user'||u.role==='spectator');
+  sel.innerHTML=players.map(u=>`<option value="${u.id}" data-role="${u.role}">${u.name}${u.role==='spectator'?' 👀':''}</option>`).join('');
+}
 async function adminSubmitRecord(){
-  const tid=document.getElementById('admin-target-user').value,w=document.getElementById('admin-rec-weight').value,f=document.getElementById('admin-rec-bodyfat').value,d=document.getElementById('admin-rec-date').value;
+  const sel=document.getElementById('admin-target-user');
+  const tid=sel.value;
+  const selectedOption=sel.options[sel.selectedIndex];
+  const isSpectator=selectedOption&&selectedOption.dataset.role==='spectator';
+  const w=document.getElementById('admin-rec-weight').value,f=document.getElementById('admin-rec-bodyfat').value,d=document.getElementById('admin-rec-date').value;
   const subcut=document.getElementById('admin-rec-subcut').value,muscle=document.getElementById('admin-rec-muscle').value,visceral=document.getElementById('admin-rec-visceral').value,bmr=document.getElementById('admin-rec-bmr').value,bodyage=document.getElementById('admin-rec-bodyage').value;
   if(!w||!f||!d)return toast('請填寫所有欄位','error');
-  await db.collection('records').add({userId:tid,weight:parseFloat(w),bodyFat:parseFloat(f),subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,bodyage:bodyage?parseFloat(bodyage):null,date:d,status:'approved',adminEntered:true,createdAt:Date.now()});
-  toast('已錄入');loadPublicData();
+  await db.collection('records').add({
+    userId:tid,weight:parseFloat(w),bodyFat:parseFloat(f),
+    subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,
+    visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,
+    bodyage:bodyage?parseFloat(bodyage):null,
+    date:d,status:'approved',adminEntered:true,
+    isSpectator:isSpectator||false,
+    createdAt:Date.now()
+  });
+  toast(isSpectator?'已為監視者錄入（不計入比賽）':'已錄入');
+  loadPublicData();
 }
 function saveProfile(){db.collection('users').doc(CU.id).update({name:document.getElementById('profile-name').value});toast("更新成功");loadPublicData();}
 async function loadHistory(){
@@ -910,10 +1021,24 @@ function userTab(t){
   ['mydata','addrecord','diary','profile'].forEach(tab=>document.getElementById('utab-'+tab).style.display=tab===t?'block':'none');
   document.querySelectorAll('#user-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['mydata','addrecord','diary','profile'].indexOf(t)));
   if(t==='diary')loadUserDiaries();
+  if(t==='profile')loadWatchRequestsForPlayers();
 }
 // ── 通知系統 ──────────────────────────────────────────────
 let notifUnsubscribe=null;
 let notifInitialized=false;
+
+// 除錯用，可在 console 執行 debugNotif()
+window.debugNotif=async function(){
+  console.log('=== 通知除錯 ===');
+  console.log('CU:', CU);
+  console.log('notif_last_read:', localStorage.getItem('notif_last_read'));
+  const snap=await db.collection('comments').get();
+  console.log('全部 comments 數量:', snap.docs.length);
+  const mine=snap.docs.filter(d=>d.data().targetUid===CU?.id);
+  console.log('我的 comments:', mine.map(d=>d.data()));
+  console.log('notifUnsubscribe:', notifUnsubscribe);
+  console.log('notifInitialized:', notifInitialized);
+};
 function startNotifListener(){
   if(!CU||CU.role==='admin')return;
   if(notifUnsubscribe){notifUnsubscribe();notifUnsubscribe=null;}
@@ -921,18 +1046,21 @@ function startNotifListener(){
   notifUnsubscribe=db.collection('comments').onSnapshot(snap=>{
     const lastRead=parseInt(localStorage.getItem('notif_last_read')||'0');
     const myComments=snap.docs.filter(d=>d.data().targetUid===CU.id);
-    const unread=myComments.filter(d=>d.data().createdAt>lastRead).length;
-    // 如果是初始化之後又有新留言，跳出 toast 提醒
-    if(notifInitialized && unread>0){
+    const unreadComments=myComments.filter(d=>d.data().createdAt>lastRead).length;
+    if(notifInitialized&&unreadComments>0){
       const newest=myComments.sort((a,b)=>b.data().createdAt-a.data().createdAt)[0];
       if(newest&&newest.data().createdAt>lastRead){
         toast(`💢 ${newest.data().authorName||'有人'} 剛剛對你叫囂了！`);
       }
     }
     notifInitialized=true;
-    db.collection('announcements').get().then(aSnap=>{
+    Promise.all([
+      db.collection('announcements').get(),
+      db.collection('playerNotifs').get()
+    ]).then(([aSnap,pSnap])=>{
       const unreadA=aSnap.docs.filter(d=>d.data().createdAt>lastRead).length;
-      const total=unread+unreadA;
+      const unreadP=CU.role==='user'?pSnap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead).length:0;
+      const total=unreadComments+unreadA+unreadP;
       const badge=document.getElementById('notif-badge');
       if(badge){badge.textContent=total>9?'9+':total;badge.style.display=total>0?'block':'none';}
     });
@@ -1303,14 +1431,14 @@ async function deleteComment(commentId){
       updateNav();
       if(CU.role==='admin'){showPage('admin');loadPending();loadAdminUserList();}
       else{
-        // 記錄每次開啟網頁（每天只記一次）
         const today=getToday();
         const lastLog=localStorage.getItem('ci_last_log');
         if(lastLog!==today){
           db.collection('loginLogs').add({userId:CU.id,userName:CU.name||CU.id,date:today,ts:Date.now()});
           localStorage.setItem('ci_last_log',today);
         }
-        showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();
+        if(CU.role==='spectator'){showPage('spectator');loadSpectatorPage();}
+        else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
       }
     } else {
       localStorage.removeItem('ci_user');
@@ -1325,6 +1453,159 @@ async function deleteComment(commentId){
     goPublic();
   }
 })();
+
+// ── 監視者系統 ──────────────────────────────────────────────
+let spectatorChartInst=null;
+
+function spectatorTab(t){
+  ['mydata','addrecord','watch','diary'].forEach(tab=>document.getElementById('stab-'+tab).style.display=tab===t?'block':'none');
+  document.querySelectorAll('#spectator-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['mydata','addrecord','watch','diary'].indexOf(t)));
+  if(t==='watch')loadSpectatorWatchPage();
+  if(t==='diary')loadSpectatorDiaries();
+  if(t==='mydata')loadSpectatorRecords();
+}
+
+async function loadSpectatorPage(){
+  const title=document.getElementById('spectator-name-title');
+  if(title)title.textContent=`👀 ${CU.name||CU.id} 的監視者後台`;
+  spectatorTab('mydata');
+  loadWatchRequestsForPlayers();
+}
+
+async function loadSpectatorRecords(){
+  const list=document.getElementById('spectator-record-list');
+  if(!list)return;
+  const snap=await db.collection('records').get();
+  const recs=snap.docs.map(d=>d.data()).filter(r=>r.userId===CU.id).sort((a,b)=>a.date.localeCompare(b.date));
+  if(recs.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px">尚無數據，去輸入第一筆吧！</div>';return;}
+  list.innerHTML=`<div style="overflow-x:auto"><table><tr><th>日期</th><th>體重</th><th>體脂率</th><th>骨骼肌</th><th>基代</th></tr>${recs.map(r=>`<tr><td>${r.date}</td><td>${r.weight||'-'}kg</td><td>${r.bodyFat||'-'}%</td><td>${r.muscle||'-'}kg</td><td>${r.bmr||'-'}</td></tr>`).join('')}</table></div>`;
+  // 畫趨勢圖
+  if(recs.length>=2){
+    const ctx=document.getElementById('spectator-chart-canvas');
+    if(ctx){
+      if(spectatorChartInst)spectatorChartInst.destroy();
+      spectatorChartInst=new Chart(ctx.getContext('2d'),{type:'line',data:{labels:recs.map(r=>r.date.slice(5)),datasets:[{label:'體脂率 %',data:recs.map(r=>r.bodyFat),borderColor:'#5b9cf6',tension:0.3}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{labels:{color:'#e8eaf0'}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}}}}});
+    }
+  }
+}
+
+async function submitSpectatorRecord(){
+  const d=document.getElementById('spec-rec-date').value,w=document.getElementById('spec-rec-weight').value,f=document.getElementById('spec-rec-bodyfat').value;
+  if(!d||!w||!f)return toast('請填日期、體重、體脂','error');
+  await db.collection('records').add({
+    userId:CU.id,date:d,weight:parseFloat(w),bodyFat:parseFloat(f),
+    subcut:parseFloat(document.getElementById('spec-rec-subcut').value)||null,
+    muscle:parseFloat(document.getElementById('spec-rec-muscle').value)||null,
+    visceral:parseFloat(document.getElementById('spec-rec-visceral').value)||null,
+    bmr:parseFloat(document.getElementById('spec-rec-bmr').value)||null,
+    bodyage:parseFloat(document.getElementById('spec-rec-bodyage').value)||null,
+    status:'approved',adminEntered:false,isSpectator:true,createdAt:Date.now()
+  });
+  toast('已儲存！');
+  spectatorTab('mydata');
+}
+
+async function loadSpectatorWatchPage(){
+  // 載入所有選手
+  const snap=await db.collection('users').get();
+  const players=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
+  // 載入我的申請狀態
+  const reqSnap=await db.collection('watchRequests').get();
+  const myReqs=reqSnap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.spectatorId===CU.id);
+  const reqMap={};
+  myReqs.forEach(r=>{reqMap[r.playerId]=r;});
+  const grid=document.getElementById('spectator-player-list');
+  const approvedList=document.getElementById('spectator-approved-list');
+  if(!grid)return;
+  grid.innerHTML=players.map(p=>{
+    const req=reqMap[p.id];
+    let btn='';
+    if(!req)btn=`<button class="btn btn-primary" style="width:auto;padding:4px 12px;font-size:12px" onclick="requestWatch('${p.id}','${p.name}')">申請查看</button>`;
+    else if(req.status==='pending')btn=`<span style="color:var(--muted);font-size:12px">⏳ 等待同意</span>`;
+    else if(req.status==='approved')btn=`<span style="color:var(--green);font-size:12px">✅ 已獲授權</span>`;
+    else btn=`<span style="color:var(--red);font-size:12px">❌ 已拒絕</span>`;
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #2a314820">
+      <div style="font-size:13px;font-weight:600">${p.name}</div>${btn}</div>`;
+  }).join('');
+  // 已授權的選手詳細數據
+  const approved=myReqs.filter(r=>r.status==='approved').map(r=>r.playerId);
+  if(approved.length===0){approvedList.innerHTML='<div style="color:var(--muted);font-size:13px">尚無已授權的選手</div>';return;}
+  const recSnap=await db.collection('records').get();
+  const allRecs=recSnap.docs.map(d=>d.data());
+  approvedList.innerHTML=approved.map(pid=>{
+    const p=players.find(u=>u.id===pid);
+    const recs=allRecs.filter(r=>r.userId===pid&&r.adminEntered).sort((a,b)=>a.date.localeCompare(b.date));
+    if(recs.length===0)return`<div style="padding:10px 0;color:var(--muted);font-size:13px">${p?.name||pid}：尚無官方數據</div>`;
+    const last=recs[recs.length-1];
+    return`<div style="background:var(--surface);border-radius:10px;padding:14px;margin-bottom:10px">
+      <div style="font-weight:700;margin-bottom:8px">${p?.name||pid}</div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;font-size:12px">
+        <div class="stat-box"><div class="stat-label">最新體脂</div><div class="stat-val" style="color:var(--accent)">${last.bodyFat}%</div></div>
+        <div class="stat-box"><div class="stat-label">最新體重</div><div class="stat-val" style="color:var(--blue)">${last.weight}kg</div></div>
+        <div class="stat-box"><div class="stat-label">測量次數</div><div class="stat-val">${recs.length}</div></div>
+      </div>
+    </div>`;
+  }).join('');
+}
+
+async function requestWatch(playerId, playerName){
+  const reqSnap=await db.collection('watchRequests').get();
+  const exists=reqSnap.docs.find(d=>d.data().spectatorId===CU.id&&d.data().playerId===playerId);
+  if(exists){toast('已經申請過了','error');return;}
+  await db.collection('watchRequests').add({
+    spectatorId:CU.id, spectatorName:CU.name||CU.id,
+    playerId, playerName, status:'pending', createdAt:Date.now()
+  });
+  // 通知選手（寫入通知 collection）
+  await db.collection('playerNotifs').add({
+    targetUid:playerId, type:'watchRequest',
+    spectatorId:CU.id, spectatorName:CU.name||CU.id,
+    status:'pending', createdAt:Date.now()
+  });
+  toast(`已向 ${playerName} 發送申請！`);
+  loadSpectatorWatchPage();
+}
+
+async function loadWatchRequestsForPlayers(){
+  if(CU.role!=='user')return;
+  const snap=await db.collection('watchRequests').get();
+  const pending=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.playerId===CU.id&&r.status==='pending');
+  const list=document.getElementById('watch-request-list');
+  if(!list)return;
+  if(pending.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px">目前沒有待處理的申請</div>';return;}
+  list.innerHTML=pending.map(r=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #2a314820">
+      <div style="font-size:13px"><strong>${r.spectatorName}</strong> 想查看你的數據</div>
+      <div style="display:flex;gap:6px">
+        <button class="btn btn-primary" style="width:auto;padding:4px 12px;font-size:12px;background:var(--green);color:#000" onclick="respondWatch('${r.id}','approved')">同意</button>
+        <button class="btn-red" style="border-radius:8px;padding:4px 12px" onclick="respondWatch('${r.id}','rejected')">拒絕</button>
+      </div>
+    </div>`).join('');
+}
+
+async function respondWatch(reqId, status){
+  await db.collection('watchRequests').doc(reqId).update({status});
+  toast(status==='approved'?'已同意申請':'已拒絕申請');
+  loadWatchRequestsForPlayers();
+}
+
+async function loadSpectatorDiaries(){
+  const snap=await db.collection('diaries').get();
+  const diaries=snap.docs.map(d=>({id:d.id,...d.data()})).filter(d=>d.userId===CU.id).sort((a,b)=>b.createdAt-a.createdAt);
+  const list=document.getElementById('spectator-diary-list');
+  if(!list)return;
+  if(diaries.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">還沒有日記</div>';return;}
+  list.innerHTML=diaries.map(d=>`<div class="card" style="margin-bottom:10px"><div style="font-size:11px;color:var(--muted);margin-bottom:6px">${d.date||new Date(d.createdAt).toLocaleDateString('zh-TW')}</div><div style="font-size:13px">${d.content}</div></div>`).join('');
+}
+
+async function submitSpectatorDiary(){
+  const content=document.getElementById('spec-diary-content').value.trim();
+  if(!content)return toast('請輸入內容','error');
+  await db.collection('diaries').add({userId:CU.id,content,date:getToday(),createdAt:Date.now()});
+  document.getElementById('spec-diary-content').value='';
+  toast('日記已儲存！');
+  loadSpectatorDiaries();
+}
 
 // ── 叫囂模組 ──────────────────────────────────────────────
 let selectedJiaoColor='#e8eaf0';
