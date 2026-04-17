@@ -95,6 +95,12 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .notif-item.unread-c{background:#f05c6e10;border-left:3px solid #f05c6e}
 .notif-overlay{display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:997;background:#0005}
 .notif-overlay.open{display:block}
+.qa-item{background:var(--surface);border:1px solid var(--border);border-radius:10px;padding:14px;margin-bottom:12px}
+.qa-reply{background:var(--card);border-left:3px solid var(--border);border-radius:6px;padding:10px 12px;margin-top:8px;font-size:12px}
+.qa-mention{color:var(--accent);font-weight:700}
+.mention-dropdown{position:absolute;background:var(--card);border:1px solid var(--border);border-radius:8px;z-index:500;max-height:160px;overflow-y:auto;box-shadow:0 4px 16px #0006;min-width:160px}
+.mention-item{padding:8px 14px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px}
+.mention-item:hover{background:var(--surface)}
 </style>
 </head>
 <body>
@@ -196,10 +202,28 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       </div>
     </div>
   </div>
+  <!-- QA 專區 -->
+  <div class="card">
+    <h2>🙋 大家來問問 <span style="font-size:11px;color:var(--muted);font-weight:400">匿名或公開都可以</span></h2>
+    <div id="qa-input-area" style="display:none">
+      <div style="position:relative">
+        <textarea id="qa-text" placeholder="輸入你的問題... 輸入 @ 可以標記某人" oninput="handleQaMention(this,'qa-mention-dropdown')" onkeydown="handleMentionKey(event,'qa-mention-dropdown','qa-text')"></textarea>
+        <div id="qa-mention-dropdown" class="mention-dropdown" style="display:none"></div>
+      </div>
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px">
+        <div style="display:flex;gap:8px">
+          <button id="qa-mode-public" class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px" onclick="setQaMode('public')">👤 公開提問</button>
+          <button id="qa-mode-anon" class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--muted)" onclick="setQaMode('anon')">🐭 小老鼠</button>
+        </div>
+        <div id="qa-mode-hint" style="font-size:11px;color:var(--muted)">公開提問，所有人看得到你的名字</div>
+      </div>
+      <button class="btn btn-primary" onclick="submitQa()">送出問題 🙋</button>
+    </div>
+    <div id="qa-login-hint" style="color:var(--muted);font-size:13px;padding:6px 0;display:none">請先登入才能提問</div>
+    <div id="qa-list" style="margin-top:14px">載入中...</div>
+  </div>
 </main>
 </div>
-
-<!-- 叫囂模組頁面 -->
 <div class="page" id="page-jiaoxiao">
 <main>
   <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
@@ -500,6 +524,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <button class="tab" onclick="adminTab('history')">🗂 歷史紀錄</button>
     <button class="tab" onclick="adminTab('announce')">📢 發公告</button>
     <button class="tab" onclick="adminTab('emoji')">😊 叫囂表情</button>
+    <button class="tab" onclick="adminTab('qa')">🙋 QA管理</button>
   </div>
   <div id="atab-pending"><div class="card"><h2>⏳ 待審核名單</h2><div id="pending-list"></div></div></div>
   <div id="atab-admin-add" style="display:none">
@@ -578,6 +603,13 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div id="emoji-picker-grid" style="display:flex;flex-wrap:wrap;gap:4px">
         <!-- 由 JS 產生 -->
       </div>
+    </div>
+  </div>
+  <div id="atab-qa" style="display:none">
+    <div class="card">
+      <h2>🙋 QA 管理（管理員視角）</h2>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">匿名問題會顯示真實提問者，可以刪除任何問題或回覆</div>
+      <div id="admin-qa-list">載入中...</div>
     </div>
   </div>
   <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px;width:100%">登出管理員</button>
@@ -770,7 +802,7 @@ function toggleFaq(){const m=document.getElementById('faq-modal');m.style.displa
 function toggleRules(){const c=document.getElementById('rules-content'),a=document.getElementById('rules-arrow');if(c.style.display==='none'){c.style.display='block';a.textContent='▲ 收起';}else{c.style.display='none';a.textContent='▼ 展開';}}
 function toast(msg,type='success'){const el=document.getElementById('toast-el');el.textContent=msg;el.style.background=type==='error'?'var(--red)':'var(--green)';el.style.color='#fff';el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');}
-function goPublic(){if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubscribe=null;}showPage('public');loadPublicData();}
+function goPublic(){if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubscribe=null;}showPage('public');loadPublicData();setTimeout(initQaSection,300);}
 function updateNav(){
   const nr=document.getElementById('nav-right');
   if(CU){
@@ -1205,12 +1237,14 @@ function startNotifListener(){
     Promise.all([
       db.collection('announcements').get(),
       db.collection('playerNotifs').get(),
-      db.collection('spectatorNotifs').get()
-    ]).then(([aSnap,pSnap,sSnap])=>{
+      db.collection('spectatorNotifs').get(),
+      db.collection('mentions').get()
+    ]).then(([aSnap,pSnap,sSnap,mSnap])=>{
       const unreadA=aSnap.docs.filter(d=>d.data().createdAt>lastRead).length;
       const unreadP=CU.role==='user'?pSnap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead).length:0;
       const unreadS=CU.role==='spectator'?sSnap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead).length:0;
-      const total=unreadComments+unreadA+unreadP+unreadS;
+      const unreadM=mSnap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead).length;
+      const total=unreadComments+unreadA+unreadP+unreadS+unreadM;
       const badge=document.getElementById('notif-badge');
       if(badge){badge.textContent=total>9?'9+':total;badge.style.display=total>0?'block':'none';}
     });
@@ -1241,11 +1275,12 @@ async function loadNotifList(){
   const list=document.getElementById('notif-list');
   list.innerHTML='<div style="color:var(--muted);font-size:12px;padding:16px;text-align:center">載入中...</div>';
   const lastRead=parseInt(localStorage.getItem('notif_last_read')||'0');
-  const [announceSnap, commentSnap, playerNotifSnap, spectatorNotifSnap]=await Promise.all([
+  const [announceSnap, commentSnap, playerNotifSnap, spectatorNotifSnap, mentionSnap]=await Promise.all([
     db.collection('announcements').get(),
     db.collection('comments').get(),
     db.collection('playerNotifs').get(),
-    db.collection('spectatorNotifs').get()
+    db.collection('spectatorNotifs').get(),
+    db.collection('mentions').get()
   ]);
   const items=[];
   // 系統公告
@@ -1280,7 +1315,15 @@ async function loadNotifList(){
       }
     });
   }
-  items.sort((a,b)=>b.ts-a.ts);
+  // @ 標記通知
+  if(CU&&CU.role!=='admin'){
+    mentionSnap.docs.forEach(d=>{
+      const data=d.data();
+      if(data.targetUid===CU.id){
+        items.push({type:'mention',ts:data.createdAt,fromName:data.fromName||'某人',text:data.text,unread:data.createdAt>lastRead});
+      }
+    });
+  }
   if(items.length===0){
     list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:24px 16px;text-align:center">目前沒有通知</div>';
     return;
@@ -1331,6 +1374,18 @@ async function loadNotifList(){
           ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px"></div>':''}
         </div>
       </div>`;
+    if(item.type==='mention') return`
+      <div class="notif-item ${item.unread?'unread':''}" onclick="notifGoQa();markItemRead()" style="cursor:pointer">
+        <div style="display:flex;gap:8px;align-items:flex-start">
+          <div style="font-size:18px;flex-shrink:0">🐭</div>
+          <div style="flex:1">
+            <div style="font-size:13px;font-weight:700;margin-bottom:3px">${item.fromName} 在 QA 區 @ 了你！</div>
+            <div style="font-size:12px;color:var(--muted);line-height:1.5;font-style:italic">"${item.text}"</div>
+            <div style="font-size:10px;color:var(--muted);margin-top:5px">${time} · 點此查看 →</div>
+          </div>
+          ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px"></div>':''}
+        </div>
+      </div>`;
     const targetUid=item.targetUid||'';
     const authorName=item.author||'';
     return`
@@ -1358,6 +1413,15 @@ function markItemRead(){
     const dot=el.querySelector('div[style*="border-radius:50%"]');
     if(dot)dot.style.display='none';
   });
+}
+
+function notifGoQa(){
+  closeNotif();
+  goPublic();
+  setTimeout(()=>{
+    const qaEl=document.getElementById('qa-list');
+    if(qaEl)qaEl.scrollIntoView({behavior:'smooth'});
+  },500);
 }
 
 function notifGoAnnounce(link){
@@ -1460,6 +1524,182 @@ async function applyEmoji(emoji){
   loadEmojiAssign();
 }
 
+// ── QA 系統 ──────────────────────────────────────────────
+let qaMode='public';
+let qaUnsubscribe=null;
+let mentionCursor={textarea:null,atIndex:-1};
+
+function setQaMode(mode){
+  qaMode=mode;
+  const pub=document.getElementById('qa-mode-public');
+  const anon=document.getElementById('qa-mode-anon');
+  const hint=document.getElementById('qa-mode-hint');
+  if(mode==='public'){
+    pub.style.background='var(--accent)';pub.style.color='#000';pub.style.border='none';
+    anon.style.background='var(--surface)';anon.style.color='var(--muted)';anon.style.border='1px solid var(--border)';
+    hint.textContent='公開提問，所有人看得到你的名字';
+  } else {
+    anon.style.background='var(--accent)';anon.style.color='#000';anon.style.border='none';
+    pub.style.background='var(--surface)';pub.style.color='var(--muted)';pub.style.border='1px solid var(--border)';
+    hint.textContent='🐭 小老鼠模式，其他人看不到你是誰';
+  }
+}
+
+function handleQaMention(textarea, dropdownId){
+  const val=textarea.value;
+  const pos=textarea.selectionStart;
+  const lastAt=val.lastIndexOf('@',pos-1);
+  const dropdown=document.getElementById(dropdownId);
+  if(lastAt===-1||pos-lastAt>20){dropdown.style.display='none';return;}
+  const query=val.slice(lastAt+1,pos).toLowerCase();
+  mentionCursor={textarea,atIndex:lastAt};
+  const users=USERS_CACHE.filter(u=>u.role!=='admin'&&(u.name||u.id).toLowerCase().includes(query));
+  if(users.length===0){dropdown.style.display='none';return;}
+  dropdown.style.display='block';
+  const emojiList=DEFAULT_EMOJIS;
+  dropdown.innerHTML=users.slice(0,6).map((u,i)=>`
+    <div class="mention-item" onclick="insertMention('${u.id}','${u.name||u.id}','${dropdownId}')">
+      <span style="font-size:16px">${emojiList[i%emojiList.length]}</span>
+      <span>${u.name||u.id}</span>
+    </div>`).join('');
+}
+
+function handleMentionKey(e, dropdownId, textareaId){
+  const dropdown=document.getElementById(dropdownId);
+  if(dropdown.style.display==='none')return;
+  if(e.key==='Escape'){dropdown.style.display='none';}
+}
+
+function insertMention(uid, name, dropdownId){
+  const {textarea, atIndex}=mentionCursor;
+  if(!textarea||atIndex===-1)return;
+  const pos=textarea.selectionStart;
+  const before=textarea.value.slice(0,atIndex);
+  const after=textarea.value.slice(pos);
+  textarea.value=`${before}@${name} ${after}`;
+  textarea.focus();
+  document.getElementById(dropdownId).style.display='none';
+  mentionCursor={textarea:null,atIndex:-1};
+}
+
+function renderMentions(text){
+  return text.replace(/@(\S+)/g,'<span class="qa-mention">@$1</span>');
+}
+
+async function submitQa(){
+  if(!CU)return toast('請先登入','error');
+  const text=document.getElementById('qa-text').value.trim();
+  if(!text)return toast('請輸入問題','error');
+  // 找出被 @ 的人
+  const mentions=[...text.matchAll(/@(\S+)/g)].map(m=>m[1]);
+  const mentionedUsers=USERS_CACHE.filter(u=>mentions.includes(u.name||u.id));
+  await db.collection('qa').add({
+    text, authorId:CU.id, authorName:CU.name||CU.id,
+    anon:qaMode==='anon', createdAt:Date.now(), replies:[]
+  });
+  // 通知被 @ 的人
+  for(const u of mentionedUsers){
+    await db.collection('mentions').add({
+      targetUid:u.id, type:'qaMention',
+      fromName:qaMode==='anon'?'小老鼠':CU.name||CU.id,
+      text:text.length>40?text.slice(0,40)+'...':text,
+      createdAt:Date.now()
+    });
+  }
+  document.getElementById('qa-text').value='';
+  toast('問題已送出！');
+  loadQaList();
+}
+
+async function submitQaReply(qaId, textareaId, dropdownId){
+  if(!CU)return toast('請先登入','error');
+  const textarea=document.getElementById(textareaId);
+  const text=textarea.value.trim();
+  if(!text)return toast('請輸入回覆','error');
+  const mentions=[...text.matchAll(/@(\S+)/g)].map(m=>m[1]);
+  const mentionedUsers=USERS_CACHE.filter(u=>mentions.includes(u.name||u.id));
+  await db.collection('qaReplies').add({
+    qaId, text, authorId:CU.id, authorName:CU.name||CU.id, createdAt:Date.now()
+  });
+  // 通知被 @ 的人
+  for(const u of mentionedUsers){
+    await db.collection('mentions').add({
+      targetUid:u.id, type:'qaMention',
+      fromName:CU.name||CU.id,
+      text:text.length>40?text.slice(0,40)+'...':text,
+      createdAt:Date.now()
+    });
+  }
+  textarea.value='';
+  toast('回覆已送出！');
+  loadQaList();
+}
+
+async function deleteQa(qaId){
+  if(!confirm('確定刪除這則問題？'))return;
+  await db.collection('qa').doc(qaId).delete();
+  // 同時刪除相關回覆
+  const snap=await db.collection('qaReplies').get();
+  const replies=snap.docs.filter(d=>d.data().qaId===qaId);
+  for(const r of replies) await db.collection('qaReplies').doc(r.id).delete();
+  toast('已刪除');loadQaList();
+}
+
+async function deleteQaReply(replyId){
+  if(!confirm('確定刪除這則回覆？'))return;
+  await db.collection('qaReplies').doc(replyId).delete();
+  toast('已刪除');loadQaList();
+}
+
+async function loadQaList(isAdmin=false){
+  const listId=isAdmin?'admin-qa-list':'qa-list';
+  const list=document.getElementById(listId);
+  if(!list)return;
+  list.innerHTML='<div style="color:var(--muted);font-size:12px;padding:8px 0">載入中...</div>';
+  const [qaSnap, replySnap]=await Promise.all([
+    db.collection('qa').get(),
+    db.collection('qaReplies').get()
+  ]);
+  const questions=qaSnap.docs.map(d=>({id:d.id,...d.data()})).sort((a,b)=>b.createdAt-a.createdAt);
+  const replies=replySnap.docs.map(d=>({id:d.id,...d.data()}));
+  if(questions.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px;padding:16px;text-align:center">還沒有問題，來提第一個問題吧！</div>';return;}
+  const canDel=CU&&CU.role==='admin';
+  list.innerHTML=questions.map((q,qi)=>{
+    const displayName=q.anon&&!isAdmin?'🐭 小老鼠':(isAdmin&&q.anon?`🐭 ${q.authorName}（匿名）`:q.authorName);
+    const qReplies=replies.filter(r=>r.qaId===q.id).sort((a,b)=>a.createdAt-b.createdAt);
+    const replyTextareaId=`qa-reply-${q.id}`;
+    const replyDropdownId=`qa-reply-dropdown-${q.id}`;
+    return`<div class="qa-item">
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div style="font-size:11px;color:var(--muted)">${displayName} · ${new Date(q.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+        ${canDel?`<button onclick="deleteQa('${q.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:13px">🗑</button>`:''}
+      </div>
+      <div style="font-size:13px;line-height:1.6;margin-bottom:10px">${renderMentions(q.text)}</div>
+      ${qReplies.map(r=>`
+        <div class="qa-reply">
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+            <div style="color:var(--muted);font-size:10px">${r.authorName} · ${new Date(r.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+            ${canDel||r.authorId===CU?.id?`<button onclick="deleteQaReply('${r.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:12px">🗑</button>`:''}
+          </div>
+          <div style="font-size:12px;line-height:1.5">${renderMentions(r.text)}</div>
+        </div>`).join('')}
+      ${CU?`<div style="margin-top:10px;position:relative">
+        <textarea id="${replyTextareaId}" placeholder="回覆... 輸入 @ 標記某人" style="height:60px;font-size:12px;resize:none" oninput="handleQaMention(this,'${replyDropdownId}')" onkeydown="handleMentionKey(event,'${replyDropdownId}','${replyTextareaId}')"></textarea>
+        <div id="${replyDropdownId}" class="mention-dropdown" style="display:none"></div>
+        <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}')" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--text);font-size:12px;cursor:pointer;margin-top:4px">回覆</button>
+      </div>`:'<div style="font-size:11px;color:var(--muted);margin-top:8px">登入後才能回覆</div>'}
+    </div>`;
+  }).join('');
+}
+
+async function initQaSection(){
+  const inputArea=document.getElementById('qa-input-area');
+  const loginHint=document.getElementById('qa-login-hint');
+  if(CU){inputArea.style.display='block';loginHint.style.display='none';}
+  else{inputArea.style.display='none';loginHint.style.display='block';}
+  loadQaList(false);
+}
+
 async function submitAnnounce(){
   const title=document.getElementById('announce-title').value.trim();
   const body=document.getElementById('announce-body').value.trim();
@@ -1497,12 +1737,13 @@ async function deleteAnnounce(id){
 }
 
 function adminTab(t){
-  ['pending','admin-add','register','history','announce','emoji'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
-  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','announce','emoji'].indexOf(t)));
+  ['pending','admin-add','register','history','announce','emoji','qa'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
+  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','announce','emoji','qa'].indexOf(t)));
   if(t==='admin-add')loadPublicData();
   if(t==='history')loadHistory();
   if(t==='announce')loadAnnounceHistory();
   if(t==='emoji')loadEmojiAssign();
+  if(t==='qa')loadQaList(true);
 }
 
 async function loadActivityLog(){
