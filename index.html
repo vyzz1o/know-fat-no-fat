@@ -487,6 +487,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <button class="tab" onclick="adminTab('register')">👤 用戶管理</button>
     <button class="tab" onclick="adminTab('history')">🗂 歷史紀錄</button>
     <button class="tab" onclick="adminTab('announce')">📢 發公告</button>
+    <button class="tab" onclick="adminTab('emoji')">😊 叫囂表情</button>
   </div>
   <div id="atab-pending"><div class="card"><h2>⏳ 待審核名單</h2><div id="pending-list"></div></div></div>
   <div id="atab-admin-add" style="display:none">
@@ -535,6 +536,21 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <div class="card">
       <h2>📋 歷史公告</h2>
       <div id="announce-history-list">載入中...</div>
+    </div>
+  </div>
+  <div id="atab-emoji" style="display:none">
+    <div class="card">
+      <h2>😊 叫囂板表情管理</h2>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">為每位選手指定叫囂板上的專屬 Emoji，點擊任何 Emoji 可套用</div>
+      <div id="emoji-assign-list">載入中...</div>
+    </div>
+    <div class="card">
+      <h2>😊 Emoji 選擇器</h2>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:10px">點擊 Emoji 套用給選中的用戶</div>
+      <div id="emoji-current-target" style="font-size:13px;color:var(--accent);font-weight:700;margin-bottom:10px"></div>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;font-size:24px;line-height:1">
+        🐷 🦆 🐸 🐨 🦊 🐯 🐼 🦁 🐻 🐮 🐰 🐹 🐭 🐱 🐶 🐺 🦝 🐗 🐴 🦄 🐔 🐧 🐦 🦅 🦆 🦉 🦇 🐺 🐗 🐛 🦋 🐌 🐜 🐝 🪲 🐞 🦗 🦂 🐢 🐍 🦎 🦖 🦕 🐊 🐸 🐲 🌵 🎃 👻 💀 🤡 👽 🤖 🎯 🔥 💥 ⚡ 🌈 🍕 🍔 🍩 🍦 🎂 🏆 🥇 💪 🦾 🧠 👁 👅 🫀 🦷 🦴 🫁
+      </div>
     </div>
   </div>
   <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px;width:100%">登出管理員</button>
@@ -653,12 +669,12 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       </div>
       <div style="color:#f05c6e;font-weight:700;margin-bottom:6px">📣 叫囂模組</div>
       <div style="color:var(--muted);margin-bottom:16px">
-        <div>• 分為「公開大剪貼簿」和「個人叫囂板」兩個區域</div>
-        <div>• <strong style="color:var(--text)">公開大剪貼簿</strong>：對所有人廣播，留言隨機散落在畫布上，可以重疊，像真的剪貼簿</div>
-        <div>• <strong style="color:var(--text)">個人叫囂板</strong>：選擇特定對象，在他的個人板上留言，所有人都看得到</div>
-        <div>• 可調整文字大小、顏色、隨機傾斜角度</div>
+        <div>• 首頁點「It's 叫囂 Time」進入</div>
+        <div>• 選擇想叫囂的對象，在他的個人板上留言，所有人都看得到</div>
+        <div>• 可調整文字大小、顏色（白紅橘黃綠藍紫）、粗體、隨機傾斜</div>
         <div>• 需要登入才能留言；未登入可以觀看</div>
-        <div>• 管理員可以刪除任何留言</div>
+        <div>• 自己發的留言可以自己刪；管理員可以刪除任何留言</div>
+        <div>• 進入叫囂模組可看到「叫囂王排行榜」，統計誰最愛主動嗆人</div>
       </div>
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">🔐 登入</div>
       <div style="color:var(--muted);margin-bottom:16px">
@@ -1064,11 +1080,13 @@ function startNotifListener(){
     notifInitialized=true;
     Promise.all([
       db.collection('announcements').get(),
-      db.collection('playerNotifs').get()
-    ]).then(([aSnap,pSnap])=>{
+      db.collection('playerNotifs').get(),
+      db.collection('spectatorNotifs').get()
+    ]).then(([aSnap,pSnap,sSnap])=>{
       const unreadA=aSnap.docs.filter(d=>d.data().createdAt>lastRead).length;
       const unreadP=CU.role==='user'?pSnap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead).length:0;
-      const total=unreadComments+unreadA+unreadP;
+      const unreadS=CU.role==='spectator'?sSnap.docs.filter(d=>d.data().targetUid===CU.id&&d.data().createdAt>lastRead).length:0;
+      const total=unreadComments+unreadA+unreadP+unreadS;
       const badge=document.getElementById('notif-badge');
       if(badge){badge.textContent=total>9?'9+':total;badge.style.display=total>0?'block':'none';}
     });
@@ -1196,6 +1214,61 @@ async function loadNotifList(){
   }).join('');
 }
 
+// ── Emoji 管理 ──────────────────────────────────────────────
+let emojiTargetId=null;
+const DEFAULT_EMOJIS=['🐷','🦆','🐸','🐨','🦊','🐯','🐼','🦁','🐻','🐮','🐰','🐹','🐭','🐱','🐶','🐺'];
+
+async function loadEmojiAssign(){
+  const list=document.getElementById('emoji-assign-list');
+  list.innerHTML='<div style="color:var(--muted);font-size:12px">載入中...</div>';
+  const [userSnap,emojiSnap]=await Promise.all([
+    db.collection('users').get(),
+    db.collection('userEmojis').get()
+  ]);
+  const users=userSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role!=='admin');
+  const emojiMap={};
+  emojiSnap.docs.forEach(d=>{emojiMap[d.id]=d.data().emoji;});
+  list.innerHTML=users.map((u,i)=>{
+    const emoji=emojiMap[u.id]||DEFAULT_EMOJIS[i%DEFAULT_EMOJIS.length];
+    const roleTag=u.role==='spectator'?'<span style="color:#5b9cf6;font-size:10px"> 👀</span>':'';
+    return`<div style="display:flex;align-items:center;justify-content:space-between;padding:10px 0;border-bottom:1px solid #2a314820">
+      <div style="display:flex;align-items:center;gap:12px">
+        <div style="font-size:28px">${emoji}</div>
+        <div style="font-size:13px;font-weight:600">${u.name||u.id}${roleTag}</div>
+      </div>
+      <button onclick="selectEmojiTarget('${u.id}','${u.name||u.id}')" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--muted);font-size:12px;cursor:pointer">更換</button>
+    </div>`;
+  }).join('');
+
+  // 綁定 Emoji 選擇器點擊事件
+  const picker=document.querySelector('#atab-emoji .card:nth-child(2) div:last-child');
+  if(picker){
+    picker.onclick=async(e)=>{
+      const emoji=[...e.target.textContent.trim()][0];
+      if(!emoji||!emojiTargetId)return;
+      await db.collection('userEmojis').doc(emojiTargetId).set({emoji});
+      toast(`已更新！`);
+      document.getElementById('emoji-current-target').textContent='';
+      emojiTargetId=null;
+      loadEmojiAssign();
+    };
+  }
+}
+
+function selectEmojiTarget(uid,name){
+  emojiTargetId=uid;
+  document.getElementById('emoji-current-target').textContent=`正在為 ${name} 選擇 Emoji，點擊下方任一個套用`;
+  document.querySelector('#atab-emoji .card:nth-child(2)').scrollIntoView({behavior:'smooth'});
+}
+
+async function getUserEmoji(uid, index){
+  try{
+    const snap=await db.collection('userEmojis').doc(uid).get();
+    if(snap.exists)return snap.data().emoji;
+  }catch(e){}
+  return DEFAULT_EMOJIS[index%DEFAULT_EMOJIS.length];
+}
+
 async function submitAnnounce(){
   const title=document.getElementById('announce-title').value.trim();
   const body=document.getElementById('announce-body').value.trim();
@@ -1231,11 +1304,12 @@ async function deleteAnnounce(id){
 }
 
 function adminTab(t){
-  ['pending','admin-add','register','history','announce'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
-  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','announce'].indexOf(t)));
+  ['pending','admin-add','register','history','announce','emoji'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
+  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','announce','emoji'].indexOf(t)));
   if(t==='admin-add')loadPublicData();
   if(t==='history')loadHistory();
   if(t==='announce')loadAnnounceHistory();
+  if(t==='emoji')loadEmojiAssign();
 }
 
 async function loadActivityLog(){
@@ -1821,20 +1895,28 @@ async function loadJiaoTargets(){
       </div>`).join('');
   }
 
-  // 渲染選人格子
-  const emojis=['🐷','🦆','🐸','🐨','🦊','🐯','🐼','🦁','🐻','🐮','🐰','🐹'];
-  // 計算每個人被叫囂次數（targetUid）
+  // 計算每個人被叫囂次數
   const targetCountMap={};
   commentSnap.docs.forEach(d=>{
     const uid=d.data().targetUid;
-    if(uid) targetCountMap[uid]=(targetCountMap[uid]||0)+1;
+    if(uid)targetCountMap[uid]=(targetCountMap[uid]||0)+1;
   });
-  grid.innerHTML=users.map((u,i)=>`
-    <div class="target-avatar" id="tav-${u.id}" onclick="selectJiaoTarget('${u.id}','${u.name||u.id}','${emojis[i%emojis.length]}')">
-      <div style="font-size:28px">${emojis[i%emojis.length]}</div>
+
+  // 載入自訂 Emoji
+  const emojiSnap=await db.collection('userEmojis').get();
+  const emojiMap={};
+  emojiSnap.docs.forEach(d=>{emojiMap[d.id]=d.data().emoji;});
+
+  // 渲染選人格子（附上被叫囂次數）
+  const emojis=DEFAULT_EMOJIS;
+  grid.innerHTML=users.map((u,i)=>{
+    const emoji=emojiMap[u.id]||emojis[i%emojis.length];
+    return`<div class="target-avatar" id="tav-${u.id}" onclick="selectJiaoTarget('${u.id}','${u.name||u.id}','${emoji}')">
+      <div style="font-size:28px">${emoji}</div>
       <div class="av-name">${u.name||u.id}</div>
-      <div class="av-rank">${targetCountMap[u.id]?`💢 ${targetCountMap[u.id]} 則`:'還沒被嗆'}</div>
-    </div>`).join('');
+      <div class="av-rank">${targetCountMap[u.id]?'💢 '+targetCountMap[u.id]+' 則':'還沒被嗆'}</div>
+    </div>`;
+  }).join('');
 }
 
 function selectJiaoTarget(uid, name, emoji){
