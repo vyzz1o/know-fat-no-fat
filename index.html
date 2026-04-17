@@ -1166,9 +1166,10 @@ async function loadNotifList(){
             <div style="font-size:12px;color:var(--muted)">${item.status==='approved'?'前往「申請觀看」可查看完整數據':'可重新申請或聯絡對方'}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${time}</div>
           </div>
-          ${item.unread?`<div style="width:7px;height:7px;border-radius:50%;background:${item.status==='approved'?'var(--green)':'var(--red)'};flex-shrink:0;margin-top:4px"></div>`:''}
+          ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:4px"></div>':''}
         </div>
       </div>`;
+    if(item.type==='watchRequest') return`
       <div class="notif-item ${item.unread?'unread':''}">
         <div style="display:flex;gap:8px;align-items:flex-start">
           <div style="font-size:18px;flex-shrink:0">👀</div>
