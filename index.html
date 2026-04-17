@@ -334,6 +334,11 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">以下監視者申請查看你的詳細數據</div>
       <div id="watch-request-list">載入中...</div>
     </div>
+    <div class="card">
+      <h2>✅ 已授權的監視者</h2>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:12px">以下監視者可以查看你的完整數據，點刪除可以撤銷授權</div>
+      <div id="approved-spectator-list">載入中...</div>
+    </div>
   </div>
   <button class="btn btn-ghost" onclick="logout()" style="margin-top:20px;width:100%">安全登出</button>
 </main>
@@ -1046,7 +1051,30 @@ function userTab(t){
   ['mydata','addrecord','diary','profile'].forEach(tab=>document.getElementById('utab-'+tab).style.display=tab===t?'block':'none');
   document.querySelectorAll('#user-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['mydata','addrecord','diary','profile'].indexOf(t)));
   if(t==='diary')loadUserDiaries();
-  if(t==='profile')loadWatchRequestsForPlayers();
+  if(t==='profile'){loadWatchRequestsForPlayers();loadApprovedSpectators();}
+}
+
+async function loadApprovedSpectators(){
+  const list=document.getElementById('approved-spectator-list');
+  if(!list)return;
+  const snap=await db.collection('watchRequests').get();
+  const approved=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.playerId===CU.id&&r.status==='approved');
+  if(approved.length===0){list.innerHTML='<div style="color:var(--muted);font-size:13px">目前沒有已授權的監視者</div>';return;}
+  list.innerHTML=approved.map(r=>`
+    <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #2a314820">
+      <div style="display:flex;align-items:center;gap:10px">
+        <div style="font-size:20px">👀</div>
+        <div style="font-size:13px;font-weight:600">${r.spectatorName}</div>
+      </div>
+      <button class="btn-red" style="border-radius:8px;padding:4px 12px;font-size:12px" onclick="revokeSpectator('${r.id}','${r.spectatorName}')">撤銷授權</button>
+    </div>`).join('');
+}
+
+async function revokeSpectator(reqId, name){
+  if(!confirm(`確定撤銷 ${name} 的查看權限？`))return;
+  await db.collection('watchRequests').doc(reqId).update({status:'revoked'});
+  toast(`已撤銷 ${name} 的授權`);
+  loadApprovedSpectators();
 }
 // ── 通知系統 ──────────────────────────────────────────────
 let notifUnsubscribe=null;
