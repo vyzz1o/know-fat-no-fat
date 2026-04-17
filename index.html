@@ -507,6 +507,11 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <input type="number" step="1" id="admin-rec-visceral" placeholder="內臟脂肪程度">
       <input type="number" step="1" id="admin-rec-bmr" placeholder="基礎代謝量 (kcal)">
       <input type="number" step="1" id="admin-rec-bodyage" placeholder="身體年齡">
+      <label style="margin-bottom:4px">納入計分</label>
+      <select id="admin-rec-scoring" style="margin-bottom:10px">
+        <option value="1">✅ 納入比賽計分（官方數據）</option>
+        <option value="0">📋 僅供參考（不影響排名）</option>
+      </select>
       <button class="btn btn-primary" onclick="adminSubmitRecord()">錄入發佈</button>
     </div>
   </div>
@@ -799,7 +804,7 @@ async function loadPublicData(){
     document.getElementById('prize-count').textContent=currentUsers.length;
     const rSnap=await db.collection('records').where('status','==','approved').get();
     const adminRecords={};
-    rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered&&!r.isSpectator){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
+    rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered&&!r.isSpectator&&r.forScoring!==false){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
     Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
     let winners=0;
     const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
@@ -1028,6 +1033,8 @@ async function adminSubmitRecord(){
   const isSpectator=selectedOption&&selectedOption.dataset.role==='spectator';
   const w=document.getElementById('admin-rec-weight').value,f=document.getElementById('admin-rec-bodyfat').value,d=document.getElementById('admin-rec-date').value;
   const subcut=document.getElementById('admin-rec-subcut').value,muscle=document.getElementById('admin-rec-muscle').value,visceral=document.getElementById('admin-rec-visceral').value,bmr=document.getElementById('admin-rec-bmr').value,bodyage=document.getElementById('admin-rec-bodyage').value;
+  const scoringVal=document.getElementById('admin-rec-scoring').value;
+  const forScoring=scoringVal==='1'&&!isSpectator; // 監視者永遠不計分
   if(!w||!f||!d)return toast('請填寫所有欄位','error');
   await db.collection('records').add({
     userId:tid,weight:parseFloat(w),bodyFat:parseFloat(f),
@@ -1036,9 +1043,12 @@ async function adminSubmitRecord(){
     bodyage:bodyage?parseFloat(bodyage):null,
     date:d,status:'approved',adminEntered:true,
     isSpectator:isSpectator||false,
+    forScoring, // true = 納入計分, false = 僅供參考
     createdAt:Date.now()
   });
-  toast(isSpectator?'已為監視者錄入（不計入比賽）':'已錄入');
+  if(isSpectator) toast('已為監視者錄入（不計入比賽）');
+  else if(forScoring) toast('✅ 已錄入並納入比賽計分！');
+  else toast('📋 已錄入（僅供參考，不影響排名）');
   loadPublicData();
 }
 function saveProfile(){db.collection('users').doc(CU.id).update({name:document.getElementById('profile-name').value});toast("更新成功");loadPublicData();}
