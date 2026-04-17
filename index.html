@@ -788,8 +788,9 @@ function calculateFullStats(recs){
 async function loadPublicData(){
   try{
     const uSnap=await db.collection('users').get();
-    const currentUsers=uSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
-    USERS_CACHE=currentUsers;
+    const allUsers=uSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role!=='admin');
+    const currentUsers=allUsers.filter(u=>u.role==='user');
+    USERS_CACHE=allUsers; // 包含選手和監視者
     document.getElementById('prize-count').textContent=currentUsers.length;
     const rSnap=await db.collection('records').where('status','==','approved').get();
     const adminRecords={};
@@ -1734,31 +1735,26 @@ async function loadWatchRequestsForPlayers(){
     <div style="display:flex;justify-content:space-between;align-items:center;padding:10px 0;border-bottom:1px solid #2a314820">
       <div style="font-size:13px"><strong>${r.spectatorName}</strong> 想查看你的數據</div>
       <div style="display:flex;gap:6px">
-        <button class="btn btn-primary" style="width:auto;padding:4px 12px;font-size:12px;background:var(--green);color:#000" onclick="respondWatch('${r.id}','approved')">同意</button>
-        <button class="btn-red" style="border-radius:8px;padding:4px 12px" onclick="respondWatch('${r.id}','rejected')">拒絕</button>
+        <button class="btn btn-primary" style="width:auto;padding:4px 12px;font-size:12px;background:var(--green);color:#000" onclick="respondWatch('${r.id}','approved','${r.spectatorId}','${r.spectatorName}')">同意</button>
+        <button class="btn-red" style="border-radius:8px;padding:4px 12px" onclick="respondWatch('${r.id}','rejected','${r.spectatorId}','${r.spectatorName}')">拒絕</button>
       </div>
     </div>`).join('');
 }
 
-async function respondWatch(reqId, status){
-  const reqSnap=await db.collection('watchRequests').doc(reqId).get();
-  const req=reqSnap.data();
-  console.log('respondWatch req data:', req);
+async function respondWatch(reqId, status, spectatorId, spectatorName){
   await db.collection('watchRequests').doc(reqId).update({status});
-  if(req&&req.spectatorId){
-    const notifData={
-      targetUid:req.spectatorId,
+  if(spectatorId){
+    await db.collection('spectatorNotifs').add({
+      targetUid:spectatorId,
       type:'watchResponse',
       playerName:CU.name||CU.id,
       playerId:CU.id,
       status,
       createdAt:Date.now()
-    };
-    console.log('寫入 spectatorNotifs:', notifData);
-    await db.collection('spectatorNotifs').add(notifData);
-    toast(status==='approved'?'已同意申請，通知已送出':'已拒絕申請');
+    });
+    toast(status==='approved'?`已同意 ${spectatorName} 的申請！`:`已拒絕 ${spectatorName} 的申請`);
   } else {
-    console.error('找不到 spectatorId，req=', req);
+    console.error('找不到 spectatorId！reqId=',reqId);
     toast(status==='approved'?'已同意申請':'已拒絕申請');
   }
   loadWatchRequestsForPlayers();
