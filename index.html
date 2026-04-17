@@ -548,6 +548,16 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <input id="announce-title" placeholder="例：新功能上線！叫囂模組更新">
       <label>公告內容</label>
       <textarea id="announce-body" placeholder="詳細說明..."></textarea>
+      <label>點擊通知後導向</label>
+      <select id="announce-link" style="margin-bottom:10px">
+        <option value="">無（只看不跳轉）</option>
+        <option value="checkin">⭐ 每日打卡</option>
+        <option value="diary">📔 私人日記</option>
+        <option value="jiaoxiao">📣 叫囂模組</option>
+        <option value="mydata">📊 我的數據</option>
+        <option value="addrecord">➕ 新增測量</option>
+        <option value="profile">👤 設定</option>
+      </select>
       <button class="btn btn-primary" onclick="submitAnnounce()">發布公告 📢</button>
     </div>
     <div class="card">
@@ -1241,7 +1251,7 @@ async function loadNotifList(){
   // 系統公告
   announceSnap.docs.forEach(d=>{
     const data=d.data();
-    items.push({type:'announce',ts:data.createdAt,title:data.title,body:data.body,unread:data.createdAt>lastRead});
+    items.push({type:'announce',ts:data.createdAt,title:data.title,body:data.body,link:data.link||'',unread:data.createdAt>lastRead});
   });
   // 被叫囂通知
   if(CU&&CU.role!=='admin'){
@@ -1277,18 +1287,24 @@ async function loadNotifList(){
   }
   list.innerHTML=items.map(item=>{
     const time=new Date(item.ts).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
-    if(item.type==='announce') return`
-      <div class="notif-item ${item.unread?'unread':''}" onclick="markItemRead()" style="cursor:default">
+    if(item.type==='announce'){
+      const hasLink=item.link&&item.link!=='';
+      const linkLabels={checkin:'前往每日打卡 →',diary:'前往私人日記 →',jiaoxiao:'前往叫囂模組 →',mydata:'前往我的數據 →',addrecord:'前往新增測量 →',profile:'前往設定 →'};
+      const linkLabel=hasLink?(linkLabels[item.link]||'查看 →'):'';
+      return`
+      <div class="notif-item ${item.unread?'unread':''}" onclick="${hasLink?`notifGoAnnounce('${item.link}');markItemRead()`:'markItemRead()'}" style="cursor:${hasLink?'pointer':'default'}">
         <div style="display:flex;gap:8px;align-items:flex-start">
           <div style="font-size:18px;flex-shrink:0">📢</div>
           <div style="flex:1">
             <div style="font-size:13px;font-weight:700;margin-bottom:3px">${item.title}</div>
             <div style="font-size:12px;color:var(--muted);line-height:1.5">${item.body}</div>
-            <div style="font-size:10px;color:var(--muted);margin-top:5px">${time}</div>
+            ${hasLink?`<div style="font-size:10px;color:var(--accent);margin-top:4px">${linkLabel}</div>`:''}
+            <div style="font-size:10px;color:var(--muted);margin-top:3px">${time}</div>
           </div>
           ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--accent);flex-shrink:0;margin-top:4px"></div>':''}
         </div>
       </div>`;
+    }
     if(item.type==='watchResponse') return`
       <div class="notif-item ${item.unread?'unread':''}" onclick="notifGoWatch();markItemRead()" style="cursor:pointer">
         <div style="display:flex;gap:8px;align-items:flex-start">
@@ -1342,6 +1358,25 @@ function markItemRead(){
     const dot=el.querySelector('div[style*="border-radius:50%"]');
     if(dot)dot.style.display='none';
   });
+}
+
+function notifGoAnnounce(link){
+  closeNotif();
+  if(!link)return;
+  if(link==='checkin'){showCheckin();return;}
+  if(link==='jiaoxiao'){openJiaoxiao();return;}
+  if(CU.role==='spectator'){
+    showPage('spectator');
+    if(link==='diary')setTimeout(()=>spectatorTab('diary'),100);
+    else if(link==='mydata')setTimeout(()=>spectatorTab('mydata'),100);
+    else if(link==='addrecord')setTimeout(()=>spectatorTab('addrecord'),100);
+  } else {
+    showPage('user');
+    if(link==='diary')setTimeout(()=>userTab('diary'),100);
+    else if(link==='mydata')setTimeout(()=>userTab('mydata'),100);
+    else if(link==='addrecord')setTimeout(()=>userTab('addrecord'),100);
+    else if(link==='profile')setTimeout(()=>userTab('profile'),100);
+  }
 }
 
 function notifGoJiao(targetUid, authorName){
@@ -1428,10 +1463,12 @@ async function applyEmoji(emoji){
 async function submitAnnounce(){
   const title=document.getElementById('announce-title').value.trim();
   const body=document.getElementById('announce-body').value.trim();
+  const link=document.getElementById('announce-link').value;
   if(!title||!body)return toast('請填寫標題和內容','error');
-  await db.collection('announcements').add({title,body,createdAt:Date.now(),authorId:'admin'});
+  await db.collection('announcements').add({title,body,link,createdAt:Date.now(),authorId:'admin'});
   document.getElementById('announce-title').value='';
   document.getElementById('announce-body').value='';
+  document.getElementById('announce-link').value='';
   toast('公告已發送！📢');
   loadAnnounceHistory();
 }
