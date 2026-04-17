@@ -1066,14 +1066,24 @@ async function loadApprovedSpectators(){
         <div style="font-size:20px">👀</div>
         <div style="font-size:13px;font-weight:600">${r.spectatorName}</div>
       </div>
-      <button class="btn-red" style="border-radius:8px;padding:4px 12px;font-size:12px" onclick="revokeSpectator('${r.id}','${r.spectatorName}')">撤銷授權</button>
+      <button class="btn-red" style="border-radius:8px;padding:4px 12px;font-size:12px" onclick="revokeSpectator('${r.id}','${r.spectatorName}','${r.spectatorId}')">撤銷授權</button>
     </div>`).join('');
 }
 
-async function revokeSpectator(reqId, name){
+async function revokeSpectator(reqId, name, spectatorId){
   if(!confirm(`確定撤銷 ${name} 的查看權限？`))return;
-  await db.collection('watchRequests').doc(reqId).update({status:'revoked'});
-  toast(`已撤銷 ${name} 的授權`);
+  await db.collection('watchRequests').doc(reqId).delete();
+  if(spectatorId){
+    await db.collection('spectatorNotifs').add({
+      targetUid:spectatorId,
+      type:'watchResponse',
+      playerName:CU.name||CU.id,
+      playerId:CU.id,
+      status:'revoked',
+      createdAt:Date.now()
+    });
+  }
+  toast(`已撤銷 ${name} 的授權，對方可重新申請`);
   loadApprovedSpectators();
 }
 // ── 通知系統 ──────────────────────────────────────────────
@@ -1211,10 +1221,12 @@ async function loadNotifList(){
     if(item.type==='watchResponse') return`
       <div class="notif-item ${item.unread?'unread':''}">
         <div style="display:flex;gap:8px;align-items:flex-start">
-          <div style="font-size:18px;flex-shrink:0">${item.status==='approved'?'✅':'❌'}</div>
+          <div style="font-size:18px;flex-shrink:0">${item.status==='approved'?'✅':item.status==='revoked'?'🚫':'❌'}</div>
           <div style="flex:1">
-            <div style="font-size:13px;font-weight:700;margin-bottom:3px">${item.playerName} ${item.status==='approved'?'同意了你的申請！':'拒絕了你的申請'}</div>
-            <div style="font-size:12px;color:var(--muted)">${item.status==='approved'?'前往「申請觀看」可查看完整數據':'可重新申請或聯絡對方'}</div>
+            <div style="font-size:13px;font-weight:700;margin-bottom:3px">
+              ${item.status==='approved'?`${item.playerName} 同意了你的申請！`:item.status==='revoked'?`${item.playerName} 撤銷了你的查看權限`:`${item.playerName} 拒絕了你的申請`}
+            </div>
+            <div style="font-size:12px;color:var(--muted)">${item.status==='approved'?'前往「申請觀看」可查看完整數據':item.status==='revoked'?'授權已被撤銷，可重新申請':'可重新前往叫囂模組申請'}</div>
             <div style="font-size:10px;color:var(--muted);margin-top:5px">${time}</div>
           </div>
           ${item.unread?'<div style="width:7px;height:7px;border-radius:50%;background:var(--green);flex-shrink:0;margin-top:4px"></div>':''}
@@ -1735,8 +1747,11 @@ async function loadSpectatorWatchPage(){
 
 async function requestWatch(playerId, playerName){
   const reqSnap=await db.collection('watchRequests').get();
-  const exists=reqSnap.docs.find(d=>d.data().spectatorId===CU.id&&d.data().playerId===playerId);
-  if(exists){toast('已經申請過了','error');return;}
+  const exists=reqSnap.docs.find(d=>d.data().spectatorId===CU.id&&d.data().playerId===playerId&&(d.data().status==='pending'||d.data().status==='approved'));
+  if(exists){
+    toast(exists.data().status==='pending'?'已申請過，等待回覆中':'已獲得授權，無需重新申請','error');
+    return;
+  }
   await db.collection('watchRequests').add({
     spectatorId:CU.id, spectatorName:CU.name||CU.id,
     playerId, playerName, status:'pending', createdAt:Date.now()
@@ -1769,7 +1784,12 @@ async function loadWatchRequestsForPlayers(){
 }
 
 async function respondWatch(reqId, status, spectatorId, spectatorName){
-  await db.collection('watchRequests').doc(reqId).update({status});
+  if(status==='approved'){
+    await db.collection('watchRequests').doc(reqId).update({status});
+  } else {
+    // 拒絕就刪掉，讓監視者可以重新申請
+    await db.collection('watchRequests').doc(reqId).delete();
+  }
   if(spectatorId){
     await db.collection('spectatorNotifs').add({
       targetUid:spectatorId,
@@ -1779,12 +1799,12 @@ async function respondWatch(reqId, status, spectatorId, spectatorName){
       status,
       createdAt:Date.now()
     });
-    toast(status==='approved'?`已同意 ${spectatorName} 的申請！`:`已拒絕 ${spectatorName} 的申請`);
+    toast(status==='approved'?`已同意 ${spectatorName} 的申請！`:`已拒絕 ${spectatorName} 的申請，對方可重新申請`);
   } else {
-    console.error('找不到 spectatorId！reqId=',reqId);
     toast(status==='approved'?'已同意申請':'已拒絕申請');
   }
   loadWatchRequestsForPlayers();
+  loadApprovedSpectators();
 }
 
 async function loadSpectatorDiaries(){
