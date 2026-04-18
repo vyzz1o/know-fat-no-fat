@@ -1834,7 +1834,7 @@ async function loadAdminVoteResult(){
   const totalPlayers=players.length;
   const allVoted=total>=totalPlayers&&totalPlayers>0;
   const passed=yesPct>=80&&allVoted;
-  const choiceLabel={yes:'✅ 同意新規則',no:'❌ 照舊',later:'🤔 再想一下'};
+  const notVotedCount=totalPlayers-total-laterVotes.length;
   const choiceColor={yes:'var(--green)',no:'var(--red)',later:'var(--muted)'};
   el.innerHTML=`
     <div style="margin-bottom:16px">
@@ -1845,7 +1845,7 @@ async function loadAdminVoteResult(){
       <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
         <div class="stat-box"><div class="stat-label">✅ 同意</div><div class="stat-val" style="color:var(--green)">${yesVotes.length} 人</div></div>
         <div class="stat-box"><div class="stat-label">❌ 照舊</div><div class="stat-val" style="color:var(--red)">${noVotes.length} 人</div></div>
-        <div class="stat-box"><div class="stat-label">⏳ 未決定</div><div class="stat-val" style="color:var(--muted)">${notVoted.length+laterVotes.length} 人</div></div>
+        <div class="stat-box"><div class="stat-label">⏳ 未決定</div><div class="stat-val" style="color:var(--muted)">${notVotedCount+laterVotes.length} 人</div></div>
       </div>
       <div style="font-size:12px;color:${passed?'var(--green)':yesPct>=80?'var(--accent)':'var(--red)'};font-weight:700;text-align:center;padding:8px;background:${passed?'#4cde8f18':yesPct>=80?'#f5a62318':'#f05c6e18'};border-radius:8px">
         ${passed?'✅ 全員已投票且達 80% 同意，可以改規則！':yesPct>=80&&!allVoted?`同意已達 80%，但還有 ${totalPlayers-total} 人尚未投票`:allVoted?`全員已投票，但同意未達 80%（目前 ${yesPct}%）`:`還有 ${totalPlayers-total} 人尚未投票，同意目前 ${yesPct}%`}
