@@ -992,6 +992,7 @@ function updateNav(){
   if(CU){
     nr.innerHTML=`<div style="display:flex;align-items:center;gap:8px">
       <button onclick="showCheckin()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;color:var(--accent);font-size:16px;cursor:pointer" title="每日打卡">⭐</button>
+      <button onclick="openWorkoutPage()" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 10px;font-size:16px;cursor:pointer" title="今日訓練" id="workout-nav-btn">🎁</button>
       <button class="notif-bell" onclick="openNotif()" title="通知">🔔<span class="notif-badge" id="notif-badge"></span></button>
       <button class="btn btn-primary" style="width:auto;padding:5px 14px;font-size:12px" onclick="goDashboard()">👤 ${CU.name||CU.id}</button>
     </div>`;
@@ -1985,6 +1986,9 @@ async function loadWorkout(){
   const todayData=myWorkout.days[`day${cycleDay}`];
   const openedKey=`workout_opened_${CU.id}_${today.toDateString()}`;
   const alreadyOpened=localStorage.getItem(openedKey);
+  // 更新右上角按鈕圖示
+  const navBtn=document.getElementById('workout-nav-btn');
+  if(navBtn)navBtn.textContent=alreadyOpened?'📬':'🎁';
   if(alreadyOpened){
     document.getElementById('gift-box-area').style.display='none';
     showTodayWorkout(todayData,cycleDay);
@@ -2002,6 +2006,8 @@ function openGift(todayData,cycleDay,openedKey){
   box.classList.add('opened');
   box.onclick=null;
   localStorage.setItem(openedKey,'1');
+  const navBtn=document.getElementById('workout-nav-btn');
+  if(navBtn)navBtn.textContent='📬';
   setTimeout(()=>{
     document.getElementById('gift-box-area').style.display='none';
     showTodayWorkout(todayData,cycleDay);
