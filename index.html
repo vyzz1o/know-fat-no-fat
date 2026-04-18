@@ -129,7 +129,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <!-- 原因說明 -->
     <div style="background:var(--surface);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.7">
       <div style="font-weight:700;color:var(--accent);margin-bottom:6px">💡 為什麼要改？</div>
-      <div style="color:var(--muted)">目前體重下降率（30%）對天生體重基數小的人不太公平。骨骼肌上升率更能反映「真正在減脂而非減肌肉」的努力，也更符合比賽精神。</div>
+      <div style="color:var(--muted)">現行規則中，體重下降率佔 30% 的比重，但體重其實不是衡量減脂效果最好的指標。<br><br>有些人認真運動、肌肉增加，體重反而沒掉多少，在現行規則下會吃虧。相反地，只靠節食快速掉體重的人，可能肌肉也跟著流失，總分高，但身體更糟。<br><br>新規則改以骨骼肌上升率取代體重降幅，讓「有認真運動」的人能被看見，也讓評分更貼近減脂的真正目標。</div>
     </div>
 
     <!-- 新舊規則對比 -->
@@ -637,6 +637,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <button class="tab" onclick="adminTab('announce')">📢 發公告</button>
     <button class="tab" onclick="adminTab('emoji')">😊 叫囂表情</button>
     <button class="tab" onclick="adminTab('qa')">🙋 QA管理</button>
+    <button class="tab" onclick="adminTab('voteresult')">📊 投票結果</button>
   </div>
   <div id="atab-pending"><div class="card"><h2>⏳ 待審核名單</h2><div id="pending-list"></div></div></div>
   <div id="atab-admin-add" style="display:none">
@@ -718,7 +719,12 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       </div>
     </div>
   </div>
-  <div id="atab-qa" style="display:none">
+  <div id="atab-voteresult" style="display:none">
+    <div class="card">
+      <h2>📊 規則投票結果（管理員視角）</h2>
+      <div id="admin-vote-result">載入中...</div>
+    </div>
+  </div>
     <div class="card">
       <h2>🙋 QA 管理（管理員視角）</h2>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">匿名問題會顯示真實提問者，可以刪除任何問題或回覆</div>
@@ -1740,7 +1746,66 @@ function openVoteModal(){
   loadVoteData();
 }
 
-// ── QA 系統 ──────────────────────────────────────────────
+async function loadAdminVoteResult(){
+  const el=document.getElementById('admin-vote-result');
+  if(!el)return;
+  el.innerHTML='<div style="color:var(--muted);font-size:12px">載入中...</div>';
+  const [voteSnap,userSnap]=await Promise.all([
+    db.collection('votes').get(),
+    db.collection('users').get()
+  ]);
+  const votes=voteSnap.docs.map(d=>({id:d.id,...d.data()}));
+  const users=userSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role!=='admin');
+  const players=users.filter(u=>u.role==='user');
+  const spectators=users.filter(u=>u.role==='spectator');
+  const playerVotes=votes.filter(v=>v.role==='user');
+  const specVotes=votes.filter(v=>v.role==='spectator');
+  const yesVotes=playerVotes.filter(v=>v.choice==='yes');
+  const noVotes=playerVotes.filter(v=>v.choice==='no');
+  const laterVotes=playerVotes.filter(v=>v.choice==='later');
+  const total=yesVotes.length+noVotes.length;
+  const yesPct=total>0?Math.round(yesVotes.length/total*100):0;
+  const notVoted=players.filter(p=>!playerVotes.find(v=>v.userId===p.id));
+  const choiceLabel={yes:'✅ 同意新規則',no:'❌ 照舊',later:'🤔 再想一下'};
+  const choiceColor={yes:'var(--green)',no:'var(--red)',later:'var(--muted)'};
+  el.innerHTML=`
+    <div style="margin-bottom:16px">
+      <div style="display:flex;height:24px;border-radius:8px;overflow:hidden;background:#f05c6e22;margin-bottom:8px">
+        <div style="width:${yesPct}%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;transition:width 0.4s">${yesPct>10?yesPct+'%':''}</div>
+        <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--red)">${100-yesPct>10?(100-yesPct)+'%':''}</div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+        <div class="stat-box"><div class="stat-label">✅ 同意</div><div class="stat-val" style="color:var(--green)">${yesVotes.length} 人</div></div>
+        <div class="stat-box"><div class="stat-label">❌ 照舊</div><div class="stat-val" style="color:var(--red)">${noVotes.length} 人</div></div>
+        <div class="stat-box"><div class="stat-label">⏳ 未決定</div><div class="stat-val" style="color:var(--muted)">${notVoted.length+laterVotes.length} 人</div></div>
+      </div>
+      <div style="font-size:12px;color:${yesPct>=80?'var(--green)':'var(--accent)'};font-weight:700;text-align:center;padding:8px;background:${yesPct>=80?'#4cde8f18':'#f5a62318'};border-radius:8px">
+        ${yesPct>=80?'✅ 已達 80% 門檻，可以改規則！':`需要 80% 同意才通過（目前 ${yesPct}%，還差 ${Math.ceil(total*0.8)-yesVotes.length} 票）`}
+      </div>
+    </div>
+    <div style="margin-bottom:16px">
+      <div style="font-size:12px;font-weight:700;color:var(--muted);margin-bottom:8px">🏃 選手投票明細</div>
+      ${players.map(p=>{
+        const v=playerVotes.find(v=>v.userId===p.id);
+        return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a314820">
+          <div style="font-size:13px;font-weight:600">${p.name||p.id}</div>
+          <div style="font-size:12px;font-weight:700;color:${v?choiceColor[v.choice]:'var(--muted)'}">${v?choiceLabel[v.choice]:'— 尚未投票'}</div>
+        </div>`;
+      }).join('')}
+    </div>
+    ${spectators.length>0?`<div>
+      <div style="font-size:12px;font-weight:700;color:#5b9cf6;margin-bottom:8px">👀 監視者表態（不計入結果）</div>
+      ${spectators.map(p=>{
+        const v=specVotes.find(v=>v.userId===p.id);
+        return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a314820">
+          <div style="font-size:13px;font-weight:600">${p.name||p.id}</div>
+          <div style="font-size:12px;font-weight:700;color:${v?choiceColor[v.choice]:'var(--muted)'}">${v?choiceLabel[v.choice]:'— 尚未表態'}</div>
+        </div>`;
+      }).join('')}
+    </div>`:''}`;
+}
+
+async function loadAdminVoteResult_placeholder(){}
 let qaMode='public';
 let qaUnsubscribe=null;
 let mentionCursor={textarea:null,atIndex:-1};
@@ -1959,13 +2024,14 @@ async function deleteAnnounce(id){
 }
 
 function adminTab(t){
-  ['pending','admin-add','register','history','announce','emoji','qa'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
-  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','announce','emoji','qa'].indexOf(t)));
+  ['pending','admin-add','register','history','announce','emoji','qa','voteresult'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
+  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','announce','emoji','qa','voteresult'].indexOf(t)));
   if(t==='admin-add')loadPublicData();
   if(t==='history')loadHistory();
   if(t==='announce')loadAnnounceHistory();
   if(t==='emoji')loadEmojiAssign();
   if(t==='qa')loadQaList(true);
+  if(t==='voteresult')loadAdminVoteResult();
 }
 
 async function loadActivityLog(){
