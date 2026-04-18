@@ -101,6 +101,11 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .mention-dropdown{position:absolute;background:var(--card);border:1px solid var(--border);border-radius:8px;z-index:500;max-height:160px;overflow-y:auto;box-shadow:0 4px 16px #0006;min-width:160px}
 .mention-item{padding:8px 14px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px}
 .mention-item:hover{background:var(--surface)}
+.gift-box{width:80px;height:80px;cursor:pointer;transition:transform 0.2s;display:flex;align-items:center;justify-content:center;font-size:52px;filter:drop-shadow(0 4px 12px #0006)}
+.gift-box:hover{transform:scale(1.1) rotate(-3deg)}
+.gift-box.opened{filter:grayscale(0.3);cursor:default}
+.workout-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
+.workout-day{background:linear-gradient(135deg,#f5a62318,#f5a62305);border:1px solid #f5a62333;border-radius:12px;padding:14px;margin-bottom:10px}
 .vote-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000c;z-index:1000;align-items:center;justify-content:center;padding:16px}
 .vote-modal.open{display:flex}
 .vote-box{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px}
@@ -313,6 +318,33 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   <!-- QA 預覽（點入口進完整頁面） -->
 </main>
 </div>
+<!-- 訓練禮物盒頁面 -->
+<div class="page" id="page-workout">
+<main>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button onclick="goDashboard()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:20px">←</button>
+    <div style="font-size:18px;font-weight:800">🎁 今日訓練</div>
+  </div>
+  <!-- 今日禮物盒 -->
+  <div class="card" style="text-align:center;padding:28px 16px">
+    <div id="workout-date" style="font-size:12px;color:var(--muted);margin-bottom:16px"></div>
+    <div id="gift-box-area">
+      <div class="gift-box" id="gift-box" onclick="openGift()">🎁</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:12px">點擊打開今日訓練！</div>
+    </div>
+    <div id="today-workout" style="display:none;text-align:left;margin-top:16px"></div>
+  </div>
+  <!-- 完整14天清單 -->
+  <div class="card">
+    <div onclick="toggleWorkoutList()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">
+      <div style="font-weight:700;font-size:15px">📅 完整14天清單</div>
+      <div id="workout-list-arrow" style="color:var(--muted);font-size:13px">▼ 展開</div>
+    </div>
+    <div id="workout-full-list" style="display:none;margin-top:14px"></div>
+  </div>
+</main>
+</div>
+
 <!-- QA 頁面 -->
 <div class="page" id="page-qa">
 <main>
@@ -439,6 +471,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <button class="tab active" onclick="userTab('mydata')">📊 我的數據</button>
     <button class="tab" onclick="userTab('addrecord')">➕ 新增測量</button>
     <button class="tab" onclick="userTab('diary')">📔 私人日記</button>
+    <button class="tab" onclick="openWorkoutPage()">🎁 今日訓練</button>
     <button class="tab" onclick="userTab('profile')">👤 設定</button>
   </div>
   <div id="utab-mydata">
@@ -646,6 +679,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <button class="tab" onclick="adminTab('emoji')">😊 叫囂表情</button>
     <button class="tab" onclick="adminTab('qa')">🙋 QA管理</button>
     <button class="tab" onclick="adminTab('voteresult')">📊 投票結果</button>
+    <button class="tab" onclick="adminTab('export')">📋 匯出數據</button>
   </div>
   <div id="atab-pending"><div class="card"><h2>⏳ 待審核名單</h2><div id="pending-list"></div></div></div>
   <div id="atab-admin-add" style="display:none">
@@ -733,7 +767,20 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div id="admin-vote-result">載入中...</div>
     </div>
   </div>
-  <div id="atab-qa" style="display:none">
+  <div id="atab-export" style="display:none">
+    <div class="card">
+      <h2>📋 匯出測量數據</h2>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">點擊匯出，複製文字貼給 Claude 生成個人化訓練清單</div>
+      <button class="btn btn-primary" onclick="exportData()">📋 匯出所有人最新數據</button>
+      <div id="export-output" style="margin-top:16px;display:none">
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+          <div style="font-size:12px;font-weight:700">複製以下文字貼給 Claude：</div>
+          <button onclick="copyExport()" style="background:var(--accent);border:none;border-radius:8px;padding:5px 14px;font-size:12px;font-weight:700;color:#000;cursor:pointer">複製</button>
+        </div>
+        <textarea id="export-text" style="height:300px;font-size:11px;font-family:monospace;resize:vertical;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);width:100%" readonly></textarea>
+      </div>
+    </div>
+  </div>
     <div class="card">
       <h2>🙋 QA 管理（管理員視角）</h2>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">匿名問題會顯示真實提問者，可以刪除任何問題或回覆</div>
@@ -1668,21 +1715,7 @@ async function applyEmoji(emoji){
 
 // ── 投票系統 ──────────────────────────────────────────────
 async function checkVoteModal(){
-  if(!CU||CU.role==='admin')return;
-  // 先查 localStorage 快取
-  const cached=localStorage.getItem(`vote_rule_change_${CU.id}`);
-  if(cached==='yes'||cached==='no')return;
-  // 再查 Firebase 確認
-  const snap=await db.collection('votes').get();
-  const myVote=snap.docs.find(d=>d.data().userId===CU.id&&(d.data().choice==='yes'||d.data().choice==='no'));
-  if(myVote){
-    // 同步回 localStorage
-    localStorage.setItem(`vote_rule_change_${CU.id}`,myVote.data().choice);
-    return;
-  }
-  // 沒投過才跳出
-  document.getElementById('vote-modal').classList.add('open');
-  loadVoteData();
+  return; // 暫時關閉自動彈出
 }
 
 async function loadVoteData(){
@@ -1812,6 +1845,58 @@ function openVoteModal(){
   loadVoteData();
 }
 
+async function exportData(){
+  const btn=document.querySelector('#atab-export .btn-primary');
+  if(btn)btn.textContent='載入中...';
+  const [userSnap,recSnap]=await Promise.all([
+    db.collection('users').get(),
+    db.collection('records').get()
+  ]);
+  const users=userSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
+  const allRecs=recSnap.docs.map(d=>d.data()).filter(r=>r.adminEntered&&r.status==='approved'&&r.forScoring!==false&&!r.isSpectator);
+  const today=new Date().toLocaleDateString('zh-TW',{year:'numeric',month:'2-digit',day:'2-digit'});
+  let output=`=== 測量數據匯出 ${today} ===\n請根據以下數據，為每位選手生成接下來14天（每天）的居家訓練建議。\n每天的建議格式：運動名稱、組數/次數/時間、說明。以居家無器材為主。\n\n`;
+
+  users.forEach(u=>{
+    const recs=allRecs.filter(r=>r.userId===u.id).sort((a,b)=>a.date.localeCompare(b.date));
+    if(recs.length===0){
+      output+=`【${u.name||u.id}】\n- 尚無測量數據\n\n`;
+      return;
+    }
+    const first=recs[0];
+    const last=recs[recs.length-1];
+    const prev=recs.length>=2?recs[recs.length-2]:null;
+    const fatRate=((first.bodyFat-last.bodyFat)/first.bodyFat*100).toFixed(1);
+    const muscleRate=first.muscle&&last.muscle?((last.muscle-first.muscle)/first.muscle*100).toFixed(1):null;
+    const s=calculateFullStats(recs);
+    output+=`【${u.name||u.id}】\n`;
+    output+=`- 體脂：${first.bodyFat}% → ${last.bodyFat}%（降 ${fatRate}%）\n`;
+    output+=`- 體重：${first.weight}kg → ${last.weight}kg\n`;
+    if(last.muscle)output+=`- 骨骼肌：${first.muscle||'無'}% → ${last.muscle}%${muscleRate?`（${parseFloat(muscleRate)>=0?'升':'降'} ${Math.abs(muscleRate)}%）`:''}\n`;
+    if(prev&&last){
+      const fatTrend=last.bodyFat<prev.bodyFat?'↓ 下降':'↑ 上升';
+      const muscleTrend=last.muscle&&prev.muscle?(last.muscle>prev.muscle?'↑ 上升':'↓ 下降'):'無數據';
+      output+=`- 近期體脂趨勢：${fatTrend}\n`;
+      output+=`- 近期骨骼肌趨勢：${muscleTrend}\n`;
+    }
+    output+=`- 測量次數：${recs.length} 次\n`;
+    output+=`- 目前評分：${s.total.toFixed(2)}%\n\n`;
+  });
+
+  output+=`\n請為以上每位選手分別生成14天訓練清單，格式如下：\n【選手名字】\nDay1: 運動A x 組數，運動B x 時間...\nDay2: ...\n（以此類推到Day14）`;
+
+  document.getElementById('export-text').value=output;
+  document.getElementById('export-output').style.display='block';
+  if(btn)btn.textContent='📋 匯出所有人最新數據';
+}
+
+function copyExport(){
+  const txt=document.getElementById('export-text');
+  txt.select();
+  document.execCommand('copy');
+  toast('已複製！貼給 Claude 即可 🎉');
+}
+
 async function loadAdminVoteResult(){
   const el=document.getElementById('admin-vote-result');
   if(!el)return;
@@ -1874,6 +1959,86 @@ async function loadAdminVoteResult(){
 }
 
 async function loadAdminVoteResult_placeholder(){}
+// ── 訓練禮物盒 ──────────────────────────────────────────────
+async function openWorkoutPage(){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-workout').classList.add('active');
+  loadWorkout();
+}
+
+async function loadWorkout(){
+  if(!CU)return;
+  const today=new Date();
+  const dateStr=today.toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',weekday:'short'});
+  document.getElementById('workout-date').textContent=dateStr;
+  const start=new Date('2026-04-15');
+  const diffDays=Math.floor((today-start)/(1000*60*60*24));
+  const cycleDay=(diffDays%14)+1;
+  const snap=await db.collection('workouts').get();
+  const myWorkout=snap.docs.map(d=>d.data()).find(w=>w.userId===CU.id);
+  if(!myWorkout||!myWorkout.days){
+    document.getElementById('gift-box-area').innerHTML=`
+      <div style="font-size:40px;margin-bottom:12px">🏋️</div>
+      <div style="font-size:13px;color:var(--muted)">訓練清單尚未生成<br>測量日後管理員會更新</div>`;
+    return;
+  }
+  const todayData=myWorkout.days[`day${cycleDay}`];
+  const openedKey=`workout_opened_${CU.id}_${today.toDateString()}`;
+  const alreadyOpened=localStorage.getItem(openedKey);
+  if(alreadyOpened){
+    document.getElementById('gift-box-area').style.display='none';
+    showTodayWorkout(todayData,cycleDay);
+  } else {
+    document.getElementById('gift-box-area').style.display='block';
+    document.getElementById('today-workout').style.display='none';
+    document.getElementById('gift-box').onclick=()=>openGift(todayData,cycleDay,openedKey);
+  }
+  loadFullWorkoutList(myWorkout.days,cycleDay);
+}
+
+function openGift(todayData,cycleDay,openedKey){
+  const box=document.getElementById('gift-box');
+  box.textContent='🎉';
+  box.classList.add('opened');
+  box.onclick=null;
+  localStorage.setItem(openedKey,'1');
+  setTimeout(()=>{
+    document.getElementById('gift-box-area').style.display='none';
+    showTodayWorkout(todayData,cycleDay);
+  },600);
+}
+
+function showTodayWorkout(data,day){
+  const el=document.getElementById('today-workout');
+  el.style.display='block';
+  if(!data){el.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">今天是休息日！好好恢復 💤</div>';return;}
+  el.innerHTML=`
+    <div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:10px">Day ${day} 的訓練</div>
+    <div style="font-size:14px;line-height:2;white-space:pre-line">${data}</div>`;
+}
+
+function loadFullWorkoutList(days,cycleDay){
+  const list=document.getElementById('workout-full-list');
+  if(!days){list.innerHTML='<div style="color:var(--muted);font-size:13px">尚無清單</div>';return;}
+  list.innerHTML=Array.from({length:14},(_,i)=>{
+    const d=i+1;
+    const isToday=d===cycleDay;
+    const data=days[`day${d}`];
+    return`<div class="workout-day" style="${isToday?'border-color:var(--accent);background:linear-gradient(135deg,#f5a62328,#f5a62308)':''}">
+      <div style="font-size:12px;font-weight:700;color:${isToday?'var(--accent)':'var(--muted)'};margin-bottom:6px">Day ${d}${isToday?' ← 今天':''}</div>
+      <div style="font-size:13px;line-height:1.8;white-space:pre-line">${data||'休息日 💤'}</div>
+    </div>`;
+  }).join('');
+}
+
+function toggleWorkoutList(){
+  const list=document.getElementById('workout-full-list');
+  const arrow=document.getElementById('workout-list-arrow');
+  const show=list.style.display==='none';
+  list.style.display=show?'block':'none';
+  arrow.textContent=show?'▲ 收合':'▼ 展開';
+}
+
 let qaMode='public';
 let qaUnsubscribe=null;
 let mentionCursor={textarea:null,atIndex:-1};
@@ -2094,8 +2259,8 @@ async function deleteAnnounce(id){
 }
 
 function adminTab(t){
-  ['pending','admin-add','register','history','announce','emoji','qa','voteresult'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
-  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','announce','emoji','qa','voteresult'].indexOf(t)));
+  ['pending','admin-add','register','history','announce','emoji','qa','voteresult','export'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
+  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','announce','emoji','qa','voteresult','export'].indexOf(t)));
   if(t==='admin-add')loadPublicData();
   if(t==='history')loadHistory();
   if(t==='announce')loadAnnounceHistory();
