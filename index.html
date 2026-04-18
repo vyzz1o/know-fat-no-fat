@@ -748,6 +748,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <label>點擊通知後導向</label>
       <select id="announce-link" style="margin-bottom:10px">
         <option value="">無（只看不跳轉）</option>
+        <option value="workout">🎁 今日訓練</option>
         <option value="qa">🙋 QA 專區</option>
         <option value="checkin">⭐ 每日打卡</option>
         <option value="diary">📔 私人日記</option>
@@ -962,6 +963,14 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         <div>• 自行填入體重、體脂等數據，立即儲存</div>
         <div>• <strong style="color:var(--text)">注意：自填數據僅供個人參考，不納入計分和排行榜</strong></div>
         <div>• 計分用的官方數據由管理員在測量日統一錄入</div>
+      </div>
+      <div style="color:var(--accent);font-weight:700;margin-bottom:6px">🎁 今日訓練</div>
+      <div style="color:var(--muted);margin-bottom:16px">
+        <div>• 登入後點右上角「🎁」進入，每天自動更新當天的訓練建議</div>
+        <div>• 點擊禮物盒打開今日訓練，每天只有一次開場動畫</div>
+        <div>• 訓練以居家無器材為主，根據每個人的體脂和骨骼肌數值個別設計</div>
+        <div>• 下方可展開完整 14 天清單預覽</div>
+        <div>• 每兩週測量後會更新新一輪的訓練清單</div>
       </div>
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">⭐ 每日打卡</div>
       <div style="color:var(--muted);margin-bottom:16px">
@@ -1559,7 +1568,7 @@ async function loadNotifList(){
     const time=new Date(item.ts).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'});
     if(item.type==='announce'){
       const hasLink=item.link&&item.link!=='';
-      const linkLabels={checkin:'前往每日打卡 →',diary:'前往私人日記 →',jiaoxiao:'前往叫囂模組 →',mydata:'前往我的數據 →',addrecord:'前往新增測量 →',profile:'前往設定 →'};
+      const linkLabels={checkin:'前往每日打卡 →',diary:'前往私人日記 →',jiaoxiao:'前往叫囂模組 →',mydata:'前往我的數據 →',addrecord:'前往新增測量 →',profile:'前往設定 →',qa:'前往 QA 專區 →',workout:'前往今日訓練 →'};
       const linkLabel=hasLink?(linkLabels[item.link]||'查看 →'):'';
       return`
       <div class="notif-item ${item.unread?'unread':''}" onclick="${hasLink?`notifGoAnnounce('${item.link}');markItemRead()`:'markItemRead()'}" style="cursor:${hasLink?'pointer':'default'}">
@@ -1653,6 +1662,7 @@ function notifGoAnnounce(link){
   if(link==='checkin'){showCheckin();return;}
   if(link==='jiaoxiao'){openJiaoxiao();return;}
   if(link==='qa'){openQaPage();return;}
+  if(link==='workout'){openWorkoutPage();return;}
   if(CU.role==='spectator'){
     showPage('spectator');
     if(link==='diary')setTimeout(()=>spectatorTab('diary'),100);
