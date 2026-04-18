@@ -196,19 +196,21 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <div class="countdown-nums" id="countdown-display"></div>
     <div id="next-measure-box" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
   </div>
-  <div class="prize-banner" onclick="openVoteModal()" style="cursor:pointer" id="vote-banner">
-    <div>
-      <div style="font-size:11px;color:var(--muted)">📊 規則修改投票進行中</div>
-      <div id="vote-banner-bar" style="display:flex;height:8px;border-radius:4px;overflow:hidden;width:140px;margin:6px 0;background:var(--border)">
-        <div id="vote-banner-yes" style="background:var(--green);width:50%;transition:width 0.4s"></div>
-      </div>
-      <div id="vote-banner-count" style="font-size:10px;color:var(--muted)">載入中...</div>
+  <div onclick="openVoteModal()" style="cursor:pointer;background:linear-gradient(135deg,#4cde8f18,#5b9cf618);border:1px solid #4cde8f44;border-radius:12px;padding:16px 20px;margin-bottom:14px">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <div style="font-weight:800;font-size:14px">📊 規則修改投票進行中</div>
+      <div style="font-size:12px;color:var(--accent);font-weight:700">點擊投票 →</div>
     </div>
-    <div style="text-align:right">
-      <div style="font-size:11px;color:var(--accent);font-weight:700">點擊查看 →</div>
-      <div id="vote-banner-my" style="font-size:10px;color:var(--muted);margin-top:4px"></div>
+    <div style="position:relative;height:20px;border-radius:8px;overflow:hidden;width:100%;margin-bottom:8px;background:#f05c6e33">
+      <div id="vote-banner-yes" style="position:absolute;left:0;top:0;height:100%;background:var(--green);width:50%;transition:width 0.4s;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000"></div>
+      <div id="vote-banner-no" style="position:absolute;right:0;top:0;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--red);padding-right:8px"></div>
+    </div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div id="vote-banner-count" style="font-size:11px;color:var(--muted)">載入中...</div>
+      <div id="vote-banner-my" style="font-size:11px;color:var(--muted)"></div>
     </div>
   </div>
+  <div class="prize-banner">
     <div>
       <div style="font-size:11px;color:var(--muted)">💰 當前獎金池</div>
       <div id="prize-amount" style="font-size:26px;font-weight:800;color:var(--accent)">NT$ 0</div>
@@ -1685,13 +1687,15 @@ async function loadVoteData(){
   }
   // 更新首頁 banner
   const bannerYes=document.getElementById('vote-banner-yes');
+  const bannerNo=document.getElementById('vote-banner-no');
   const bannerCount=document.getElementById('vote-banner-count');
   const bannerMy=document.getElementById('vote-banner-my');
-  if(bannerYes)bannerYes.style.width=yesPct+'%';
-  if(bannerCount)bannerCount.textContent=`${total} 人已投票・${yesPct}% 同意`;
+  if(bannerYes){bannerYes.style.width=yesPct+'%';bannerYes.textContent=yesPct>15?`✅ ${yesPct}%`:'';}
+  if(bannerNo){bannerNo.style.width=noPct+'%';bannerNo.textContent=noPct>15?`❌ ${noPct}%`:'';}  
+  if(bannerCount)bannerCount.textContent=`${total} 人已投票・需 80% 同意通過`;
   if(bannerMy&&CU){
     const mc=localStorage.getItem(`vote_rule_change_${CU.id}`);
-    bannerMy.textContent=mc==='yes'?'你：✅ 同意':mc==='no'?'你：❌ 照舊':mc==='later'?'你：未決定':'';
+    bannerMy.textContent=mc==='yes'?'你已投：✅ 同意':mc==='no'?'你已投：❌ 照舊':mc==='later'?'你尚未決定':'';
   }
   const specVotes=votes.filter(v=>v.role==='spectator');
   const specSection=document.getElementById('spectator-vote-section');
