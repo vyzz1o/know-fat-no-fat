@@ -1694,6 +1694,10 @@ async function loadVoteData(){
   const total=yesCount+noCount;
   const yesPct=total>0?Math.round(yesCount/total*100):50;
   const noPct=100-yesPct;
+  // 選手總人數
+  const totalPlayers=USERS_CACHE.filter(u=>u.role==='user').length;
+  const allVoted=total>=totalPlayers&&totalPlayers>0;
+  const passed=yesPct>=80&&allVoted;
   // 更新進度條
   const barYes=document.getElementById('vote-bar-yes');
   const barNo=document.getElementById('vote-bar-no');
@@ -1701,13 +1705,25 @@ async function loadVoteData(){
   if(barNo){barNo.style.width=noPct+'%';barNo.textContent=noPct>10?noPct+'%':'';}
   // 更新人數
   const countEl=document.getElementById('vote-count');
-  if(countEl)countEl.textContent=`共 ${total} 人已投票（不記名）`;
+  if(countEl)countEl.textContent=`${total} / ${totalPlayers} 人已投票（不記名）`;
   // 門檻提示
   const threshEl=document.getElementById('vote-threshold');
   if(threshEl){
-    if(total===0){threshEl.textContent='80% 以上同意即通過新規則';}
-    else if(yesPct>=80){threshEl.textContent=`✅ 目前已達 80% 同意門檻！`;}
-    else{threshEl.textContent=`需要 80% 同意才能通過（目前 ${yesPct}%）`;}
+    if(total===0){
+      threshEl.textContent='需全員投票且 80% 以上同意才通過';
+    } else if(passed){
+      threshEl.textContent='✅ 全員已投票且達 80% 同意，可以改規則！';
+      threshEl.style.color='var(--green)';
+    } else if(yesPct>=80&&!allVoted){
+      threshEl.textContent=`同意已達 80%，但還有 ${totalPlayers-total} 人尚未投票`;
+      threshEl.style.color='var(--accent)';
+    } else if(allVoted&&yesPct<80){
+      threshEl.textContent=`全員已投票，但同意未達 80%（目前 ${yesPct}%）`;
+      threshEl.style.color='var(--red)';
+    } else {
+      threshEl.textContent=`還有 ${totalPlayers-total} 人尚未投票，同意目前 ${yesPct}%`;
+      threshEl.style.color='var(--muted)';
+    }
   }
   // 我的選擇
   const myChoice=localStorage.getItem(`vote_rule_change_${CU?.id}`);
@@ -1815,7 +1831,9 @@ async function loadAdminVoteResult(){
   const laterVotes=playerVotes.filter(v=>v.choice==='later');
   const total=yesVotes.length+noVotes.length;
   const yesPct=total>0?Math.round(yesVotes.length/total*100):0;
-  const notVoted=players.filter(p=>!playerVotes.find(v=>v.userId===p.id));
+  const totalPlayers=players.length;
+  const allVoted=total>=totalPlayers&&totalPlayers>0;
+  const passed=yesPct>=80&&allVoted;
   const choiceLabel={yes:'✅ 同意新規則',no:'❌ 照舊',later:'🤔 再想一下'};
   const choiceColor={yes:'var(--green)',no:'var(--red)',later:'var(--muted)'};
   el.innerHTML=`
@@ -1829,8 +1847,8 @@ async function loadAdminVoteResult(){
         <div class="stat-box"><div class="stat-label">❌ 照舊</div><div class="stat-val" style="color:var(--red)">${noVotes.length} 人</div></div>
         <div class="stat-box"><div class="stat-label">⏳ 未決定</div><div class="stat-val" style="color:var(--muted)">${notVoted.length+laterVotes.length} 人</div></div>
       </div>
-      <div style="font-size:12px;color:${yesPct>=80?'var(--green)':'var(--accent)'};font-weight:700;text-align:center;padding:8px;background:${yesPct>=80?'#4cde8f18':'#f5a62318'};border-radius:8px">
-        ${yesPct>=80?'✅ 已達 80% 門檻，可以改規則！':`需要 80% 同意才通過（目前 ${yesPct}%，還差 ${Math.ceil(total*0.8)-yesVotes.length} 票）`}
+      <div style="font-size:12px;color:${passed?'var(--green)':yesPct>=80?'var(--accent)':'var(--red)'};font-weight:700;text-align:center;padding:8px;background:${passed?'#4cde8f18':yesPct>=80?'#f5a62318':'#f05c6e18'};border-radius:8px">
+        ${passed?'✅ 全員已投票且達 80% 同意，可以改規則！':yesPct>=80&&!allVoted?`同意已達 80%，但還有 ${totalPlayers-total} 人尚未投票`:allVoted?`全員已投票，但同意未達 80%（目前 ${yesPct}%）`:`還有 ${totalPlayers-total} 人尚未投票，同意目前 ${yesPct}%`}
       </div>
     </div>
     <div style="margin-bottom:16px">
