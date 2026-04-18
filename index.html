@@ -781,6 +781,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       </div>
     </div>
   </div>
+  <div id="atab-qa" style="display:none">
     <div class="card">
       <h2>🙋 QA 管理（管理員視角）</h2>
       <div style="font-size:12px;color:var(--muted);margin-bottom:12px">匿名問題會顯示真實提問者，可以刪除任何問題或回覆</div>
@@ -1961,8 +1962,7 @@ async function loadAdminVoteResult(){
 async function loadAdminVoteResult_placeholder(){}
 // ── 訓練禮物盒 ──────────────────────────────────────────────
 async function openWorkoutPage(){
-  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
-  document.getElementById('page-workout').classList.add('active');
+  showPage('workout');
   loadWorkout();
 }
 
@@ -2259,8 +2259,14 @@ async function deleteAnnounce(id){
 }
 
 function adminTab(t){
-  ['pending','admin-add','register','history','announce','emoji','qa','voteresult','export'].forEach(tab=>document.getElementById('atab-'+tab).style.display=tab===t?'block':'none');
-  document.querySelectorAll('#admin-tabs .tab').forEach((b,i)=>b.classList.toggle('active',i===['pending','admin-add','register','history','announce','emoji','qa','voteresult','export'].indexOf(t)));
+  ['pending','admin-add','register','history','announce','emoji','qa','voteresult','export'].forEach(tab=>{
+    const el=document.getElementById('atab-'+tab);
+    if(el)el.style.display=tab===t?'block':'none';
+  });
+  document.querySelectorAll('#admin-tabs .tab').forEach(b=>{
+    const match=b.getAttribute('onclick');
+    b.classList.toggle('active',match&&match.includes(`'${t}'`));
+  });
   if(t==='admin-add')loadPublicData();
   if(t==='history')loadHistory();
   if(t==='announce')loadAnnounceHistory();
