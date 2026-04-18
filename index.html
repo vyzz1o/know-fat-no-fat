@@ -353,7 +353,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   <!-- 完整14天清單 -->
   <div class="card">
     <div onclick="toggleWorkoutList()" style="display:flex;justify-content:space-between;align-items:center;cursor:pointer">
-      <div style="font-weight:700;font-size:15px">📅 完整14天清單</div>
+      <div style="font-weight:700;font-size:15px">📅 已解鎖的訓練紀錄</div>
       <div id="workout-list-arrow" style="color:var(--muted);font-size:13px">▼ 展開</div>
     </div>
     <div id="workout-full-list" style="display:none;margin-top:14px"></div>
@@ -2210,15 +2210,21 @@ function showTodayWorkout(data,day){
 function loadFullWorkoutList(days,cycleDay){
   const list=document.getElementById('workout-full-list');
   if(!days){list.innerHTML='<div style="color:var(--muted);font-size:13px">尚無清單</div>';return;}
-  list.innerHTML=Array.from({length:14},(_,i)=>{
+  const title=document.querySelector('#page-workout .card:nth-child(3) h3, #page-workout .card:last-child .toggle-title div:first-child');
+  // 只顯示今天和之前，未來的天數完全隱藏
+  const visibleDays=Array.from({length:cycleDay},(_,i)=>{
     const d=i+1;
     const isToday=d===cycleDay;
+    const isPast=d<cycleDay;
     const data=days[`day${d}`];
-    return`<div class="workout-day" style="${isToday?'border-color:var(--accent);background:linear-gradient(135deg,#f5a62328,#f5a62308)':''}">
-      <div style="font-size:12px;font-weight:700;color:${isToday?'var(--accent)':'var(--muted)'};margin-bottom:6px">Day ${d}${isToday?' ← 今天':''}</div>
+    return`<div class="workout-day" style="${isToday?'border-color:var(--accent);background:linear-gradient(135deg,#f5a62328,#f5a62308)':isPast?'opacity:0.7':''}">
+      <div style="font-size:12px;font-weight:700;color:${isToday?'var(--accent)':'var(--muted)'};margin-bottom:6px">Day ${d}${isToday?' ← 今天':' ✓'}</div>
       <div style="font-size:13px;line-height:1.8;white-space:pre-line">${data||'休息日 💤'}</div>
     </div>`;
-  }).join('');
+  });
+  const remaining=14-cycleDay;
+  const lockHint=remaining>0?`<div style="text-align:center;padding:14px;color:var(--muted);font-size:12px">🔒 還有 ${remaining} 天待解鎖，每天來開禮物！</div>`:'';
+  list.innerHTML=visibleDays.join('')+lockHint;
 }
 
 function toggleWorkoutList(){
