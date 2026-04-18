@@ -2095,7 +2095,7 @@ async function checkGiftModal(){
   const snap=await db.collection('workouts').get();
   const myWorkout=snap.docs.map(d=>d.data()).find(w=>w.userId===CU.id);
   if(!myWorkout||!myWorkout.days)return;
-  const start=new Date('2026-04-19');
+  const start=new Date('2026-04-16');
   const diffDays=Math.floor((today-start)/(1000*60*60*24));
   const cycleDay=(diffDays%14)+1;
   const todayData=myWorkout.days[`day${cycleDay}`];
@@ -2145,7 +2145,7 @@ async function loadWorkout(){
   const today=new Date();
   const dateStr=today.toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',weekday:'short'});
   document.getElementById('workout-date').textContent=dateStr;
-  const start=new Date('2026-04-19');
+  const start=new Date('2026-04-16');
   const diffDays=Math.floor((today-start)/(1000*60*60*24));
   const cycleDay=(diffDays%14)+1;
   const snap=await db.collection('workouts').get();
