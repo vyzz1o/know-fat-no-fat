@@ -101,6 +101,13 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .mention-dropdown{position:absolute;background:var(--card);border:1px solid var(--border);border-radius:8px;z-index:500;max-height:160px;overflow-y:auto;box-shadow:0 4px 16px #0006;min-width:160px}
 .mention-item{padding:8px 14px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px}
 .mention-item:hover{background:var(--surface)}
+.vote-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000c;z-index:1000;align-items:center;justify-content:center;padding:16px}
+.vote-modal.open{display:flex}
+.vote-box{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px}
+.vote-btn{border:none;border-radius:10px;padding:12px 16px;font-size:14px;font-weight:700;cursor:pointer;width:100%;margin-bottom:8px;transition:all 0.15s}
+.vote-bar-wrap{display:flex;height:28px;border-radius:8px;overflow:hidden;margin:12px 0}
+.vote-bar-yes{background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;transition:width 0.4s}
+.vote-bar-no{background:var(--red);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;transition:width 0.4s}
 </style>
 </head>
 <body>
@@ -110,6 +117,77 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   <div id="nav-right"><button class="btn btn-ghost" style="width:auto;padding:5px 12px" onclick="showPage('login')">登入</button></div>
 </nav>
 
+<!-- 規則投票 Modal -->
+<div class="vote-modal" id="vote-modal">
+  <div class="vote-box">
+    <div style="text-align:center;margin-bottom:20px">
+      <div style="font-size:28px;margin-bottom:8px">📊</div>
+      <div style="font-size:18px;font-weight:800">計分規則修改提案</div>
+      <div style="font-size:12px;color:var(--muted);margin-top:4px">請大家投票決定新規則</div>
+    </div>
+
+    <!-- 原因說明 -->
+    <div style="background:var(--surface);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.7">
+      <div style="font-weight:700;color:var(--accent);margin-bottom:6px">💡 為什麼要改？</div>
+      <div style="color:var(--muted)">目前體重下降率（30%）對天生體重基數小的人不太公平。骨骼肌上升率更能反映「真正在減脂而非減肌肉」的努力，也更符合比賽精神。</div>
+    </div>
+
+    <!-- 新舊規則對比 -->
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-bottom:16px">
+      <div style="background:#f05c6e12;border:1px solid #f05c6e33;border-radius:10px;padding:12px">
+        <div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:8px">❌ 舊規則</div>
+        <div style="font-size:12px;line-height:1.8;color:var(--muted)">
+          <div>體脂降率 <strong style="color:var(--text)">× 70%</strong></div>
+          <div>體重降率 <strong style="color:var(--text)">× 30%</strong></div>
+          <div style="margin-top:6px;font-size:11px;border-top:1px solid #f05c6e22;padding-top:6px">總分 = 基礎分 × (1＋加分%)</div>
+        </div>
+      </div>
+      <div style="background:#4cde8f12;border:1px solid #4cde8f33;border-radius:10px;padding:12px">
+        <div style="font-size:11px;color:var(--green);font-weight:700;margin-bottom:8px">✨ 新規則</div>
+        <div style="font-size:12px;line-height:1.8;color:var(--muted)">
+          <div>體脂降率 <strong style="color:var(--text)">× 70%</strong></div>
+          <div>骨骼肌升率 <strong style="color:var(--text)">× 30%</strong></div>
+          <div style="margin-top:6px;font-size:11px;border-top:1px solid #4cde8f22;padding-top:6px">總分 = 基礎分 × (1＋加分%)</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 加分機制不變說明 -->
+    <div style="background:var(--surface);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:12px;color:var(--muted)">
+      ℹ️ 加分機制不變（每次測量皆降 +10%，僅 1 次回升 +5%）
+    </div>
+
+    <!-- 投票結果 -->
+    <div id="vote-result-section" style="margin-bottom:16px">
+      <div style="display:flex;justify-content:space-between;font-size:12px;color:var(--muted);margin-bottom:4px">
+        <span>✅ 同意新規則</span>
+        <span>❌ 照舊</span>
+      </div>
+      <div class="vote-bar-wrap" id="vote-bar">
+        <div class="vote-bar-yes" id="vote-bar-yes" style="width:50%">50%</div>
+        <div class="vote-bar-no" id="vote-bar-no" style="width:50%">50%</div>
+      </div>
+      <div id="vote-count" style="font-size:11px;color:var(--muted);text-align:center">載入投票數據中...</div>
+      <div id="vote-threshold" style="font-size:11px;color:var(--accent);text-align:center;margin-top:4px;font-weight:700"></div>
+    </div>
+
+    <!-- 監視者表態區 -->
+    <div id="spectator-vote-section" style="display:none;background:#5b9cf618;border:1px solid #5b9cf633;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px">
+      <div style="font-weight:700;color:#5b9cf6;margin-bottom:6px">👀 監視者的想法</div>
+      <div id="spectator-vote-result" style="color:var(--muted)">載入中...</div>
+    </div>
+
+    <!-- 投票按鈕 -->
+    <div id="vote-buttons">
+      <button class="vote-btn" id="vote-btn-yes" style="background:var(--green);color:#000" onclick="castVote('yes')">✅ 同意新規則</button>
+      <button class="vote-btn" id="vote-btn-no" style="background:var(--red);color:#fff" onclick="castVote('no')">❌ 照舊，不改</button>
+      <button class="vote-btn" style="background:var(--surface);border:1px solid var(--border);color:var(--muted)" onclick="castVote('later')">🤔 我再想一下</button>
+    </div>
+    <div id="vote-my-choice" style="text-align:center;font-size:12px;color:var(--muted);margin-top:8px"></div>
+    <button onclick="closeVoteModal()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;width:100%;margin-top:12px;padding:8px">稍後再看</button>
+  </div>
+</div>
+
 <div class="page active" id="page-public">
 <main>
   <div class="countdown-box">
@@ -118,7 +196,19 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <div class="countdown-nums" id="countdown-display"></div>
     <div id="next-measure-box" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
   </div>
-  <div class="prize-banner">
+  <div class="prize-banner" onclick="openVoteModal()" style="cursor:pointer" id="vote-banner">
+    <div>
+      <div style="font-size:11px;color:var(--muted)">📊 規則修改投票進行中</div>
+      <div id="vote-banner-bar" style="display:flex;height:8px;border-radius:4px;overflow:hidden;width:140px;margin:6px 0;background:var(--border)">
+        <div id="vote-banner-yes" style="background:var(--green);width:50%;transition:width 0.4s"></div>
+      </div>
+      <div id="vote-banner-count" style="font-size:10px;color:var(--muted)">載入中...</div>
+    </div>
+    <div style="text-align:right">
+      <div style="font-size:11px;color:var(--accent);font-weight:700">點擊查看 →</div>
+      <div id="vote-banner-my" style="font-size:10px;color:var(--muted);margin-top:4px"></div>
+    </div>
+  </div>
     <div>
       <div style="font-size:11px;color:var(--muted)">💰 當前獎金池</div>
       <div id="prize-amount" style="font-size:26px;font-weight:800;color:var(--accent)">NT$ 0</div>
@@ -808,10 +898,8 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div style="color:var(--muted)">
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：為什麼我的排名沒有更新？</strong><br>A：排行榜只計算管理員在測量日錄入的數據，測量日分別為 4/15、4/29、5/13、5/27、6/10、6/24。</div>
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：自己填的數據會影響排名嗎？</strong><br>A：不會，自填數據只供個人趨勢參考。</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：我填錯數據怎麼辦？</strong><br>A：可以在「我的數據」點「刪」申請刪除，管理員審核後會刪除。</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：叫囂的留言可以刪嗎？</strong><br>A：自己發的留言可以自己刪，管理員也可以刪除任何留言。</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：監視者申請看數據，選手在哪裡同意？</strong><br>A：選手在「我的後台 → 設定」最下方可以看到申請，按同意或拒絕。</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：QA 匿名提問，管理員看得到是誰嗎？</strong><br>A：看得到，管理員後台會顯示真實名字加上（匿名）標註。</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：我填錯數據怎麼辦？</strong><br>A：自己填的數據可以在「我的數據」點「刪」刪除，也可以直接編輯。</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：叫囂的留言可以刪嗎？</strong><br>A：自己發的留言可以自己刪。</div>
         <div><strong style="color:var(--text)">Q：退賽可以退款嗎？</strong><br>A：退賽不退款，公基金一旦投入即不退還。</div>
       </div>
     </div>
@@ -833,7 +921,7 @@ function toggleFaq(){const m=document.getElementById('faq-modal');m.style.displa
 function toggleRules(){const c=document.getElementById('rules-content'),a=document.getElementById('rules-arrow');if(c.style.display==='none'){c.style.display='block';a.textContent='▲ 收起';}else{c.style.display='none';a.textContent='▼ 展開';}}
 function toast(msg,type='success'){const el=document.getElementById('toast-el');el.textContent=msg;el.style.background=type==='error'?'var(--red)':'var(--green)';el.style.color='#fff';el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
 function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');}
-function goPublic(){if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubscribe=null;}showPage('public');loadPublicData();setTimeout(initQaSection,300);}
+function goPublic(){if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubscribe=null;}showPage('public');loadPublicData();setTimeout(()=>{initQaSection();loadVoteData();},300);}
 function updateNav(){
   const nr=document.getElementById('nav-right');
   if(CU){
@@ -962,6 +1050,7 @@ async function login(){
     updateNav();
     if(CU.role==='spectator'){showPage('spectator');loadSpectatorPage();}
     else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
+    setTimeout(checkVoteModal,800);
   } else {
     toast('帳號或密碼錯誤','error');
   }
@@ -1552,6 +1641,101 @@ async function applyEmoji(emoji){
   loadEmojiAssign();
 }
 
+// ── 投票系統 ──────────────────────────────────────────────
+async function checkVoteModal(){
+  if(!CU||CU.role==='admin')return;
+  const myChoice=localStorage.getItem(`vote_rule_change_${CU.id}`);
+  if(myChoice==='yes'||myChoice==='no')return; // 已決定，不再跳出
+  // 顯示 modal
+  document.getElementById('vote-modal').classList.add('open');
+  loadVoteData();
+}
+
+async function loadVoteData(){
+  const snap=await db.collection('votes').get();
+  const votes=snap.docs.map(d=>({id:d.id,...d.data()}));
+  const playerVotes=votes.filter(v=>v.role==='user'&&(v.choice==='yes'||v.choice==='no'));
+  const yesCount=playerVotes.filter(v=>v.choice==='yes').length;
+  const noCount=playerVotes.filter(v=>v.choice==='no').length;
+  const total=yesCount+noCount;
+  const yesPct=total>0?Math.round(yesCount/total*100):50;
+  const noPct=100-yesPct;
+  // 更新進度條
+  const barYes=document.getElementById('vote-bar-yes');
+  const barNo=document.getElementById('vote-bar-no');
+  if(barYes){barYes.style.width=yesPct+'%';barYes.textContent=yesPct>10?yesPct+'%':'';}
+  if(barNo){barNo.style.width=noPct+'%';barNo.textContent=noPct>10?noPct+'%':'';}
+  // 更新人數
+  const countEl=document.getElementById('vote-count');
+  if(countEl)countEl.textContent=`共 ${total} 人已投票（不記名）`;
+  // 門檻提示
+  const threshEl=document.getElementById('vote-threshold');
+  if(threshEl){
+    if(total===0){threshEl.textContent='80% 以上同意即通過新規則';}
+    else if(yesPct>=80){threshEl.textContent=`✅ 目前已達 80% 同意門檻！`;}
+    else{threshEl.textContent=`需要 80% 同意才能通過（目前 ${yesPct}%）`;}
+  }
+  // 我的選擇
+  const myChoice=localStorage.getItem(`vote_rule_change_${CU?.id}`);
+  const myChoiceEl=document.getElementById('vote-my-choice');
+  if(myChoiceEl){
+    if(myChoice==='yes')myChoiceEl.textContent='你已選擇：✅ 同意新規則（可重新選擇）';
+    else if(myChoice==='no')myChoiceEl.textContent='你已選擇：❌ 照舊（可重新選擇）';
+    else myChoiceEl.textContent='';
+  }
+  // 更新首頁 banner
+  const bannerYes=document.getElementById('vote-banner-yes');
+  const bannerCount=document.getElementById('vote-banner-count');
+  const bannerMy=document.getElementById('vote-banner-my');
+  if(bannerYes)bannerYes.style.width=yesPct+'%';
+  if(bannerCount)bannerCount.textContent=`${total} 人已投票・${yesPct}% 同意`;
+  if(bannerMy&&CU){
+    const mc=localStorage.getItem(`vote_rule_change_${CU.id}`);
+    bannerMy.textContent=mc==='yes'?'你：✅ 同意':mc==='no'?'你：❌ 照舊':mc==='later'?'你：未決定':'';
+  }
+  const specVotes=votes.filter(v=>v.role==='spectator');
+  const specSection=document.getElementById('spectator-vote-section');
+  const specResult=document.getElementById('spectator-vote-result');
+  if(specSection&&specResult){
+    if(specVotes.length>0){
+      specSection.style.display='block';
+      const specYes=specVotes.filter(v=>v.choice==='yes').length;
+      const specNo=specVotes.filter(v=>v.choice==='no').length;
+      specResult.textContent=`${specVotes.length} 位監視者表態：✅ ${specYes} 人覺得新規則好，❌ ${specNo} 人覺得照舊`;
+    }
+  }
+}
+
+async function castVote(choice){
+  if(!CU)return;
+  if(choice==='later'){
+    closeVoteModal();
+    return;
+  }
+  // 先刪舊票
+  const snap=await db.collection('votes').get();
+  const myOld=snap.docs.find(d=>d.data().userId===CU.id);
+  if(myOld)await db.collection('votes').doc(myOld.id).delete();
+  // 寫新票（監視者也可投但標記role）
+  await db.collection('votes').add({
+    userId:CU.id,userName:CU.name||CU.id,
+    role:CU.role,choice,createdAt:Date.now()
+  });
+  localStorage.setItem(`vote_rule_change_${CU.id}`,choice);
+  toast(choice==='yes'?'✅ 已投票：同意新規則':'❌ 已投票：照舊');
+  closeVoteModal();
+  loadVoteData();
+}
+
+function closeVoteModal(){
+  document.getElementById('vote-modal').classList.remove('open');
+}
+
+function openVoteModal(){
+  document.getElementById('vote-modal').classList.add('open');
+  loadVoteData();
+}
+
 // ── QA 系統 ──────────────────────────────────────────────
 let qaMode='public';
 let qaUnsubscribe=null;
@@ -1700,7 +1884,7 @@ async function loadQaList(isAdmin=false){
     return`<div class="qa-item">
       <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
         <div style="font-size:11px;color:var(--muted)">${displayName} · ${new Date(q.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
-        ${canDel?`<button onclick="deleteQa('${q.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:13px">🗑</button>`:''}
+        ${canDel||q.authorId===CU?.id?`<button onclick="deleteQa('${q.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:13px">🗑</button>`:''}
       </div>
       <div style="font-size:13px;line-height:1.6;margin-bottom:10px">${renderMentions(q.text)}</div>
       ${qReplies.map(r=>`
@@ -2056,6 +2240,7 @@ async function deleteComment(commentId){
         }
         if(CU.role==='spectator'){showPage('spectator');loadSpectatorPage();}
         else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
+        setTimeout(checkVoteModal,800);
       }
     } else {
       localStorage.removeItem('ci_user');
