@@ -106,6 +106,8 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .gift-box.opened{filter:grayscale(0.3);cursor:default}
 .workout-card{background:var(--surface);border:1px solid var(--border);border-radius:12px;padding:16px;margin-bottom:10px}
 .workout-day{background:linear-gradient(135deg,#f5a62318,#f5a62305);border:1px solid #f5a62333;border-radius:12px;padding:14px;margin-bottom:10px}
+.gift-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000c;z-index:1000;align-items:center;justify-content:center;padding:16px}
+.gift-modal.open{display:flex}
 .vote-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000c;z-index:1000;align-items:center;justify-content:center;padding:16px}
 .vote-modal.open{display:flex}
 .vote-box{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px}
@@ -121,6 +123,20 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   <div class="nav-title" onclick="goPublic()">🏆 脂己脂彼</div>
   <div id="nav-right"><button class="btn btn-ghost" style="width:auto;padding:5px 12px" onclick="showPage('login')">登入</button></div>
 </nav>
+
+<!-- 禮物盒彈窗 -->
+<div class="gift-modal" id="gift-modal">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:400px;padding:28px;text-align:center">
+    <div style="font-size:14px;color:var(--accent);font-weight:700;margin-bottom:6px" id="gift-modal-date"></div>
+    <div style="font-size:16px;font-weight:800;margin-bottom:20px">今日訓練到了！</div>
+    <div id="gift-modal-box-area">
+      <div style="font-size:72px;cursor:pointer;transition:transform 0.15s;display:inline-block" id="gift-modal-box" onclick="openGiftModal()">🎁</div>
+      <div style="font-size:13px;color:var(--muted);margin-top:12px">點擊打開！</div>
+    </div>
+    <div id="gift-modal-content" style="display:none;text-align:left;margin-top:16px"></div>
+    <button onclick="closeGiftModal()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;margin-top:16px;padding:8px;width:100%">稍後再看</button>
+  </div>
+</div>
 
 <!-- 規則投票 Modal -->
 <div class="vote-modal" id="vote-modal">
@@ -1133,7 +1149,7 @@ async function login(){
     updateNav();
     if(CU.role==='spectator'){showPage('spectator');loadSpectatorPage();}
     else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
-    setTimeout(checkVoteModal,800);
+    setTimeout(()=>{checkVoteModal();setTimeout(checkGiftModal,400);},800);
   } else {
     toast('帳號或密碼錯誤','error');
   }
@@ -1881,15 +1897,45 @@ async function loadWorkoutUploadStatus(){
     db.collection('workouts').get()
   ]);
   const users=userSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
-  const workouts=workoutSnap.docs.map(d=>d.data());
+  const workouts=workoutSnap.docs.map(d=>({docId:d.id,...d.data()}));
   list.innerHTML=users.map(u=>{
     const w=workouts.find(w=>w.userId===u.id);
     const dayCount=w&&w.days?Object.keys(w.days).length:0;
-    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a314820">
-      <div style="font-size:13px;font-weight:600">${u.name||u.id}</div>
-      <div style="font-size:12px;color:${dayCount>0?'var(--green)':'var(--muted)'};font-weight:700">${dayCount>0?`✅ 已上傳 ${dayCount} 天`:'— 尚未上傳'}</div>
+    const daysHtml=w&&w.days?Object.entries(w.days).sort((a,b)=>parseInt(a[0].replace('day',''))-parseInt(b[0].replace('day',''))).map(([key,val])=>{
+      const d=key.replace('day','');
+      return`<div style="display:flex;gap:8px;align-items:flex-start;padding:6px 0;border-bottom:1px solid #2a314810">
+        <div style="font-size:11px;font-weight:700;color:var(--accent);min-width:36px;padding-top:2px">Day${d}</div>
+        <div style="flex:1;font-size:12px;line-height:1.5">${val}</div>
+        <button onclick="editWorkoutDay('${w.docId}','${key}',this)" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:12px;flex-shrink:0">✏️</button>
+      </div>`;
+    }).join(''):'';
+    return`<div style="border:1px solid var(--border);border-radius:10px;padding:12px;margin-bottom:12px">
+      <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+        <div style="font-size:13px;font-weight:700">${u.name||u.id}</div>
+        <div style="font-size:12px;color:${dayCount>0?'var(--green)':'var(--muted)'};font-weight:700">${dayCount>0?`✅ ${dayCount} 天`:'未上傳'}</div>
+      </div>
+      ${daysHtml}
     </div>`;
   }).join('');
+}
+
+async function editWorkoutDay(docId, dayKey, btn){
+  const row=btn.parentElement;
+  const contentEl=row.querySelector('div:nth-child(2)');
+  const current=contentEl.textContent;
+  // 替換為輸入框
+  contentEl.innerHTML=`<textarea style="width:100%;font-size:12px;height:60px;resize:vertical">${current}</textarea>`;
+  btn.textContent='💾';
+  btn.onclick=async()=>{
+    const newVal=contentEl.querySelector('textarea').value.trim();
+    if(!newVal)return toast('不能是空的','error');
+    const snap=await db.collection('workouts').doc(docId).get();
+    const days=snap.data().days||{};
+    days[dayKey]=newVal;
+    await db.collection('workouts').doc(docId).update({days});
+    toast('✅ 已更新！');
+    loadWorkoutUploadStatus();
+  };
 }
 
 async function uploadWorkout(){
@@ -2039,7 +2085,56 @@ async function loadAdminVoteResult(){
 }
 
 async function loadAdminVoteResult_placeholder(){}
-// ── 訓練禮物盒 ──────────────────────────────────────────────
+// ── 禮物彈窗 ──────────────────────────────────────────────
+async function checkGiftModal(){
+  if(!CU||CU.role==='admin')return;
+  const today=new Date();
+  const openedKey=`workout_opened_${CU.id}_${today.toDateString()}`;
+  if(localStorage.getItem(openedKey))return;
+  // 確認有訓練清單
+  const snap=await db.collection('workouts').get();
+  const myWorkout=snap.docs.map(d=>d.data()).find(w=>w.userId===CU.id);
+  if(!myWorkout||!myWorkout.days)return;
+  const start=new Date('2026-04-19');
+  const diffDays=Math.floor((today-start)/(1000*60*60*24));
+  const cycleDay=(diffDays%14)+1;
+  const todayData=myWorkout.days[`day${cycleDay}`];
+  // 更新彈窗內容
+  const dateStr=today.toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',weekday:'short'});
+  document.getElementById('gift-modal-date').textContent=dateStr;
+  document.getElementById('gift-modal-box').onclick=()=>openGiftModal(todayData,cycleDay,openedKey);
+  document.getElementById('gift-modal').classList.add('open');
+}
+
+function openGiftModal(todayData,cycleDay,openedKey){
+  const box=document.getElementById('gift-modal-box');
+  box.textContent='🎉';
+  box.style.cursor='default';
+  box.onclick=null;
+  if(openedKey)localStorage.setItem(openedKey,'1');
+  const navBtn=document.getElementById('workout-nav-btn');
+  if(navBtn)navBtn.textContent='📬';
+  setTimeout(()=>{
+    document.getElementById('gift-modal-box-area').style.display='none';
+    const content=document.getElementById('gift-modal-content');
+    content.style.display='block';
+    if(!todayData){
+      content.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:16px">今天是休息日！好好恢復 💤</div>';
+    } else {
+      content.innerHTML=`<div style="font-size:12px;color:var(--accent);font-weight:700;margin-bottom:8px">Day ${cycleDay} 的訓練</div><div style="font-size:13px;line-height:2;white-space:pre-line">${todayData}</div>`;
+    }
+    // 同步更新訓練頁面
+    if(document.getElementById('page-workout').classList.contains('active')){
+      loadWorkout();
+    }
+  },500);
+}
+
+function closeGiftModal(){
+  document.getElementById('gift-modal').classList.remove('open');
+}
+
+// ── 訓練清單 ──────────────────────────────────────────────
 async function openWorkoutPage(){
   showPage('workout');
   loadWorkout();
@@ -2050,7 +2145,7 @@ async function loadWorkout(){
   const today=new Date();
   const dateStr=today.toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',weekday:'short'});
   document.getElementById('workout-date').textContent=dateStr;
-  const start=new Date('2026-04-15');
+  const start=new Date('2026-04-19');
   const diffDays=Math.floor((today-start)/(1000*60*60*24));
   const cycleDay=(diffDays%14)+1;
   const snap=await db.collection('workouts').get();
@@ -2636,7 +2731,7 @@ async function deleteComment(commentId){
         }
         if(CU.role==='spectator'){showPage('spectator');loadSpectatorPage();}
         else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
-        setTimeout(checkVoteModal,800);
+        setTimeout(()=>{checkVoteModal();setTimeout(checkGiftModal,400);},800);
       }
     } else {
       localStorage.removeItem('ci_user');
