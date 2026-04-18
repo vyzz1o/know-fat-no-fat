@@ -680,6 +680,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <button class="tab" onclick="adminTab('qa')">🙋 QA管理</button>
     <button class="tab" onclick="adminTab('voteresult')">📊 投票結果</button>
     <button class="tab" onclick="adminTab('export')">📋 匯出數據</button>
+    <button class="tab" onclick="adminTab('uploadworkout')">🎁 上傳訓練</button>
   </div>
   <div id="atab-pending"><div class="card"><h2>⏳ 待審核名單</h2><div id="pending-list"></div></div></div>
   <div id="atab-admin-add" style="display:none">
@@ -779,6 +780,22 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         </div>
         <textarea id="export-text" style="height:300px;font-size:11px;font-family:monospace;resize:vertical;background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:12px;color:var(--text);width:100%" readonly></textarea>
       </div>
+    </div>
+  </div>
+  <div id="atab-uploadworkout" style="display:none">
+    <div class="card">
+      <h2>🎁 上傳訓練清單</h2>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px">選擇選手，貼上 Claude 生成的訓練清單（Day1 到 Day11），按上傳即存入</div>
+      <label>選擇選手</label>
+      <select id="workout-target-user" style="margin-bottom:10px"></select>
+      <label>訓練清單（每行一天，格式：Day1: 內容）</label>
+      <textarea id="workout-input" placeholder="Day1: 深蹲 x15 x3組，弓步蹲 x12 x3組&#10;Day2: 快走 30分鐘&#10;Day3: ..." style="height:220px;font-size:12px;font-family:monospace"></textarea>
+      <button class="btn btn-primary" onclick="uploadWorkout()" style="margin-top:8px">上傳訓練清單 🎁</button>
+      <div id="workout-upload-status" style="margin-top:10px;font-size:12px"></div>
+    </div>
+    <div class="card">
+      <h2>📋 目前上傳狀態</h2>
+      <div id="workout-upload-list">載入中...</div>
     </div>
   </div>
   <div id="atab-qa" style="display:none">
@@ -1847,6 +1864,67 @@ function openVoteModal(){
   loadVoteData();
 }
 
+// ── 訓練清單上傳 ──────────────────────────────────────────────
+async function loadWorkoutUserSelect(){
+  const sel=document.getElementById('workout-target-user');
+  if(!sel)return;
+  const snap=await db.collection('users').get();
+  const users=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
+  sel.innerHTML=users.map(u=>`<option value="${u.id}">${u.name||u.id}</option>`).join('');
+}
+
+async function loadWorkoutUploadStatus(){
+  const list=document.getElementById('workout-upload-list');
+  if(!list)return;
+  const [userSnap,workoutSnap]=await Promise.all([
+    db.collection('users').get(),
+    db.collection('workouts').get()
+  ]);
+  const users=userSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
+  const workouts=workoutSnap.docs.map(d=>d.data());
+  list.innerHTML=users.map(u=>{
+    const w=workouts.find(w=>w.userId===u.id);
+    const dayCount=w&&w.days?Object.keys(w.days).length:0;
+    return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a314820">
+      <div style="font-size:13px;font-weight:600">${u.name||u.id}</div>
+      <div style="font-size:12px;color:${dayCount>0?'var(--green)':'var(--muted)'};font-weight:700">${dayCount>0?`✅ 已上傳 ${dayCount} 天`:'— 尚未上傳'}</div>
+    </div>`;
+  }).join('');
+}
+
+async function uploadWorkout(){
+  const uid=document.getElementById('workout-target-user').value;
+  const text=document.getElementById('workout-input').value.trim();
+  const status=document.getElementById('workout-upload-status');
+  if(!uid||!text){toast('請選擇選手並輸入訓練清單','error');return;}
+  // 解析每天的內容
+  const lines=text.split('\n').filter(l=>l.trim());
+  const days={};
+  lines.forEach(line=>{
+    const match=line.match(/^Day(\d+)[：:]\s*(.+)$/i);
+    if(match){
+      days[`day${match[1]}`]=match[2].trim();
+    }
+  });
+  if(Object.keys(days).length===0){
+    toast('格式錯誤！請確認每行格式為「Day1: 內容」','error');
+    return;
+  }
+  // 存到 Firebase
+  const snap=await db.collection('workouts').get();
+  const existing=snap.docs.find(d=>d.data().userId===uid);
+  if(existing){
+    await db.collection('workouts').doc(existing.id).update({days,updatedAt:Date.now()});
+  } else {
+    await db.collection('workouts').add({userId:uid,days,createdAt:Date.now()});
+  }
+  const userName=document.querySelector(`#workout-target-user option[value="${uid}"]`)?.textContent||uid;
+  toast(`✅ ${userName} 的訓練清單已上傳！`);
+  status.innerHTML=`<span style="color:var(--green)">✅ 成功上傳 ${Object.keys(days).length} 天的訓練清單</span>`;
+  document.getElementById('workout-input').value='';
+  loadWorkoutUploadStatus();
+}
+
 async function exportData(){
   const btn=document.querySelector('#atab-export .btn-primary');
   if(btn)btn.textContent='載入中...';
@@ -2265,7 +2343,7 @@ async function deleteAnnounce(id){
 }
 
 function adminTab(t){
-  ['pending','admin-add','register','history','announce','emoji','qa','voteresult','export'].forEach(tab=>{
+  ['pending','admin-add','register','history','announce','emoji','qa','voteresult','export','uploadworkout'].forEach(tab=>{
     const el=document.getElementById('atab-'+tab);
     if(el)el.style.display=tab===t?'block':'none';
   });
@@ -2279,6 +2357,7 @@ function adminTab(t){
   if(t==='emoji')loadEmojiAssign();
   if(t==='qa')loadQaList(true);
   if(t==='voteresult')loadAdminVoteResult();
+  if(t==='uploadworkout'){loadWorkoutUserSelect();loadWorkoutUploadStatus();}
 }
 
 async function loadActivityLog(){
