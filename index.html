@@ -1960,7 +1960,7 @@ async function submitQa(){
   loadQaList();
 }
 
-async function submitQaReply(qaId, textareaId, dropdownId){
+async function submitQaReply(qaId, textareaId, dropdownId, anon=false){
   if(!CU)return toast('請先登入','error');
   const textarea=document.getElementById(textareaId);
   const text=textarea.value.trim();
@@ -1968,19 +1968,18 @@ async function submitQaReply(qaId, textareaId, dropdownId){
   const mentions=[...text.matchAll(/@(\S+)/g)].map(m=>m[1]);
   const mentionedUsers=USERS_CACHE.filter(u=>mentions.includes(u.name||u.id));
   await db.collection('qaReplies').add({
-    qaId, text, authorId:CU.id, authorName:CU.name||CU.id, createdAt:Date.now()
+    qaId, text, authorId:CU.id, authorName:CU.name||CU.id, anon, createdAt:Date.now()
   });
-  // 通知被 @ 的人
   for(const u of mentionedUsers){
     await db.collection('mentions').add({
       targetUid:u.id, type:'qaMention',
-      fromName:CU.name||CU.id,
+      fromName:anon?'小老鼠':CU.name||CU.id,
       text:text.length>40?text.slice(0,40)+'...':text,
       createdAt:Date.now()
     });
   }
   textarea.value='';
-  toast('回覆已送出！');
+  toast(anon?'🐭 已匿名回覆！':'回覆已送出！');
   loadQaList();
 }
 
@@ -2027,7 +2026,7 @@ async function loadQaList(isAdmin=false){
       ${qReplies.map(r=>`
         <div class="qa-reply">
           <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-            <div style="color:var(--muted);font-size:10px">${r.authorName} · ${new Date(r.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+            <div style="color:var(--muted);font-size:10px">${r.anon&&!isAdmin?'🐭 小老鼠':isAdmin&&r.anon?`🐭 ${r.authorName}（匿名）`:r.authorName} · ${new Date(r.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
             ${canDel||r.authorId===CU?.id?`<button onclick="deleteQaReply('${r.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:12px">🗑</button>`:''}
           </div>
           <div style="font-size:12px;line-height:1.5">${renderMentions(r.text)}</div>
@@ -2035,7 +2034,10 @@ async function loadQaList(isAdmin=false){
       ${CU?`<div style="margin-top:10px;position:relative">
         <textarea id="${replyTextareaId}" placeholder="回覆... 輸入 @ 標記某人" style="height:60px;font-size:12px;resize:none" oninput="handleQaMention(this,'${replyDropdownId}')" onkeydown="handleMentionKey(event,'${replyDropdownId}','${replyTextareaId}')"></textarea>
         <div id="${replyDropdownId}" class="mention-dropdown" style="display:none"></div>
-        <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}')" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--text);font-size:12px;cursor:pointer;margin-top:4px">回覆</button>
+        <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
+          <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}',false)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--text);font-size:12px;cursor:pointer">回覆</button>
+          <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}',true)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--muted);font-size:12px;cursor:pointer">🐭 匿名回覆</button>
+        </div>
       </div>`:'<div style="font-size:11px;color:var(--muted);margin-top:8px">登入後才能回覆</div>'}
     </div>`;
   }).join('');
