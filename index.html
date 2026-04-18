@@ -184,6 +184,9 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 
     <!-- 投票按鈕 -->
     <div id="vote-buttons">
+      <div id="vote-not-logged-in" style="display:none;text-align:center;padding:12px;background:var(--surface);border-radius:8px;font-size:13px;color:var(--muted);margin-bottom:8px">
+        請先 <button onclick="closeVoteModal();showPage('login')" style="background:transparent;border:none;color:var(--accent);font-weight:700;cursor:pointer;font-size:13px">登入</button> 才能投票
+      </div>
       <button class="vote-btn" id="vote-btn-yes" style="background:var(--green);color:#000" onclick="castVote('yes')">✅ 同意新規則</button>
       <button class="vote-btn" id="vote-btn-no" style="background:var(--red);color:#fff" onclick="castVote('no')">❌ 照舊，不改</button>
       <button class="vote-btn" style="background:var(--surface);border:1px solid var(--border);color:var(--muted)" onclick="castVote('later')">🤔 我再想一下</button>
@@ -1666,9 +1669,18 @@ async function applyEmoji(emoji){
 // ── 投票系統 ──────────────────────────────────────────────
 async function checkVoteModal(){
   if(!CU||CU.role==='admin')return;
-  const myChoice=localStorage.getItem(`vote_rule_change_${CU.id}`);
-  if(myChoice==='yes'||myChoice==='no')return; // 已決定，不再跳出
-  // 顯示 modal
+  // 先查 localStorage 快取
+  const cached=localStorage.getItem(`vote_rule_change_${CU.id}`);
+  if(cached==='yes'||cached==='no')return;
+  // 再查 Firebase 確認
+  const snap=await db.collection('votes').get();
+  const myVote=snap.docs.find(d=>d.data().userId===CU.id&&(d.data().choice==='yes'||d.data().choice==='no'));
+  if(myVote){
+    // 同步回 localStorage
+    localStorage.setItem(`vote_rule_change_${CU.id}`,myVote.data().choice);
+    return;
+  }
+  // 沒投過才跳出
   document.getElementById('vote-modal').classList.add('open');
   loadVoteData();
 }
@@ -1717,6 +1729,21 @@ async function loadVoteData(){
     const mc=localStorage.getItem(`vote_rule_change_${CU.id}`);
     bannerMy.textContent=mc==='yes'?'你已投：✅ 同意':mc==='no'?'你已投：❌ 照舊':mc==='later'?'你尚未決定':'';
   }
+  // 未登入提示
+  const notLoggedIn=document.getElementById('vote-not-logged-in');
+  const btnYes=document.getElementById('vote-btn-yes');
+  const btnNo=document.getElementById('vote-btn-no');
+  if(notLoggedIn){
+    if(!CU){
+      notLoggedIn.style.display='block';
+      if(btnYes)btnYes.style.display='none';
+      if(btnNo)btnNo.style.display='none';
+    } else {
+      notLoggedIn.style.display='none';
+      if(btnYes)btnYes.style.display='block';
+      if(btnNo)btnNo.style.display='block';
+    }
+  }
   const specVotes=votes.filter(v=>v.role==='spectator');
   const specSection=document.getElementById('spectator-vote-section');
   const specResult=document.getElementById('spectator-vote-result');
@@ -1731,24 +1758,33 @@ async function loadVoteData(){
 }
 
 async function castVote(choice){
-  if(!CU)return;
+  if(!CU){toast('請先登入才能投票','error');return;}
   if(choice==='later'){
     closeVoteModal();
     return;
   }
-  // 先刪舊票
-  const snap=await db.collection('votes').get();
-  const myOld=snap.docs.find(d=>d.data().userId===CU.id);
-  if(myOld)await db.collection('votes').doc(myOld.id).delete();
-  // 寫新票（監視者也可投但標記role）
-  await db.collection('votes').add({
-    userId:CU.id,userName:CU.name||CU.id,
-    role:CU.role,choice,createdAt:Date.now()
-  });
-  localStorage.setItem(`vote_rule_change_${CU.id}`,choice);
-  toast(choice==='yes'?'✅ 已投票：同意新規則':'❌ 已投票：照舊');
-  closeVoteModal();
-  loadVoteData();
+  const btns=document.getElementById('vote-buttons');
+  if(btns)btns.style.opacity='0.5';
+  try{
+    // 先刪舊票
+    const snap=await db.collection('votes').get();
+    const myOld=snap.docs.find(d=>d.data().userId===CU.id);
+    if(myOld)await db.collection('votes').doc(myOld.id).delete();
+    // 寫新票
+    await db.collection('votes').add({
+      userId:CU.id,userName:CU.name||CU.id,
+      role:CU.role,choice,createdAt:Date.now()
+    });
+    localStorage.setItem(`vote_rule_change_${CU.id}`,choice);
+    toast(choice==='yes'?'✅ 已投票：同意新規則':'❌ 已投票：照舊');
+    closeVoteModal();
+    loadVoteData();
+  }catch(e){
+    console.error('投票失敗',e);
+    toast('投票失敗，請重試','error');
+  }finally{
+    if(btns)btns.style.opacity='1';
+  }
 }
 
 function closeVoteModal(){
