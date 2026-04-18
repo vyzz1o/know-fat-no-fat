@@ -129,7 +129,12 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <!-- 原因說明 -->
     <div style="background:var(--surface);border-radius:10px;padding:14px;margin-bottom:16px;font-size:13px;line-height:1.7">
       <div style="font-weight:700;color:var(--accent);margin-bottom:6px">💡 為什麼要改？</div>
-      <div style="color:var(--muted)">肌肉密度比脂肪高，同樣體積的肌肉比脂肪重約 18%。體重會因為肌肉增加而上升，所以體重降幅並不能真正反映減脂的成果。<br><br>持續運動增肌的人，因為肌肉長了，體重沒掉，分數卻下降——這樣不公平。更糟的是，若極端減重雖然體重掉了，但肌肉也跟著流失，活動結束後更容易復胖。<br><br>改成骨骼肌上升率，讓真正有在減脂的人得到應有的分數，也確保大家可以活久一點。</div>
+      <div style="color:var(--muted);font-size:13px;line-height:1.8">
+        <div>肌肉密度比脂肪高，同樣體積的肌肉比脂肪重約 18%。</div>
+        <div>體重會因為肌肉增加而上升，所以體重降幅並不能真正反映減脂的成果。</div>
+        <div style="margin-top:10px">持續運動增肌的人，因為肌肉長了，體重沒掉，分數卻下降——這樣不公平！若極端減重雖然體重掉了，但肌肉也跟著流失，活動結束後更容易復胖。</div>
+        <div style="margin-top:10px">改成骨骼肌上升率，讓真正有在減脂的人得到應有的分數，也確保大家可以活久一點。</div>
+      </div>
     </div>
 
     <!-- 新舊規則對比 -->
@@ -1182,9 +1187,9 @@ async function loadAdminUserList(){
   const all=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role!=='admin');
   const players=all.filter(u=>u.role==='user');
   const spectators=all.filter(u=>u.role==='spectator');
-  document.getElementById('admin-user-list').innerHTML=players.length===0?'尚無參賽者':players.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
+  document.getElementById('admin-user-list').innerHTML=players.length===0?'尚無參賽者':players.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px;background:#5b9cf6" onclick="switchRole('${u.id}','spectator')">👀 改監視者</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
   const specList=document.getElementById('admin-spectator-list');
-  if(specList)specList.innerHTML=spectators.length===0?'尚無監視者':spectators.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span> <span style="color:#5b9cf6;font-size:11px">👀 監視者</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
+  if(specList)specList.innerHTML=spectators.length===0?'尚無監視者':spectators.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span> <span style="color:#5b9cf6;font-size:11px">👀 監視者</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px;background:var(--green);color:#000" onclick="switchRole('${u.id}','user')">🏃 改選手</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
 }
 async function registerUser(){
   const id=document.getElementById('reg-id').value.trim(),n=document.getElementById('reg-name').value.trim(),p=document.getElementById('reg-pw').value,role=document.getElementById('reg-role').value;
@@ -1222,6 +1227,14 @@ async function showUserChart(uid,name){
   });
 }
 function closeUserChart(){document.getElementById('user-chart-modal').style.display='none';if(userChartInst){userChartInst.destroy();userChartInst=null;}}
+async function switchRole(id, newRole){
+  const label=newRole==='spectator'?'監視者':'選手';
+  if(!confirm(`確定將此帳號改為「${label}」？`))return;
+  await db.collection('users').doc(id).update({role:newRole});
+  toast(`已改為${label}`);
+  loadAdminUserList();
+  loadPublicData();
+}
 async function deleteUser(id){if(!confirm("確定刪除？"))return;await db.collection('users').doc(id).delete();loadAdminUserList();loadPublicData();}
 function updateAdminTargetSelect(){
   const sel=document.getElementById('admin-target-user');
