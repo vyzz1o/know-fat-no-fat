@@ -1125,7 +1125,7 @@ async function loadUserRecords(){
         ops=`<button style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="editSelfRecord('${r.id}')">編輯</button><button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',false)">刪除</button>`;
       }
     }
-    return`<tr><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'kg':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>`;
+    return`<tr><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'%':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>`;
   }).join('')+`</table></div>`;
   document.getElementById('user-record-list').innerHTML=renderTable(validRecs);
   const chartEl=document.getElementById('my-chart-canvas');
