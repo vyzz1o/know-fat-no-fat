@@ -2050,26 +2050,31 @@ async function loadAdminVoteResult(){
   const yesVotes=playerVotes.filter(v=>v.choice==='yes');
   const noVotes=playerVotes.filter(v=>v.choice==='no');
   const laterVotes=playerVotes.filter(v=>v.choice==='later');
-  const total=yesVotes.length+noVotes.length;
+  // 「我再想一下」也算投過票
+  const totalVoted=playerVotes.length; // 包含 later
+  const total=yesVotes.length+noVotes.length; // 只算 yes/no 做%計算
   const yesPct=total>0?Math.round(yesVotes.length/total*100):0;
   const totalPlayers=players.length;
-  const allVoted=total>=totalPlayers&&totalPlayers>0;
-  const passed=yesPct>=80&&allVoted;
-  const notVotedCount=totalPlayers-total-laterVotes.length;
-  const choiceColor={yes:'var(--green)',no:'var(--red)',later:'var(--muted)'};
+  const notVotedCount=totalPlayers-totalVoted;
+  const allVoted=totalVoted>=totalPlayers&&totalPlayers>0;
+  const passed=yesPct>=80&&allVoted&&total===totalPlayers; // 全員都要是yes/no才算
+  const choiceLabel={yes:'✅ 同意新規則',no:'❌ 照舊',later:'🤔 再想一下'};
+  const choiceColor={yes:'var(--green)',no:'var(--red)',later:'var(--accent)'};
   el.innerHTML=`
     <div style="margin-bottom:16px">
       <div style="display:flex;height:24px;border-radius:8px;overflow:hidden;background:#f05c6e22;margin-bottom:8px">
-        <div style="width:${yesPct}%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;transition:width 0.4s">${yesPct>10?yesPct+'%':''}</div>
+        <div style="width:${yesPct}%;background:var(--green);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000">${yesPct>10?yesPct+'%':''}</div>
         <div style="flex:1;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--red)">${100-yesPct>10?(100-yesPct)+'%':''}</div>
       </div>
-      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:8px;margin-bottom:12px">
+      <div style="display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px">
         <div class="stat-box"><div class="stat-label">✅ 同意</div><div class="stat-val" style="color:var(--green)">${yesVotes.length} 人</div></div>
         <div class="stat-box"><div class="stat-label">❌ 照舊</div><div class="stat-val" style="color:var(--red)">${noVotes.length} 人</div></div>
-        <div class="stat-box"><div class="stat-label">⏳ 未決定</div><div class="stat-val" style="color:var(--muted)">${notVotedCount+laterVotes.length} 人</div></div>
+        <div class="stat-box"><div class="stat-label">🤔 再想一下</div><div class="stat-val" style="color:var(--accent)">${laterVotes.length} 人</div></div>
+        <div class="stat-box"><div class="stat-label">— 未投票</div><div class="stat-val" style="color:var(--muted)">${notVotedCount} 人</div></div>
       </div>
+      <div style="font-size:11px;color:var(--muted);text-align:center;margin-bottom:8px">已看過投票：${totalVoted} / ${totalPlayers} 人（含「再想一下」）</div>
       <div style="font-size:12px;color:${passed?'var(--green)':yesPct>=80?'var(--accent)':'var(--red)'};font-weight:700;text-align:center;padding:8px;background:${passed?'#4cde8f18':yesPct>=80?'#f5a62318':'#f05c6e18'};border-radius:8px">
-        ${passed?'✅ 全員已投票且達 80% 同意，可以改規則！':yesPct>=80&&!allVoted?`同意已達 80%，但還有 ${totalPlayers-total} 人尚未投票`:allVoted?`全員已投票，但同意未達 80%（目前 ${yesPct}%）`:`還有 ${totalPlayers-total} 人尚未投票，同意目前 ${yesPct}%`}
+        ${passed?'✅ 全員決定且達 80% 同意，可以改規則！':notVotedCount>0?`還有 ${notVotedCount} 人尚未看過投票`:laterVotes.length>0?`全員都看過了，還有 ${laterVotes.length} 人尚未決定`:`全員已投票，同意 ${yesPct}%`}
       </div>
     </div>
     <div style="margin-bottom:16px">
@@ -2078,7 +2083,7 @@ async function loadAdminVoteResult(){
         const v=playerVotes.find(v=>v.userId===p.id);
         return`<div style="display:flex;justify-content:space-between;align-items:center;padding:8px 0;border-bottom:1px solid #2a314820">
           <div style="font-size:13px;font-weight:600">${p.name||p.id}</div>
-          <div style="font-size:12px;font-weight:700;color:${v?choiceColor[v.choice]:'var(--muted)'}">${v?choiceLabel[v.choice]:'— 尚未投票'}</div>
+          <div style="font-size:12px;font-weight:700;color:${v?choiceColor[v.choice]:'var(--muted)'}">${v?choiceLabel[v.choice]:'— 尚未看過'}</div>
         </div>`;
       }).join('')}
     </div>
