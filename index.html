@@ -108,6 +108,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
 .workout-day{background:linear-gradient(135deg,#f5a62318,#f5a62305);border:1px solid #f5a62333;border-radius:12px;padding:14px;margin-bottom:10px}
 .gift-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000c;z-index:1000;align-items:center;justify-content:center;padding:16px}
 .gift-modal.open{display:flex}
+@keyframes bounce{0%,100%{transform:translateY(0)}50%{transform:translateY(-12px)}}
 .vote-modal{display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000c;z-index:1000;align-items:center;justify-content:center;padding:16px}
 .vote-modal.open{display:flex}
 .vote-box{background:var(--card);border:1px solid var(--border);border-radius:16px;width:100%;max-width:480px;max-height:90vh;overflow-y:auto;padding:24px}
@@ -130,8 +131,8 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     <div style="font-size:14px;color:var(--accent);font-weight:700;margin-bottom:6px" id="gift-modal-date"></div>
     <div style="font-size:16px;font-weight:800;margin-bottom:20px">今日訓練到了！</div>
     <div id="gift-modal-box-area">
-      <div style="font-size:72px;cursor:pointer;transition:transform 0.15s;display:inline-block" id="gift-modal-box" onclick="openGiftModal()">🎁</div>
-      <div style="font-size:13px;color:var(--muted);margin-top:12px">點擊打開！</div>
+      <div style="font-size:72px;cursor:pointer;transition:transform 0.15s;display:inline-block;animation:bounce 1s infinite" id="gift-modal-box" onclick="openGiftModal()">🎁</div>
+      <div style="font-size:14px;color:var(--accent);font-weight:700;margin-top:12px">👆 點我打開！</div>
     </div>
     <div id="gift-modal-content" style="display:none;text-align:left;margin-top:16px"></div>
     <button onclick="closeGiftModal()" style="background:transparent;border:none;color:var(--muted);font-size:12px;cursor:pointer;margin-top:16px;padding:8px;width:100%">稍後再看</button>
@@ -1133,7 +1134,11 @@ async function loadUserRecords(){
   if(chartEl){
     if(window.myChartInst)window.myChartInst.destroy();
     if(allApp.length>=2){
-      window.myChartInst=new Chart(chartEl.getContext('2d'),{type:'line',data:{labels:allApp.map(r=>r.date.slice(5)),datasets:[{label:'體脂率 %',data:allApp.map(r=>r.bodyFat),borderColor:'#f5a623',backgroundColor:'#f5a62320',fill:true,tension:0.3,yAxisID:'y'},{label:'體重 kg',data:allApp.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'}]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}});
+      window.myChartInst=new Chart(chartEl.getContext('2d'),{type:'line',data:{labels:allApp.map(r=>r.date.slice(5)),datasets:[
+        {label:'體脂率 %',data:allApp.map(r=>r.bodyFat),borderColor:'#f5a623',backgroundColor:'#f5a62320',fill:true,tension:0.3,yAxisID:'y'},
+        {label:'體重 kg',data:allApp.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'},
+        {label:'骨骼肌 %',data:allApp.map(r=>r.muscle||null),borderColor:'#4cde8f',tension:0.3,borderDash:[4,4],yAxisID:'y'}
+      ]},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}});
     } else {
       chartEl.parentElement.innerHTML='<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">需要至少 2 筆紀錄才能顯示趨勢圖</div>';
     }
@@ -1157,7 +1162,7 @@ async function login(){
     db.collection('loginLogs').add({userId:CU.id,userName:CU.name||CU.id,date:today,ts:Date.now()});
     updateNav();
     if(CU.role==='spectator'){showPage('spectator');loadSpectatorPage();}
-    else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
+    else{showPage('public');loadPublicData();setTimeout(initQaSection,300);}
     setTimeout(()=>{checkVoteModal();setTimeout(checkGiftModal,400);},800);
   } else {
     toast('帳號或密碼錯誤','error');
@@ -1297,17 +1302,19 @@ async function showUserChart(uid,name){
   const snap=await db.collection('records').get();
   const allRecs=snap.docs.map(d=>d.data()).filter(r=>r.userId===uid&&r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
   const adminRecs=allRecs.filter(r=>r.adminEntered);
-  const recs=adminRecs.length>=2?adminRecs:allRecs; // 優先用官方數據，不夠就用全部
+  const recs=adminRecs.length>=2?adminRecs:allRecs;
   document.getElementById('user-chart-title').textContent=`${name} 的數據趨勢`;
   document.getElementById('user-chart-modal').style.display='flex';
-  if(userChartInst)userChartInst.destroy();
+  if(userChartInst){userChartInst.destroy();userChartInst=null;}
+  // 重建 canvas
+  const wrap=document.querySelector('#user-chart-modal [style*="260px"]');
+  if(wrap){wrap.innerHTML='<canvas id="user-chart-canvas"></canvas>';}
   const canvas=document.getElementById('user-chart-canvas');
+  if(!canvas)return;
   if(recs.length<2){
-    canvas.style.display='none';
-    canvas.parentElement.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">尚無足夠數據（需至少 2 筆）</div>';
+    wrap.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">尚無足夠數據（需至少 2 筆）</div>';
     return;
   }
-  canvas.style.display='block';
   userChartInst=new Chart(canvas.getContext('2d'),{
     type:'line',
     data:{
@@ -2752,7 +2759,7 @@ async function deleteComment(commentId){
           localStorage.setItem('ci_last_log',today);
         }
         if(CU.role==='spectator'){showPage('spectator');loadSpectatorPage();}
-        else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
+        else{showPage('public');loadPublicData();setTimeout(initQaSection,300);}
         setTimeout(()=>{checkVoteModal();setTimeout(checkGiftModal,400);},800);
       }
     } else {
