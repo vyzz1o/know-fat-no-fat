@@ -1049,7 +1049,7 @@ function updateNav(){
 function goDashboard(){
   if(CU.role==='admin')showPage('admin');
   else if(CU.role==='spectator'){showPage('spectator');loadSpectatorPage();}
-  else showPage('user');
+  else{showPage('user');userTab('mydata');loadUserRecords();loadUserDiaries();}
 }
 
 function logout(){
