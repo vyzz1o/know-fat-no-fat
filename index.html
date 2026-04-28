@@ -165,7 +165,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         <div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:8px">❌ 舊規則</div>
         <div style="font-size:12px;line-height:1.8;color:var(--muted)">
           <div>體脂降率 <strong style="color:var(--text)">× 70%</strong></div>
-          <div>體重降率 <strong style="color:var(--text)">× 30%</strong></div>
+          <div>骨骼肌升率 <strong style="color:var(--text)">× 30%</strong></div>
           <div style="margin-top:6px;font-size:11px;border-top:1px solid #f05c6e22;padding-top:6px">總分 = 基礎分 × (1＋加分%)</div>
         </div>
       </div>
@@ -726,6 +726,16 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <input id="reg-id" placeholder="ID">
       <input id="reg-name" placeholder="暱稱">
       <input id="reg-pw" placeholder="密碼">
+      <label>性別</label>
+      <select id="reg-gender" style="margin-bottom:10px">
+        <option value="">不填寫</option>
+        <option value="female">女</option>
+        <option value="male">男</option>
+      </select>
+      <label>出生年月日（西元年）</label>
+      <input type="date" id="reg-birthday" style="margin-bottom:10px">
+      <label>身高 (cm)</label>
+      <input type="number" id="reg-height" placeholder="例：165" style="margin-bottom:10px">
       <label>角色</label>
       <select id="reg-role" style="margin-bottom:10px">
         <option value="user">🏃 選手（參加比賽）</option>
@@ -1065,14 +1075,17 @@ function logout(){
 }
 
 function calculateFullStats(recs){
-  if(recs.length<2)return{fatRate:0,weightRate:0,bonus:0,total:0,isWinner:false};
-  const start=recs[0],last=recs[recs.length-1];
-  const fRate=(start.bodyFat-last.bodyFat)/start.bodyFat,wRate=(start.weight-last.weight)/start.weight;
+  if(recs.length<2)return{fatRate:0,muscleRate:0,bonus:0,total:0,isWinner:false};
   const nonPeriod=recs.filter(r=>!r.isPeriod);
+  const calcRecs=nonPeriod.length>=2?nonPeriod:recs;
+  const start=calcRecs[0],last=calcRecs[calcRecs.length-1];
+  const fRate=(start.bodyFat-last.bodyFat)/start.bodyFat;
+  // 骨骼肌升率（沒有骨骼肌數據則為0）
+  const mRate=(start.muscle&&last.muscle&&start.muscle>0)?(last.muscle-start.muscle)/start.muscle:0;
   let upCount=0;
   if(nonPeriod.length>=2){for(let i=1;i<nonPeriod.length;i++){if(nonPeriod[i].bodyFat>nonPeriod[i-1].bodyFat)upCount++;}}
   const bonus=(upCount===0)?0.10:(upCount===1?0.05:0);
-  return{fatRate:fRate*100,weightRate:wRate*100,bonus:bonus*100,total:((fRate*0.7)+(wRate*0.3))*(1+bonus)*100,isWinner:fRate>=RATE_GOAL};
+  return{fatRate:fRate*100,muscleRate:mRate*100,bonus:bonus*100,total:((fRate*0.7)+(mRate*0.3))*(1+bonus)*100,isWinner:fRate>=RATE_GOAL};
 }
 
 async function loadPublicData(){
@@ -1112,7 +1125,7 @@ async function loadUserRecords(){
   if(app.length>0){
     const s=calculateFullStats(app),f=app[0],target=(f.bodyFat*(1-RATE_GOAL)).toFixed(1);
     gBox.innerHTML=`<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div></div><div>${s.isWinner?'✅ 已達標':'進行中'}</div></div>`;
-    sBar.innerHTML=`<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
+    sBar.innerHTML=`<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">骨骼肌升率</div><div class="stat-val" style="color:#4cde8f">${s.muscleRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
   }
   const validRecs=recs.filter(r=>r.status==='approved'||r.status==='delete_pending');
   const renderTable=(list)=>list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px 0">尚無紀錄</div>':`<div style="overflow-x:auto"><table><tr><th>日期</th><th>來源</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
@@ -1287,16 +1300,80 @@ async function loadAdminUserList(){
   const all=snap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role!=='admin');
   const players=all.filter(u=>u.role==='user');
   const spectators=all.filter(u=>u.role==='spectator');
-  document.getElementById('admin-user-list').innerHTML=players.length===0?'尚無參賽者':players.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px;background:#5b9cf6" onclick="switchRole('${u.id}','spectator')">👀 改監視者</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
+  const genderLabel={male:'男',female:'女','':''};
+  document.getElementById('admin-user-list').innerHTML=players.length===0?'尚無參賽者':players.map(u=>{
+    const age=u.birthday?Math.floor((Date.now()-new Date(u.birthday))/(365.25*24*3600*1000)):'';
+    const info=[u.gender?genderLabel[u.gender]:'',age?age+'歲':'',u.height?u.height+'cm':''].filter(Boolean).join('・');
+    return`<div class="lb-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+        <div><strong>${u.name}</strong> <span style="color:var(--muted);font-size:12px">@${u.id}</span>${info?` <span style="color:var(--muted);font-size:11px">｜${info}</span>`:''}</div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="btn btn-primary" style="width:auto;padding:4px 8px;font-size:11px" onclick="showUserChart('${u.id}','${u.name}')">📈</button>
+          <button class="btn btn-primary" style="width:auto;padding:4px 8px;font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--muted)" onclick="editUserInfo('${u.id}')">✏️</button>
+          <button class="btn btn-primary" style="width:auto;padding:4px 8px;font-size:11px;background:#5b9cf6" onclick="switchRole('${u.id}','spectator')">👀</button>
+          <button class="btn-red" style="padding:4px 8px;font-size:11px" onclick="deleteUser('${u.id}')">刪</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
   const specList=document.getElementById('admin-spectator-list');
-  if(specList)specList.innerHTML=spectators.length===0?'尚無監視者':spectators.map(u=>`<div class="lb-row"><div style="flex:1"><strong>${u.name}</strong> <span style="color:var(--muted)">@${u.id}</span> <span style="color:#5b9cf6;font-size:11px">👀 監視者</span></div><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px" onclick="showUserChart('${u.id}','${u.name}')">📈 趨勢</button><button class="btn btn-primary" style="width:auto;padding:4px 10px;font-size:12px;margin-right:6px;background:var(--green);color:#000" onclick="switchRole('${u.id}','user')">🏃 改選手</button><button class="btn-red" onclick="deleteUser('${u.id}')">刪除</button></div>`).join('');
+  if(specList)specList.innerHTML=spectators.length===0?'尚無監視者':spectators.map(u=>{
+    const age=u.birthday?Math.floor((Date.now()-new Date(u.birthday))/(365.25*24*3600*1000)):'';
+    const info=[u.gender?genderLabel[u.gender]:'',age?age+'歲':'',u.height?u.height+'cm':''].filter(Boolean).join('・');
+    return`<div class="lb-row" style="flex-direction:column;align-items:flex-start;gap:4px">
+      <div style="display:flex;justify-content:space-between;align-items:center;width:100%">
+        <div><strong>${u.name}</strong> <span style="color:var(--muted);font-size:12px">@${u.id}</span> <span style="color:#5b9cf6;font-size:11px">👀</span>${info?` <span style="color:var(--muted);font-size:11px">｜${info}</span>`:''}</div>
+        <div style="display:flex;gap:4px;flex-shrink:0">
+          <button class="btn btn-primary" style="width:auto;padding:4px 8px;font-size:11px" onclick="showUserChart('${u.id}','${u.name}')">📈</button>
+          <button class="btn btn-primary" style="width:auto;padding:4px 8px;font-size:11px;background:var(--surface);border:1px solid var(--border);color:var(--muted)" onclick="editUserInfo('${u.id}')">✏️</button>
+          <button class="btn btn-primary" style="width:auto;padding:4px 8px;font-size:11px;background:var(--green);color:#000" onclick="switchRole('${u.id}','user')">🏃</button>
+          <button class="btn-red" style="padding:4px 8px;font-size:11px" onclick="deleteUser('${u.id}')">刪</button>
+        </div>
+      </div>
+    </div>`;
+  }).join('');
 }
 async function registerUser(){
-  const id=document.getElementById('reg-id').value.trim(),n=document.getElementById('reg-name').value.trim(),p=document.getElementById('reg-pw').value,role=document.getElementById('reg-role').value;
+  const id=document.getElementById('reg-id').value.trim();
+  const n=document.getElementById('reg-name').value.trim();
+  const p=document.getElementById('reg-pw').value;
+  const role=document.getElementById('reg-role').value;
+  const gender=document.getElementById('reg-gender').value;
+  const birthday=document.getElementById('reg-birthday').value;
+  const height=document.getElementById('reg-height').value;
   if(!id||!n||!p)return toast('請填寫所有欄位','error');
-  await db.collection('users').doc(id).set({name:n,password:p,role});
+  await db.collection('users').doc(id).set({
+    name:n,password:p,role,
+    gender:gender||'',
+    birthday:birthday||'',
+    height:height?parseFloat(height):''
+  });
   toast(`${n} 已建立（${role==='spectator'?'監視者':'選手'}）`);
+  document.getElementById('reg-id').value='';
+  document.getElementById('reg-name').value='';
+  document.getElementById('reg-pw').value='';
+  document.getElementById('reg-gender').value='';
+  document.getElementById('reg-birthday').value='';
+  document.getElementById('reg-height').value='';
   loadAdminUserList();loadPublicData();
+}
+
+async function editUserInfo(uid){
+  const snap=await db.collection('users').doc(uid).get();
+  const u=snap.data();
+  const gender=prompt('性別（male/female/空白）：',u.gender||'');
+  if(gender===null)return;
+  const birthday=prompt('出生年月日（YYYY-MM-DD）：',u.birthday||'');
+  if(birthday===null)return;
+  const height=prompt('身高（cm）：',u.height||'');
+  if(height===null)return;
+  await db.collection('users').doc(uid).update({
+    gender:gender||'',
+    birthday:birthday||'',
+    height:height?parseFloat(height):''
+  });
+  toast('✅ 基本資料已更新！');
+  loadAdminUserList();
 }
 async function showUserChart(uid,name){
   const snap=await db.collection('records').get();
@@ -2624,7 +2701,7 @@ async function showProfile(uid, name){
   document.getElementById('profile-score-card').innerHTML=`
     <div class="grid4" style="margin-bottom:14px">
       <div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div>
-      <div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--blue)">${s.weightRate.toFixed(1)}%</div></div>
+      <div class="stat-box"><div class="stat-label">骨骼肌升率</div><div class="stat-val" style="color:#4cde8f">${s.muscleRate.toFixed(1)}%</div></div>
       <div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div>
       <div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div>
     </div>`;
@@ -2878,7 +2955,7 @@ async function loadSpectatorWatchPage(){
     const last=recs[recs.length-1];
     const first=recs[0];
     const fatDrop=first.bodyFat>0?((first.bodyFat-last.bodyFat)/first.bodyFat*100).toFixed(1):'-';
-    const weightDrop=first.weight>0?((first.weight-last.weight)/first.weight*100).toFixed(1):'-';
+    const muscleRise=first.muscle&&last.muscle&&first.muscle>0?((last.muscle-first.muscle)/first.muscle*100).toFixed(1):'-';
     const canvasId=`spec-chart-${pid}`;
     return`<div style="background:var(--surface);border-radius:10px;padding:14px;margin-bottom:14px">
       <div style="font-weight:800;font-size:15px;margin-bottom:10px;color:var(--accent)">${p?.name||pid}</div>
@@ -2886,7 +2963,7 @@ async function loadSpectatorWatchPage(){
         <div class="stat-box"><div class="stat-label">最新體脂</div><div class="stat-val" style="color:var(--accent)">${last.bodyFat}%</div></div>
         <div class="stat-box"><div class="stat-label">最新體重</div><div class="stat-val" style="color:var(--blue)">${last.weight}kg</div></div>
         <div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${fatDrop}%</div></div>
-        <div class="stat-box"><div class="stat-label">體重降率</div><div class="stat-val" style="color:var(--green)">${weightDrop}%</div></div>
+        <div class="stat-box"><div class="stat-label">骨骼肌升率</div><div class="stat-val" style="color:#4cde8f">${muscleRise==='−'?'無數據':muscleRise+'%'}</div></div>
       </div>
       <div style="font-size:11px;color:var(--muted);margin-bottom:8px">📋 完整紀錄</div>
       <div style="overflow-x:auto;margin-bottom:12px"><table style="font-size:11px">
