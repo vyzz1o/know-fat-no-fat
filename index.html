@@ -165,7 +165,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         <div style="font-size:11px;color:var(--red);font-weight:700;margin-bottom:8px">❌ 舊規則</div>
         <div style="font-size:12px;line-height:1.8;color:var(--muted)">
           <div>體脂降率 <strong style="color:var(--text)">× 70%</strong></div>
-          <div>骨骼肌升率 <strong style="color:var(--text)">× 30%</strong></div>
+          <div>體重降率 <strong style="color:var(--text)">× 30%</strong></div>
           <div style="margin-top:6px;font-size:11px;border-top:1px solid #f05c6e22;padding-top:6px">總分 = 基礎分 × (1＋加分%)</div>
         </div>
       </div>
@@ -268,7 +268,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
           <div style="color:var(--accent);font-weight:700;margin-bottom:6px">📊 評分方式</div>
           <div style="font-size:12px;line-height:1.7">
             <div>✦ 體脂下降率 × <strong>70%</strong></div>
-            <div>✦ 體重下降率 × <strong>30%</strong></div>
+            <div>✦ 骨骼肌上升率 × <strong>30%</strong></div>
             <div style="margin-top:4px;color:var(--muted)">總分 ＝ 基礎分 × (1＋加分%)</div>
           </div>
         </div>
@@ -1171,7 +1171,9 @@ async function loadUserRecords(){
       if(r.adminEntered){
         ops=`<button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',true)">申請刪除</button>`;
       } else {
-        ops=`<button style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="editSelfRecord('${r.id}')">編輯</button><button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',false)">刪除</button>`;
+        const isPublic=r.visibility==='public';
+        const visBtn=`<button onclick="toggleRecordVisibility('${r.id}','${isPublic?'private':'public'}')" style="background:${isPublic?'#5b9cf633':'var(--surface)'};border:1px solid ${isPublic?'#5b9cf6':'var(--border)'};color:${isPublic?'#5b9cf6':'var(--muted)'};border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;margin-right:4px">${isPublic?'📊 公開':'🔒 私人'}</button>`;
+        ops=visBtn+`<button style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="editSelfRecord('${r.id}')">編輯</button><button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',false)">刪除</button>`;
       }
     }
     return`<tr><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'%':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>`;
@@ -1236,6 +1238,12 @@ async function submitRecord(){
   btn.disabled=false;btn.innerText="儲存紀錄";
   loadUserRecords();
 }
+async function toggleRecordVisibility(id, newVisibility){
+  await db.collection('records').doc(id).update({visibility:newVisibility});
+  toast(newVisibility==='public'?'📊 已設為公開趨勢！':'🔒 已設為僅自己看');
+  loadUserRecords();
+}
+
 async function deleteRecord(id, adminEntered){
   if(adminEntered){
     if(!confirm("確定申請刪除管理員紀錄？需管理員審核後才會正式刪除。"))return;
