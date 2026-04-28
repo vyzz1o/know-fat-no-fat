@@ -318,7 +318,14 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
     </div>
   </div>
   <div class="card">
-    <h2>🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2><div style="font-size:11px;color:var(--accent);margin-bottom:10px;margin-top:-6px">💬 點擊名字｜進入個人頁面</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+      <h2 style="margin:0">🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2>
+      <div style="display:flex;gap:4px">
+        <button id="mode-btn-official" onclick="setDataMode('official')" style="background:var(--accent);color:#000;border:none;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">官方</button>
+        <button id="mode-btn-all" onclick="setDataMode('all')" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer">含自填</button>
+      </div>
+    </div>
+    <div style="font-size:11px;color:var(--accent);margin-bottom:10px">💬 點擊名字｜進入個人頁面</div>
     <div id="public-lb">載入數據中...</div>
   </div>
   <div class="card">
@@ -512,6 +519,11 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div class="period-btn" id="period-toggle" onclick="this.classList.toggle('active')">
         <span>🩸</span> 生理期中 (不列入穩定下降加分判斷)
       </div>
+      <label style="margin-top:8px">數據公開設定</label>
+      <select id="rec-visibility" style="margin-bottom:10px">
+        <option value="private">🔒 僅自己看</option>
+        <option value="public">📊 公開趨勢（只顯示曲線，不露出實際數字）</option>
+      </select>
       <button class="btn btn-primary" id="btn-submit-rec" onclick="submitRecord()">儲存紀錄</button>
     </div>
   </div>
@@ -943,9 +955,10 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
         <div>• 顯示比賽結束倒數計時和下次測量日提醒</div>
         <div>• 當前獎金池金額和參賽人數</div>
         <div>• 即時排行榜（依總得分排名）</div>
-        <div>• 全員體脂趨勢折線圖</div>
+        <div>• 排行榜右上角可切換「官方」或「含自填」兩種模式</div>
+        <div>• 全員體脂趨勢折線圖（未登入時模糊顯示）</div>
         <div>• 點「📋 比賽規則」可展開查看完整規則</div>
-        <div>• 點「It's 叫囂 Time」進入叫囂模組</div>
+        <div>• 點「It's 叫囂 Time」進入叫囂模組，點「QA」進入問答區</div>
       </div>
       <div style="color:#f05c6e;font-weight:700;margin-bottom:6px">📣 叫囂模組</div>
       <div style="color:var(--muted);margin-bottom:16px">
@@ -972,8 +985,9 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">➕ 新增測量</div>
       <div style="color:var(--muted);margin-bottom:16px">
         <div>• 自行填入體重、體脂等數據，立即儲存</div>
-        <div>• <strong style="color:var(--text)">注意：自填數據僅供個人參考，不納入計分和排行榜</strong></div>
-        <div>• 計分用的官方數據由管理員在測量日統一錄入</div>
+        <div>• 上傳時可選擇「🔒 僅自己看」或「📊 公開趨勢」</div>
+        <div>• 公開趨勢：只會讓你的體脂曲線出現在排行榜趨勢圖，<strong style="color:var(--text)">不會露出實際數字</strong></div>
+        <div>• <strong style="color:var(--text)">自填數據不會影響計分和排名</strong>，計分只看管理員在測量日錄入的官方數據</div>
       </div>
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">🎁 今日訓練</div>
       <div style="color:var(--muted);margin-bottom:16px">
@@ -1015,7 +1029,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">❓ 常見問題</div>
       <div style="color:var(--muted)">
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：為什麼我的排名沒有更新？</strong><br>A：排行榜只計算管理員在測量日錄入的數據，測量日分別為 4/15、4/29、5/13、5/27、6/10、6/24。</div>
-        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：自己填的數據會影響排名嗎？</strong><br>A：不會，自填數據只供個人趨勢參考。</div>
+        <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：自己填的數據會影響排名嗎？</strong><br>A：不會！計分只看官方數據。自填可以選擇「公開趨勢」讓體脂曲線出現在排行榜，但不影響分數。</div>
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：我填錯數據怎麼辦？</strong><br>A：自己填的數據可以在「我的數據」點「刪」刪除，也可以直接編輯。</div>
         <div style="margin-bottom:10px"><strong style="color:var(--text)">Q：叫囂的留言可以刪嗎？</strong><br>A：自己發的留言可以自己刪。</div>
         <div><strong style="color:var(--text)">Q：退賽可以退款嗎？</strong><br>A：退賽不退款，公基金一旦投入即不退還。</div>
@@ -1088,21 +1102,43 @@ function calculateFullStats(recs){
   return{fatRate:fRate*100,muscleRate:mRate*100,bonus:bonus*100,total:((fRate*0.7)+(mRate*0.3))*(1+bonus)*100,isWinner:fRate>=RATE_GOAL};
 }
 
+let DATA_MODE='official'; // 'official' 或 'all'
+function setDataMode(mode){
+  DATA_MODE=mode;
+  document.getElementById('mode-btn-official').style.background=mode==='official'?'var(--accent)':'var(--surface)';
+  document.getElementById('mode-btn-official').style.color=mode==='official'?'#000':'var(--muted)';
+  document.getElementById('mode-btn-official').style.border=mode==='official'?'none':'1px solid var(--border)';
+  document.getElementById('mode-btn-all').style.background=mode==='all'?'var(--accent)':'var(--surface)';
+  document.getElementById('mode-btn-all').style.color=mode==='all'?'#000':'var(--muted)';
+  document.getElementById('mode-btn-all').style.border=mode==='all'?'none':'1px solid var(--border)';
+  loadPublicData();
+}
+
 async function loadPublicData(){
   try{
     const uSnap=await db.collection('users').get();
     const allUsers=uSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role!=='admin');
     const currentUsers=allUsers.filter(u=>u.role==='user');
-    USERS_CACHE=allUsers; // 包含選手和監視者
+    USERS_CACHE=allUsers;
     document.getElementById('prize-count').textContent=currentUsers.length;
     const rSnap=await db.collection('records').where('status','==','approved').get();
+    // 官方數據（計分用）
     const adminRecords={};
     rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered&&!r.isSpectator&&r.forScoring!==false){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
     Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
+    // 含自填數據（公開趨勢用）
+    const allRecords={};
+    rSnap.docs.forEach(d=>{const r=d.data();if(!r.isSpectator&&(r.adminEntered||(r.visibility==='public'))){if(!allRecords[r.userId])allRecords[r.userId]=[];allRecords[r.userId].push(r);}});
+    Object.keys(allRecords).forEach(id=>allRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
+    // 達標永遠用官方數據
     let winners=0;
-    const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
+    currentUsers.forEach(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;});
+    // 排行榜根據模式切換
+    const displayRecords=DATA_MODE==='all'?allRecords:adminRecords;
+    const rows=currentUsers.map(u=>{const r=displayRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
     document.getElementById('prize-amount').textContent=`NT$ ${((currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK)).toLocaleString()}`;
-    document.getElementById('public-lb').innerHTML=rows.map((u,i)=>{
+    const modeHint=DATA_MODE==='all'?'<div style="font-size:10px;color:#5b9cf6;margin-bottom:6px">📊 含公開自填數據（不計入排名）</div>':'';
+    document.getElementById('public-lb').innerHTML=modeHint+rows.map((u,i)=>{
       const maxScore=rows[0]?Math.max(rows[0].score,0.01):1,barW=Math.max((u.score/maxScore)*100,0);
       return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div style="font-weight:600">${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`;
     }).join('');
@@ -1110,7 +1146,6 @@ async function loadPublicData(){
     const maxLen=Math.max(...rows.map(r=>r.history.length),0);
     if(maxLen>0)publicChart=new Chart(ctx,{type:'line',data:{labels:Array.from({length:maxLen},(_,i)=>`T${i+1}`),datasets:rows.map((u,i)=>({label:u.name,data:u.history,borderColor:COLORS[i%COLORS.length],tension:0.3}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
     if(CU&&CU.role==='admin')updateAdminTargetSelect();
-    // 未登入則顯示模糊遮罩
     const overlay=document.getElementById('chart-blur-overlay');
     if(overlay)overlay.style.display=CU?'none':'flex';
   }catch(e){console.error(e);}
@@ -1185,10 +1220,21 @@ async function login(){
 async function submitRecord(){
   const w=document.getElementById('rec-weight').value,f=document.getElementById('rec-bodyfat').value,d=document.getElementById('rec-date').value,isP=document.getElementById('period-toggle').classList.contains('active');
   const subcut=document.getElementById('rec-subcut').value,muscle=document.getElementById('rec-muscle').value,visceral=document.getElementById('rec-visceral').value,bmr=document.getElementById('rec-bmr').value,bodyage=document.getElementById('rec-bodyage').value;
+  const visibility=document.getElementById('rec-visibility').value;
   if(!w||!f||!d)return toast("請填寫數據","error");
   const btn=document.getElementById('btn-submit-rec');btn.disabled=true;btn.innerText="儲存中...";
-  await db.collection('records').add({userId:CU.id,weight:parseFloat(w),bodyFat:parseFloat(f),subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,bodyage:bodyage?parseFloat(bodyage):null,date:d,isPeriod:isP,status:'approved',adminEntered:false,createdAt:Date.now()});
-  toast("個人紀錄已儲存！");btn.disabled=false;btn.innerText="儲存紀錄";loadUserRecords();
+  await db.collection('records').add({
+    userId:CU.id,weight:parseFloat(w),bodyFat:parseFloat(f),
+    subcut:subcut?parseFloat(subcut):null,muscle:muscle?parseFloat(muscle):null,
+    visceral:visceral?parseFloat(visceral):null,bmr:bmr?parseFloat(bmr):null,
+    bodyage:bodyage?parseFloat(bodyage):null,
+    date:d,isPeriod:isP,status:'approved',adminEntered:false,
+    visibility, // 'private' 或 'public'
+    createdAt:Date.now()
+  });
+  toast(visibility==='public'?"✅ 已儲存並公開趨勢！":"🔒 已儲存（僅自己看得到）");
+  btn.disabled=false;btn.innerText="儲存紀錄";
+  loadUserRecords();
 }
 async function deleteRecord(id, adminEntered){
   if(adminEntered){
