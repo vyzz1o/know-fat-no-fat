@@ -325,10 +325,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   <div class="card">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
       <h2 style="margin:0">🏅 總得分排行 <span style="font-size:11px;color:var(--muted);font-weight:400">（依下降率與穩定度加分）</span></h2>
-      <div style="display:flex;gap:4px">
-        <button id="mode-btn-official" onclick="setDataMode('official')" style="background:var(--accent);color:#000;border:none;border-radius:6px;padding:3px 10px;font-size:11px;font-weight:700;cursor:pointer">官方</button>
-        <button id="mode-btn-all" onclick="setDataMode('all')" style="background:var(--surface);border:1px solid var(--border);color:var(--muted);border-radius:6px;padding:3px 10px;font-size:11px;cursor:pointer">含自填</button>
-      </div>
     </div>
     <div style="font-size:11px;color:var(--accent);margin-bottom:10px">💬 點擊名字｜進入個人頁面</div>
     <div id="public-lb">載入數據中...</div>
@@ -959,8 +955,7 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div style="color:var(--muted);margin-bottom:16px">
         <div>• 顯示比賽結束倒數計時和下次測量日提醒</div>
         <div>• 當前獎金池金額和參賽人數</div>
-        <div>• 即時排行榜（依總得分排名）</div>
-        <div>• 排行榜右上角可切換「官方」或「含自填」兩種模式</div>
+        <div>• 即時排行榜（依總得分排名，官方數據）</div>
         <div>• 全員體脂趨勢折線圖（未登入時模糊顯示）</div>
         <div>• 點「📋 比賽規則」可展開查看完整規則</div>
         <div>• 點「It's 叫囂 Time」進入叫囂模組，點「QA」進入問答區</div>
@@ -1107,18 +1102,6 @@ function calculateFullStats(recs){
   return{fatRate:fRate*100,muscleRate:mRate*100,bonus:bonus*100,total:((fRate*0.7)+(mRate*0.3))*(1+bonus)*100,isWinner:fRate>=RATE_GOAL};
 }
 
-let DATA_MODE='official'; // 'official' 或 'all'
-function setDataMode(mode){
-  DATA_MODE=mode;
-  document.getElementById('mode-btn-official').style.background=mode==='official'?'var(--accent)':'var(--surface)';
-  document.getElementById('mode-btn-official').style.color=mode==='official'?'#000':'var(--muted)';
-  document.getElementById('mode-btn-official').style.border=mode==='official'?'none':'1px solid var(--border)';
-  document.getElementById('mode-btn-all').style.background=mode==='all'?'var(--accent)':'var(--surface)';
-  document.getElementById('mode-btn-all').style.color=mode==='all'?'#000':'var(--muted)';
-  document.getElementById('mode-btn-all').style.border=mode==='all'?'none':'1px solid var(--border)';
-  loadPublicData();
-}
-
 async function loadPublicData(){
   try{
     const uSnap=await db.collection('users').get();
@@ -1131,19 +1114,12 @@ async function loadPublicData(){
     const adminRecords={};
     rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered&&!r.isSpectator&&r.forScoring!==false){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
     Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
-    // 含自填數據（公開趨勢用）
-    const allRecords={};
-    rSnap.docs.forEach(d=>{const r=d.data();if(!r.isSpectator&&(r.adminEntered||(r.visibility==='public'))){if(!allRecords[r.userId])allRecords[r.userId]=[];allRecords[r.userId].push(r);}});
-    Object.keys(allRecords).forEach(id=>allRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
-    // 達標永遠用官方數據
+    // 排行榜只顯示官方數據
+    const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
     let winners=0;
     currentUsers.forEach(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;});
-    // 排行榜根據模式切換
-    const displayRecords=DATA_MODE==='all'?allRecords:adminRecords;
-    const rows=currentUsers.map(u=>{const r=displayRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
     document.getElementById('prize-amount').textContent=`NT$ ${((currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK)).toLocaleString()}`;
-    const modeHint=DATA_MODE==='all'?'<div style="font-size:10px;color:#5b9cf6;margin-bottom:6px">📊 含公開自填數據（不計入排名）</div>':'';
-    document.getElementById('public-lb').innerHTML=modeHint+rows.map((u,i)=>{
+    document.getElementById('public-lb').innerHTML=rows.map((u,i)=>{
       const maxScore=rows[0]?Math.max(rows[0].score,0.01):1,barW=Math.max((u.score/maxScore)*100,0);
       return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div style="font-weight:600">${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`;
     }).join('');
