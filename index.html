@@ -22,7 +22,7 @@ main{max-width:900px;margin:0 auto;padding:20px 14px}
 .card{background:var(--card);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:14px}
 h2{font-size:16px;font-weight:700;margin-bottom:12px}
 label{font-size:12px;color:var(--muted);margin-bottom:4px;display:block}
-input,textarea,select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:13px;width:100%;outline:none;margin-bottom:10px}
+input,textarea,select{background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:8px 11px;color:var(--text);font-size:13px;width:100%;outline:none;margin-bottom:10px;box-sizing:border-box;-webkit-appearance:none}
 textarea{height:80px;resize:none}
 .btn{border:none;border-radius:8px;padding:9px 18px;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .15s}
 .btn-primary{background:var(--accent);color:#000;width:100%}
@@ -520,11 +520,6 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
       <div class="period-btn" id="period-toggle" onclick="this.classList.toggle('active')">
         <span>🩸</span> 生理期中 (不列入穩定下降加分判斷)
       </div>
-      <label style="margin-top:8px">數據公開設定</label>
-      <select id="rec-visibility" style="margin-bottom:10px">
-        <option value="private">🔒 僅自己看</option>
-        <option value="public">📊 公開趨勢（只顯示曲線，不露出實際數字）</option>
-      </select>
       <button class="btn btn-primary" id="btn-submit-rec" onclick="submitRecord()">儲存紀錄</button>
     </div>
   </div>
@@ -716,7 +711,11 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   <div id="atab-admin-add" style="display:none">
     <div class="card">
       <h2>管理員代錄</h2>
-      <select id="admin-target-user"></select>
+      <select id="admin-target-user" onchange="showAdminTargetInfo()"></select>
+      <div id="admin-target-info" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:10px;font-size:12px;display:none">
+        <div style="color:var(--muted);font-size:11px;margin-bottom:4px">體脂機設定參考</div>
+        <div id="admin-target-info-content" style="display:flex;gap:16px;flex-wrap:wrap;color:var(--text);font-weight:700"></div>
+      </div>
       <input type="date" id="admin-rec-date">
       <input type="number" step="0.1" id="admin-rec-weight" placeholder="體重 (kg)">
       <input type="number" step="0.1" id="admin-rec-bodyfat" placeholder="體脂 (%)">
@@ -1153,8 +1152,7 @@ async function loadUserRecords(){
         ops=`<button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',true)">申請刪除</button>`;
       } else {
         const isPublic=r.visibility==='public';
-        const visBtn=`<button onclick="toggleRecordVisibility('${r.id}','${isPublic?'private':'public'}')" style="background:${isPublic?'#5b9cf633':'var(--surface)'};border:1px solid ${isPublic?'#5b9cf6':'var(--border)'};color:${isPublic?'#5b9cf6':'var(--muted)'};border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer;margin-right:4px">${isPublic?'📊 公開':'🔒 私人'}</button>`;
-        ops=visBtn+`<button style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="editSelfRecord('${r.id}')">編輯</button><button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',false)">刪除</button>`;
+        ops=`<button style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="editSelfRecord('${r.id}')">編輯</button><button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',false)">刪除</button>`;
       }
     }
     return`<tr><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'%':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>`;
@@ -1203,7 +1201,7 @@ async function login(){
 async function submitRecord(){
   const w=document.getElementById('rec-weight').value,f=document.getElementById('rec-bodyfat').value,d=document.getElementById('rec-date').value,isP=document.getElementById('period-toggle').classList.contains('active');
   const subcut=document.getElementById('rec-subcut').value,muscle=document.getElementById('rec-muscle').value,visceral=document.getElementById('rec-visceral').value,bmr=document.getElementById('rec-bmr').value,bodyage=document.getElementById('rec-bodyage').value;
-  const visibility=document.getElementById('rec-visibility').value;
+  const visibility=document.getElementById('rec-visibility')?document.getElementById('rec-visibility').value:'private';
   if(!w||!f||!d)return toast("請填寫數據","error");
   const btn=document.getElementById('btn-submit-rec');btn.disabled=true;btn.innerText="儲存中...";
   await db.collection('records').add({
@@ -1215,7 +1213,7 @@ async function submitRecord(){
     visibility, // 'private' 或 'public'
     createdAt:Date.now()
   });
-  toast(visibility==='public'?"✅ 已儲存並公開趨勢！":"🔒 已儲存（僅自己看得到）");
+  toast("✅ 個人紀錄已儲存！");
   btn.disabled=false;btn.innerText="儲存紀錄";
   loadUserRecords();
 }
@@ -1454,7 +1452,33 @@ function updateAdminTargetSelect(){
   const sel=document.getElementById('admin-target-user');
   if(!sel)return;
   const players=USERS_CACHE.filter(u=>u.role==='user'||u.role==='spectator');
-  sel.innerHTML=players.map(u=>`<option value="${u.id}" data-role="${u.role}">${u.name}${u.role==='spectator'?' 👀':''}</option>`).join('');
+  sel.innerHTML=players.map(u=>`<option value="${u.id}" data-role="${u.role}" data-gender="${u.gender||''}" data-birthday="${u.birthday||''}" data-height="${u.height||''}">${u.name}${u.role==='spectator'?' 👀':''}</option>`).join('');
+  showAdminTargetInfo();
+}
+
+function showAdminTargetInfo(){
+  const sel=document.getElementById('admin-target-user');
+  const info=document.getElementById('admin-target-info');
+  const content=document.getElementById('admin-target-info-content');
+  if(!sel||!info||!content)return;
+  const opt=sel.options[sel.selectedIndex];
+  if(!opt){info.style.display='none';return;}
+  const gender=opt.dataset.gender;
+  const birthday=opt.dataset.birthday;
+  const height=opt.dataset.height;
+  const genderLabel={male:'男',female:'女','':'未填'};
+  let age='未填';
+  if(birthday){
+    age=Math.floor((Date.now()-new Date(birthday))/(365.25*24*3600*1000))+'歲';
+  }
+  const items=[
+    {label:'性別',value:genderLabel[gender]||'未填'},
+    {label:'年齡',value:age},
+    {label:'生日',value:birthday||'未填'},
+    {label:'身高',value:height?height+'cm':'未填'},
+  ];
+  content.innerHTML=items.map(i=>`<div><span style="color:var(--muted);font-weight:400">${i.label}：</span>${i.value}</div>`).join('');
+  info.style.display='block';
 }
 async function adminSubmitRecord(){
   const sel=document.getElementById('admin-target-user');
