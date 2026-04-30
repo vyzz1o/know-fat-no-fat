@@ -1146,7 +1146,27 @@ async function loadUserRecords(){
     if(notes){
       gBox.innerHTML+=`<div style="background:#f5a62312;border:1px solid #f5a62333;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px"><span style="color:var(--accent);font-weight:700">📝 管理員備註：</span><span style="color:var(--muted)">${notes}</span></div>`;
     }
-    sBar.innerHTML=`<div class="grid4"><div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">骨骼肌升率</div><div class="stat-val" style="color:#4cde8f">${s.muscleRate.toFixed(1)}%</div></div><div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div><div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div></div>`;
+    const firstRec=app[0],lastRec=app[app.length-1];
+    const fatArrow=s.fatRate>=0?'▼':'▲';
+    const fatColor=s.fatRate>=0?'var(--green)':'var(--red)';
+    const muscleArrow=s.muscleRate>=0?'▲':'▼';
+    const muscleColor=s.muscleRate>=0?'#4cde8f':'var(--red)';
+    const fatActual=firstRec&&lastRec?`${firstRec.bodyFat}% → ${lastRec.bodyFat}%`:'';
+    const muscleActual=firstRec&&lastRec&&lastRec.muscle?`${firstRec.muscle||'?'}% → ${lastRec.muscle}%`:'';
+    sBar.innerHTML=`<div class="grid4">
+      <div class="stat-box">
+        <div class="stat-label">體脂</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${fatActual}</div>
+        <div class="stat-val" style="color:${fatColor}">${fatArrow} ${Math.abs(s.fatRate).toFixed(1)}%</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">骨骼肌</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${muscleActual}</div>
+        <div class="stat-val" style="color:${muscleColor}">${muscleArrow} ${Math.abs(s.muscleRate).toFixed(1)}%</div>
+      </div>
+      <div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div>
+      <div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div>
+    </div>`;
   }
   const validRecs=recs.filter(r=>r.status==='approved'||r.status==='delete_pending');
   const renderTable=(list)=>list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px 0">尚無紀錄</div>':`<div style="overflow-x:auto"><table><tr><th>日期</th><th>來源</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
@@ -2780,10 +2800,25 @@ async function showProfile(uid, name){
   const rSnap=await db.collection('records').where('userId','==',uid).where('status','==','approved').where('adminEntered','==',true).get();
   const recs=rSnap.docs.map(d=>d.data()).filter(r=>r.forScoring!==false).sort((a,b)=>a.date.localeCompare(b.date));
   const s=calculateFullStats(recs);
+  const pFirst=recs[0],pLast=recs[recs.length-1];
+  const pFatArrow=s.fatRate>=0?'▼':'▲';
+  const pFatColor=s.fatRate>=0?'var(--green)':'var(--red)';
+  const pMuscleArrow=s.muscleRate>=0?'▲':'▼';
+  const pMuscleColor=s.muscleRate>=0?'#4cde8f':'var(--red)';
+  const pFatActual=pFirst&&pLast?`${pFirst.bodyFat}% → ${pLast.bodyFat}%`:'';
+  const pMuscleActual=pFirst&&pLast&&pLast.muscle?`${pFirst.muscle||'?'}% → ${pLast.muscle}%`:'';
   document.getElementById('profile-score-card').innerHTML=`
     <div class="grid4" style="margin-bottom:14px">
-      <div class="stat-box"><div class="stat-label">體脂降率</div><div class="stat-val" style="color:var(--green)">${s.fatRate.toFixed(1)}%</div></div>
-      <div class="stat-box"><div class="stat-label">骨骼肌升率</div><div class="stat-val" style="color:#4cde8f">${s.muscleRate.toFixed(1)}%</div></div>
+      <div class="stat-box">
+        <div class="stat-label">體脂</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${pFatActual}</div>
+        <div class="stat-val" style="color:${pFatColor}">${pFatArrow} ${Math.abs(s.fatRate).toFixed(1)}%</div>
+      </div>
+      <div class="stat-box">
+        <div class="stat-label">骨骼肌</div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${pMuscleActual}</div>
+        <div class="stat-val" style="color:${pMuscleColor}">${pMuscleArrow} ${Math.abs(s.muscleRate).toFixed(1)}%</div>
+      </div>
       <div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div>
       <div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div>
     </div>`;
