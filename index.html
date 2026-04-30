@@ -1037,6 +1037,15 @@ th,td{padding:8px;text-align:left;border-bottom:1px solid var(--border)}
   </div>
 </div>
 
+<!-- Tooltip 彈窗 -->
+<div id="tooltip-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1001;align-items:center;justify-content:center;padding:20px" onclick="closeTooltip()">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;max-width:280px;text-align:center;box-shadow:0 8px 32px #000a">
+    <div id="tooltip-title" style="font-size:14px;font-weight:800;margin-bottom:8px;color:var(--accent)"></div>
+    <div id="tooltip-body" style="font-size:13px;color:var(--muted);line-height:1.6"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:12px">點任意處關閉</div>
+  </div>
+</div>
+
 <script>
 const firebaseConfig={apiKey:"AIzaSyD_s-anl91EMmC1TtmXNpVlyBcD7sYjzzk",authDomain:"fat-loss-game.firebaseapp.com",projectId:"fat-loss-game",storageBucket:"fat-loss-game.appspot.com",messagingSenderId:"280707290748",appId:"1:280707290748:web:aa7946aef2cc96cafe5bf9"};
 firebase.initializeApp(firebaseConfig);
@@ -1046,6 +1055,15 @@ const RACE_START=new Date('2026-04-15T00:00:00');
 const COLORS=['#f5a623','#4cde8f','#5b9cf6','#c084fc','#fb7185','#38bdf8','#a78bfa','#f472b6'];
 const SESSION_DURATION = 12 * 60 * 60 * 1000; // 12小時
 let CU=null,USERS_CACHE=[],publicChart=null;
+
+function showTooltip(title, body){
+  document.getElementById('tooltip-title').textContent=title;
+  document.getElementById('tooltip-body').textContent=body;
+  document.getElementById('tooltip-modal').style.display='flex';
+}
+function closeTooltip(){
+  document.getElementById('tooltip-modal').style.display='none';
+}
 
 function getToday(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
 function toggleFaq(){const m=document.getElementById('faq-modal');m.style.display=m.style.display==='none'?'flex':'none';}
@@ -1147,25 +1165,31 @@ async function loadUserRecords(){
       gBox.innerHTML+=`<div style="background:#f5a62312;border:1px solid #f5a62333;border-radius:8px;padding:10px 12px;margin-bottom:14px;font-size:12px"><span style="color:var(--accent);font-weight:700">📝 管理員備註：</span><span style="color:var(--muted)">${notes}</span></div>`;
     }
     const firstRec=app[0],lastRec=app[app.length-1];
-    const fatArrow=s.fatRate>=0?'▼':'▲';
+    const fatArrow=s.fatRate>=0?'▾':'▴';
     const fatColor=s.fatRate>=0?'var(--green)':'var(--red)';
-    const muscleArrow=s.muscleRate>=0?'▲':'▼';
+    const muscleArrow=s.muscleRate>=0?'▴':'▾';
     const muscleColor=s.muscleRate>=0?'#4cde8f':'var(--red)';
     const fatActual=firstRec&&lastRec?`${firstRec.bodyFat}% → ${lastRec.bodyFat}%`:'';
     const muscleActual=firstRec&&lastRec&&lastRec.muscle?`${firstRec.muscle||'?'}% → ${lastRec.muscle}%`:'';
     sBar.innerHTML=`<div class="grid4">
-      <div class="stat-box">
-        <div class="stat-label">體脂</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${fatActual}</div>
+      <div class="stat-box" onclick="showTooltip('體脂降率','體脂肪從比賽開始到現在下降的百分率。數字越高代表減脂效果越好！▾ 代表下降（好），▴ 代表上升（需加油）')" style="cursor:pointer">
+        <div class="stat-label">體脂降率 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${fatActual}</div>
         <div class="stat-val" style="color:${fatColor}">${fatArrow} ${Math.abs(s.fatRate).toFixed(1)}%</div>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">骨骼肌</div>
-        <div style="font-size:11px;color:var(--muted);margin-bottom:2px">${muscleActual}</div>
+      <div class="stat-box" onclick="showTooltip('骨骼肌升率','骨骼肌從比賽開始到現在上升的百分率。數字越高代表增肌效果越好！▴ 代表上升（好），▾ 代表下降（需加油）')" style="cursor:pointer">
+        <div class="stat-label">骨骼肌升率 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
+        <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${muscleActual}</div>
         <div class="stat-val" style="color:${muscleColor}">${muscleArrow} ${Math.abs(s.muscleRate).toFixed(1)}%</div>
       </div>
-      <div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div>
-      <div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div>
+      <div class="stat-box" onclick="showTooltip('穩定加分','每次測量都下降 → +10%，只有一次回升 → +5%，兩次以上回升 → 不加分。生理期那次不計入判斷。')" style="cursor:pointer">
+        <div class="stat-label">穩定加分 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
+        <div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div>
+      </div>
+      <div class="stat-box" onclick="showTooltip('總評分','計算公式：（體脂降率 × 70% + 骨骼肌升率 × 30%）× (1 + 穩定加分%)。這是比賽排名的依據！')" style="cursor:pointer">
+        <div class="stat-label">總評分 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
+        <div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div>
+      </div>
     </div>`;
   }
   const validRecs=recs.filter(r=>r.status==='approved'||r.status==='delete_pending');
@@ -2801,26 +2825,32 @@ async function showProfile(uid, name){
   const recs=rSnap.docs.map(d=>d.data()).filter(r=>r.forScoring!==false).sort((a,b)=>a.date.localeCompare(b.date));
   const s=calculateFullStats(recs);
   const pFirst=recs[0],pLast=recs[recs.length-1];
-  const pFatArrow=s.fatRate>=0?'▼':'▲';
+  const pFatArrow=s.fatRate>=0?'▾':'▴';
   const pFatColor=s.fatRate>=0?'var(--green)':'var(--red)';
-  const pMuscleArrow=s.muscleRate>=0?'▲':'▼';
+  const pMuscleArrow=s.muscleRate>=0?'▴':'▾';
   const pMuscleColor=s.muscleRate>=0?'#4cde8f':'var(--red)';
   const pFatActual=pFirst&&pLast?`${pFirst.bodyFat}% → ${pLast.bodyFat}%`:'';
   const pMuscleActual=pFirst&&pLast&&pLast.muscle?`${pFirst.muscle||'?'}% → ${pLast.muscle}%`:'';
   document.getElementById('profile-score-card').innerHTML=`
     <div class="grid4" style="margin-bottom:14px">
-      <div class="stat-box">
-        <div class="stat-label">體脂</div>
+      <div class="stat-box" onclick="showTooltip('體脂降率','體脂肪從比賽開始到現在下降的百分率。數字越高代表減脂效果越好！▾ 代表下降（好），▴ 代表上升（需加油）')" style="cursor:pointer">
+        <div class="stat-label">體脂降率 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${pFatActual}</div>
         <div class="stat-val" style="color:${pFatColor}">${pFatArrow} ${Math.abs(s.fatRate).toFixed(1)}%</div>
       </div>
-      <div class="stat-box">
-        <div class="stat-label">骨骼肌</div>
+      <div class="stat-box" onclick="showTooltip('骨骼肌升率','骨骼肌從比賽開始到現在上升的百分率。數字越高代表增肌效果越好！▴ 代表上升（好），▾ 代表下降（需加油）')" style="cursor:pointer">
+        <div class="stat-label">骨骼肌升率 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${pMuscleActual}</div>
         <div class="stat-val" style="color:${pMuscleColor}">${pMuscleArrow} ${Math.abs(s.muscleRate).toFixed(1)}%</div>
       </div>
-      <div class="stat-box"><div class="stat-label">穩定加分</div><div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div></div>
-      <div class="stat-box"><div class="stat-label">總評分</div><div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div></div>
+      <div class="stat-box" onclick="showTooltip('穩定加分','每次測量都下降 → +10%，只有一次回升 → +5%，兩次以上回升 → 不加分。生理期那次不計入判斷。')" style="cursor:pointer">
+        <div class="stat-label">穩定加分 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
+        <div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div>
+      </div>
+      <div class="stat-box" onclick="showTooltip('總評分','計算公式：（體脂降率 × 70% + 骨骼肌升率 × 30%）× (1 + 穩定加分%)。這是比賽排名的依據！')" style="cursor:pointer">
+        <div class="stat-label">總評分 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
+        <div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div>
+      </div>
     </div>`;
 
   // Chart - show total score trend only, no body measurements
