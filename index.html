@@ -472,19 +472,38 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 
 /* QA */
 .qa-item{
-  background:rgba(255,255,255,0.02);
+  background:linear-gradient(135deg,rgba(25,32,48,0.6) 0%,rgba(19,23,32,0.8) 100%);
   border:1px solid var(--glass-border);
-  border-radius:14px;
-  padding:16px;
-  margin-bottom:12px;
-  transition:border-color 0.2s;
+  border-radius:16px;
+  padding:18px;
+  margin-bottom:14px;
+  transition:all 0.2s;
+  position:relative;
+  overflow:hidden;
 }
-.qa-item:hover{border-color:rgba(255,255,255,0.08)}
-.qa-reply{background:rgba(255,255,255,0.02);border-left:2px solid var(--border2);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:12px}
-.qa-mention{color:var(--accent);font-weight:700}
-.mention-dropdown{position:absolute;background:rgba(19,23,32,0.98);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:12px;z-index:500;max-height:160px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.6);min-width:160px}
-.mention-item{padding:10px 14px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background 0.15s}
-.mention-item:hover{background:rgba(255,255,255,0.05)}
+.qa-item::before{
+  content:'';
+  position:absolute;
+  top:0;left:0;right:0;
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);
+}
+.qa-item:hover{border-color:rgba(255,255,255,0.1);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
+.qa-reply{
+  background:rgba(255,255,255,0.025);
+  border-left:2px solid var(--accent);
+  border-left-color:rgba(245,166,35,0.3);
+  border-radius:0 10px 10px 0;
+  padding:12px 14px;
+  margin-top:12px;
+  font-size:12px;
+  transition:border-left-color 0.2s;
+}
+.qa-reply:hover{border-left-color:var(--accent)}
+.qa-mention{color:var(--accent);font-weight:700;background:rgba(245,166,35,0.1);padding:1px 5px;border-radius:4px}
+.mention-dropdown{position:absolute;background:rgba(14,17,23,0.98);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:14px;z-index:500;max-height:180px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.7);min-width:180px}
+.mention-item{padding:10px 16px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;transition:background 0.15s;font-family:'DM Sans',sans-serif}
+.mention-item:hover{background:rgba(245,166,35,0.08)}
 
 /* 訓練禮物 */
 .gift-box{width:80px;height:80px;cursor:pointer;transition:transform 0.2s;display:flex;align-items:center;justify-content:center;font-size:52px;filter:drop-shadow(0 8px 24px rgba(245,166,35,0.3))}
@@ -886,28 +905,30 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 <!-- QA 頁面 -->
 <div class="page" id="page-qa">
 <main>
-  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
-    <button onclick="goPublic()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:20px">←</button>
-    <div style="font-size:28px;font-weight:900;color:#5b9cf6;letter-spacing:-2px">QA</div>
-    <div style="font-size:12px;color:var(--muted);margin-left:2px">提問・回覆・@某人</div>
+  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
+    <button onclick="goPublic()" style="background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);color:var(--muted2);cursor:pointer;font-size:16px;border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">←</button>
+    <div>
+      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#5b9cf6;letter-spacing:-0.03em">QA 問答區</div>
+      <div style="font-size:11px;color:var(--muted2);letter-spacing:0.05em;text-transform:uppercase">提問 · 回覆 · @某人</div>
+    </div>
   </div>
   <!-- 輸入區 -->
   <div class="card" id="qa-input-card">
     <div id="qa-input-area">
       <div style="position:relative">
-        <textarea id="qa-text" placeholder="輸入你的問題... 輸入 @ 可以標記某人" oninput="handleQaMention(this,'qa-mention-dropdown')" onkeydown="handleMentionKey(event,'qa-mention-dropdown','qa-text')"></textarea>
+        <textarea id="qa-text" placeholder="輸入你的問題... 輸入 @ 可以標記某人" oninput="handleQaMention(this,'qa-mention-dropdown')" onkeydown="handleMentionKey(event,'qa-mention-dropdown','qa-text')" style="border-color:rgba(91,156,246,0.2);min-height:90px"></textarea>
         <div id="qa-mention-dropdown" class="mention-dropdown" style="display:none"></div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
         <div style="display:flex;gap:8px">
-          <button id="qa-mode-public" class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px" onclick="setQaMode('public')">👤 公開提問</button>
-          <button id="qa-mode-anon" class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--muted)" onclick="setQaMode('anon')">🐭 小老鼠</button>
+          <button id="qa-mode-public" class="btn btn-primary" style="width:auto;padding:7px 16px;font-size:12px;background:linear-gradient(135deg,#4f9eff,#3b82f6)" onclick="setQaMode('public')">👤 公開提問</button>
+          <button id="qa-mode-anon" class="btn btn-primary" style="width:auto;padding:7px 16px;font-size:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);color:var(--muted2)" onclick="setQaMode('anon')">🐭 小老鼠</button>
         </div>
-        <div id="qa-mode-hint" style="font-size:11px;color:var(--muted)">公開提問，所有人看得到你的名字</div>
+        <div id="qa-mode-hint" style="font-size:11px;color:var(--muted2)">公開提問，所有人看得到你的名字</div>
       </div>
-      <button class="btn btn-primary" style="background:#5b9cf6" onclick="submitQa()">送出問題 🙋</button>
+      <button class="btn btn-primary" style="background:linear-gradient(135deg,#4f9eff,#3b82f6);box-shadow:0 4px 16px rgba(79,158,255,0.25)" onclick="submitQa()">送出問題 🙋</button>
     </div>
-    <div id="qa-login-hint" style="color:var(--muted);font-size:13px;padding:6px 0;display:none">請先登入才能提問</div>
+    <div id="qa-login-hint" style="color:var(--muted2);font-size:13px;padding:8px 0;display:none">請先登入才能提問</div>
   </div>
   <!-- 問題列表 -->
   <div id="qa-list">載入中...</div>
@@ -3191,27 +3212,33 @@ async function loadQaList(isAdmin=false){
     const replyTextareaId=`qa-reply-${q.id}`;
     const replyDropdownId=`qa-reply-dropdown-${q.id}`;
     return`<div class="qa-item">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
-        <div style="font-size:11px;color:var(--muted)">${displayName} · ${new Date(q.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
-        ${canDel||q.authorId===CU?.id?`<button onclick="deleteQa('${q.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:13px">🗑</button>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
+        <div style="display:flex;align-items:center;gap:8px">
+          <div style="font-size:18px">${q.anon?'🐭':'👤'}</div>
+          <div>
+            <div style="font-size:12px;font-weight:700;color:var(--text)">${displayName}</div>
+            <div style="font-size:10px;color:var(--muted2)">${new Date(q.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+          </div>
+        </div>
+        ${canDel||q.authorId===CU?.id?`<button onclick="deleteQa('${q.id}')" style="background:transparent;border:none;color:var(--muted2);cursor:pointer;font-size:13px;padding:4px;border-radius:6px;transition:all 0.2s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted2)'">🗑</button>`:''}
       </div>
-      <div style="font-size:13px;line-height:1.6;margin-bottom:10px">${renderMentions(q.text)}</div>
+      <div style="font-size:14px;line-height:1.7;margin-bottom:12px;color:var(--text)">${renderMentions(q.text)}</div>
       ${qReplies.map(r=>`
         <div class="qa-reply">
-          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
-            <div style="color:var(--muted);font-size:10px">${r.anon&&!isAdmin?'🐭 小老鼠':isAdmin&&r.anon?`🐭 ${r.authorName}（匿名）`:r.authorName} · ${new Date(r.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
-            ${canDel||r.authorId===CU?.id?`<button onclick="deleteQaReply('${r.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:12px">🗑</button>`:''}
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
+            <div style="color:var(--muted2);font-size:11px;font-weight:600">${r.anon&&!isAdmin?'🐭 小老鼠':isAdmin&&r.anon?`🐭 ${r.authorName}（匿名）`:r.authorName} <span style="font-weight:400;opacity:0.6">· ${new Date(r.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>
+            ${canDel||r.authorId===CU?.id?`<button onclick="deleteQaReply('${r.id}')" style="background:transparent;border:none;color:var(--muted2);cursor:pointer;font-size:12px;transition:color 0.2s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted2)'">🗑</button>`:''}
           </div>
-          <div style="font-size:12px;line-height:1.5">${renderMentions(r.text)}</div>
+          <div style="font-size:13px;line-height:1.6;color:var(--text)">${renderMentions(r.text)}</div>
         </div>`).join('')}
-      ${CU?`<div style="margin-top:10px;position:relative">
-        <textarea id="${replyTextareaId}" placeholder="回覆... 輸入 @ 標記某人" style="height:60px;font-size:12px;resize:none" oninput="handleQaMention(this,'${replyDropdownId}')" onkeydown="handleMentionKey(event,'${replyDropdownId}','${replyTextareaId}')"></textarea>
+      ${CU?`<div style="margin-top:12px;position:relative">
+        <textarea id="${replyTextareaId}" placeholder="回覆... 輸入 @ 標記某人" style="height:56px;font-size:12px;resize:none;border-color:rgba(255,255,255,0.06);min-height:56px" oninput="handleQaMention(this,'${replyDropdownId}')" onkeydown="handleMentionKey(event,'${replyDropdownId}','${replyTextareaId}')"></textarea>
         <div id="${replyDropdownId}" class="mention-dropdown" style="display:none"></div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-          <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}',false)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--text);font-size:12px;cursor:pointer">回覆</button>
-          <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}',true)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--muted);font-size:12px;cursor:pointer">🐭 匿名回覆</button>
+          <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}',false)" style="background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;padding:6px 14px;color:var(--text);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.09)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">回覆</button>
+          <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}',true)" style="background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);border-radius:8px;padding:6px 14px;color:var(--muted2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted2)'">🐭 匿名回覆</button>
         </div>
-      </div>`:'<div style="font-size:11px;color:var(--muted);margin-top:8px">登入後才能回覆</div>'}
+      </div>`:'<div style="font-size:11px;color:var(--muted2);margin-top:10px;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;text-align:center">登入後才能回覆</div>'}
     </div>`;
   }).join('');
 }
