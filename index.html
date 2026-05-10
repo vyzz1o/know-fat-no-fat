@@ -599,12 +599,33 @@ tr:hover td{background:rgba(255,255,255,0.015)}
   margin:20px 0;
 }
 
+/* ── 噪點紋理 ── */
+body::after{content:'';position:fixed;inset:0;pointer-events:none;z-index:9998;opacity:0.028;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.85' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");background-size:128px}
+
+/* ── 跑馬燈 ── */
+.ticker-wrap{background:linear-gradient(90deg,var(--accent) 0%,var(--accent2) 100%);height:26px;overflow:hidden;display:flex;align-items:center;position:sticky;top:56px;z-index:99}
+.ticker-track{display:flex;animation:ticker 30s linear infinite;white-space:nowrap}
+.ticker-track:hover{animation-play-state:paused}
+.ticker-item{font-size:10px;font-weight:700;color:#000;letter-spacing:0.1em;text-transform:uppercase;padding:0 28px;display:flex;align-items:center;gap:8px;flex-shrink:0}
+.ticker-dot{width:3px;height:3px;background:#000;border-radius:50%;opacity:0.5}
+@keyframes ticker{0%{transform:translateX(0)}100%{transform:translateX(-50%)}}
+
+/* ── 排行榜名次徽章 ── */
+.rank-badge{width:28px;height:28px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:800;font-family:'Syne',sans-serif;flex-shrink:0;letter-spacing:-0.02em}
+.rank-1{background:linear-gradient(135deg,#FFD700,#FFA500);color:#000;box-shadow:0 2px 12px rgba(255,215,0,0.4)}
+.rank-2{background:linear-gradient(135deg,#D0D0D0,#A8A8A8);color:#000;box-shadow:0 2px 8px rgba(200,200,200,0.3)}
+.rank-3{background:linear-gradient(135deg,#CD7F32,#8B4513);color:#fff;box-shadow:0 2px 8px rgba(205,127,50,0.3)}
+.rank-n{background:rgba(255,255,255,0.05);color:var(--muted2);border:1px solid var(--glass-border)}
+
+/* ── 獎金池脈動 ── */
+@keyframes pulse-glow{0%,100%{box-shadow:0 0 20px rgba(245,166,35,0.08),0 4px 24px rgba(0,0,0,0.4)}50%{box-shadow:0 0 40px rgba(245,166,35,0.18),0 4px 24px rgba(0,0,0,0.4)}}
+.prize-banner{animation:pulse-glow 3s ease-in-out infinite}
+
 .page.active main > *{animation:fadeInUp 0.4s ease both}
 .page.active main > *:nth-child(1){animation-delay:0.05s}
 .page.active main > *:nth-child(2){animation-delay:0.1s}
 .page.active main > *:nth-child(3){animation-delay:0.15s}
 .page.active main > *:nth-child(4){animation-delay:0.2s}
-</style>
 </head>
 <body>
 
@@ -612,6 +633,11 @@ tr:hover td{background:rgba(255,255,255,0.015)}
   <div class="nav-title" onclick="goPublic()">🏆 脂己脂彼</div>
   <div id="nav-right"><button class="btn btn-ghost" style="width:auto;padding:5px 12px" onclick="showPage('login')">登入</button></div>
 </nav>
+
+<!-- 跑馬燈 -->
+<div class="ticker-wrap">
+  <div class="ticker-track" id="ticker-track"></div>
+</div>
 
 <!-- 禮物盒彈窗 -->
 <div class="gift-modal" id="gift-modal">
@@ -1554,6 +1580,26 @@ function closeTooltip(){
   document.getElementById('tooltip-modal').style.display='none';
 }
 
+// ── 跑馬燈初始化 ──────────────────────────────────────────
+function initTicker(){
+  const MEASURE_DATES=['2026-04-15','2026-04-29','2026-05-13','2026-05-27','2026-06-10','2026-06-24'];
+  const today=getToday();
+  const next=MEASURE_DATES.find(d=>d>today)||null;
+  const diffDays=next?Math.round((new Date(next+'T00:00:00')-new Date(today+'T00:00:00'))/86400000):0;
+  const items=[
+    `🏆 脂己脂彼 百戰百勝`,
+    `📅 比賽期間 2026/04/15 — 2026/06/24`,
+    next?`📏 下次測量日 ${next}（${diffDays}天後）`:`✅ 所有測量日完成`,
+    `💰 每人公基金 NT$3,000`,
+    `🎯 體脂降率達 7% 退款 NT$2,000`,
+    `📊 計分公式：體脂降率×70% + 骨骼肌升率×30%`,
+    `🎁 每天開禮物盒獲取今日訓練建議`,
+  ];
+  const html=items.map(t=>`<div class="ticker-item"><span class="ticker-dot"></span>${t}</div>`).join('');
+  const track=document.getElementById('ticker-track');
+  if(track)track.innerHTML=html+html; // 重複兩次無縫循環
+}
+
 // ── 卡片微傾斜效果 ──────────────────────────────────────────
 function initTiltEffect(){
   document.querySelectorAll('.card').forEach(card=>{
@@ -1608,7 +1654,7 @@ function showPage(id){
   document.getElementById('page-'+id).classList.add('active');
   setTimeout(initTiltEffect, 300);
 }
-function goPublic(){if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubscribe=null;}showPage('public');loadPublicData();setTimeout(()=>{initQaSection();loadVoteData();},300);}
+function goPublic(){if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubscribe=null;}showPage('public');loadPublicData();initTicker();setTimeout(()=>{initQaSection();loadVoteData();},300);}
 function updateNav(){
   const nr=document.getElementById('nav-right');
   if(CU){
@@ -1676,7 +1722,9 @@ async function loadPublicData(){
     document.getElementById('prize-amount').textContent=`NT$ ${((currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK)).toLocaleString()}`;
     document.getElementById('public-lb').innerHTML=rows.map((u,i)=>{
       const maxScore=rows[0]?Math.max(rows[0].score,0.01):1,barW=Math.max((u.score/maxScore)*100,0);
-      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer;transition:background 0.15s" onmouseover="this.style.background='var(--surface)'" onmouseout="this.style.background=''"><div class="lb-rank">${i<3?['🥇','🥈','🥉'][i]:'#'+(i+1)}</div><div style="flex:1"><div style="font-weight:600">${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%"></div></div></div><div style="font-size:12px;color:var(--accent);font-weight:700">${u.score.toFixed(2)}%</div></div>`;
+      const rankClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
+      const rankLabel=i<3?['1','2','3'][i]:`${i+1}`;
+      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer"><div class="lb-rank"><div class="rank-badge ${rankClass}">${rankLabel}</div></div><div style="flex:1"><div style="font-weight:600;font-size:13px">${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%;transition:width 0.8s ease"></div></div></div><div style="font-size:13px;color:var(--accent);font-weight:800;font-family:'Syne',sans-serif">${u.score.toFixed(2)}%</div></div>`;
     }).join('');
     const ctx=document.getElementById('chart-public-fat').getContext('2d');if(publicChart)publicChart.destroy();
     const maxLen=Math.max(...rows.map(r=>r.history.length),0);
