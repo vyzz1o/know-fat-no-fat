@@ -531,7 +531,74 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 .vote-bar-yes{background:linear-gradient(90deg,var(--green),var(--green2));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000;transition:width 0.5s ease}
 .vote-bar-no{background:linear-gradient(90deg,#ff4d6d,#c9184a);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#fff;transition:width 0.5s ease}
 
-/* 頁面進入動畫 */
+/* ── 卡片微傾斜效果 ── */
+.card-tilt{transform-style:preserve-3d;transition:transform 0.15s ease, box-shadow 0.15s ease}
+
+/* ── 數字跳動 ── */
+@keyframes countUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.count-anim{animation:countUp 0.4s ease both}
+
+/* ── 排行榜進場 ── */
+@keyframes lbSlideIn{
+  from{opacity:0;transform:translateX(-12px)}
+  to{opacity:1;transform:translateX(0)}
+}
+.lb-row-anim{animation:lbSlideIn 0.35s ease both}
+
+/* ── 首頁英雄區塊 ── */
+.hero-section{
+  position:relative;
+  padding:32px 0 8px;
+  margin-bottom:8px;
+  overflow:hidden;
+}
+.hero-eyebrow{
+  font-size:11px;
+  font-weight:600;
+  letter-spacing:0.15em;
+  text-transform:uppercase;
+  color:var(--accent);
+  margin-bottom:10px;
+  display:flex;
+  align-items:center;
+  gap:8px;
+}
+.hero-eyebrow::before{
+  content:'';
+  display:inline-block;
+  width:20px;
+  height:1px;
+  background:var(--accent);
+}
+.hero-title{
+  font-family:'Syne',sans-serif;
+  font-size:clamp(28px,6vw,48px);
+  font-weight:800;
+  line-height:1.1;
+  letter-spacing:-0.03em;
+  color:var(--text);
+  margin-bottom:6px;
+}
+.hero-title span{
+  background:linear-gradient(135deg,var(--accent),var(--accent2));
+  -webkit-background-clip:text;
+  -webkit-text-fill-color:transparent;
+  background-clip:text;
+}
+.hero-sub{
+  font-size:13px;
+  color:var(--muted2);
+  margin-bottom:0;
+  line-height:1.6;
+}
+
+/* ── 分隔線光效 ── */
+.glow-divider{
+  height:1px;
+  background:linear-gradient(90deg,transparent,rgba(245,166,35,0.4),transparent);
+  margin:20px 0;
+}
+
 .page.active main > *{animation:fadeInUp 0.4s ease both}
 .page.active main > *:nth-child(1){animation-delay:0.05s}
 .page.active main > *:nth-child(2){animation-delay:0.1s}
@@ -641,6 +708,12 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 
 <div class="page active" id="page-public">
 <main>
+<div class="hero-section">
+    <div class="hero-eyebrow">脂己脂彼 百戰百勝</div>
+    <div class="hero-title">Know Fat,<br><span>No Fat.</span></div>
+    <div class="hero-sub">公司減脂比賽平台 · 即時排名 · 個人化訓練</div>
+    <div class="glow-divider"></div>
+  </div>
   <div class="countdown-box">
     <div style="font-size:12px;color:var(--muted)">比賽結束倒數</div>
     <div style="font-size:13px;font-weight:700;margin-top:4px">2026/04/15 — 2026/06/24（共10週）</div>
@@ -1481,11 +1554,60 @@ function closeTooltip(){
   document.getElementById('tooltip-modal').style.display='none';
 }
 
+// ── 卡片微傾斜效果 ──────────────────────────────────────────
+function initTiltEffect(){
+  document.querySelectorAll('.card').forEach(card=>{
+    card.classList.add('card-tilt');
+    card.addEventListener('mousemove',e=>{
+      const rect=card.getBoundingClientRect();
+      const x=(e.clientX-rect.left)/rect.width-0.5;
+      const y=(e.clientY-rect.top)/rect.height-0.5;
+      card.style.transform=`perspective(600px) rotateY(${x*6}deg) rotateX(${-y*6}deg) translateZ(4px)`;
+      card.style.boxShadow=`${-x*12}px ${-y*12}px 32px rgba(0,0,0,0.4), 0 0 20px rgba(245,166,35,${Math.abs(x+y)*0.08})`;
+    });
+    card.addEventListener('mouseleave',()=>{
+      card.style.transform='perspective(600px) rotateY(0) rotateX(0) translateZ(0)';
+      card.style.boxShadow='';
+    });
+  });
+}
+
+// ── 數字跳動計數器 ──────────────────────────────────────────
+function animateCounter(el, target, duration=800, suffix='%'){
+  const start=parseFloat(el.textContent)||0;
+  const startTime=performance.now();
+  const update=now=>{
+    const elapsed=now-startTime;
+    const progress=Math.min(elapsed/duration,1);
+    const ease=1-Math.pow(1-progress,3); // ease out cubic
+    const current=start+(target-start)*ease;
+    el.textContent=current.toFixed(2)+suffix;
+    if(progress<1)requestAnimationFrame(update);
+    else el.textContent=target.toFixed(2)+suffix;
+  };
+  el.classList.add('count-anim');
+  requestAnimationFrame(update);
+}
+
+// ── 排行榜進場動畫 ──────────────────────────────────────────
+function animateLbRows(){
+  document.querySelectorAll('.lb-row').forEach((row,i)=>{
+    row.classList.remove('lb-row-anim');
+    row.style.animationDelay=`${i*0.06}s`;
+    void row.offsetWidth; // reflow
+    row.classList.add('lb-row-anim');
+  });
+}
+
 function getToday(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
 function toggleFaq(){const m=document.getElementById('faq-modal');m.style.display=m.style.display==='none'?'flex':'none';}
 function toggleRules(){const c=document.getElementById('rules-content'),a=document.getElementById('rules-arrow');if(c.style.display==='none'){c.style.display='block';a.textContent='▲ 收起';}else{c.style.display='none';a.textContent='▼ 展開';}}
 function toast(msg,type='success'){const el=document.getElementById('toast-el');el.textContent=msg;el.style.background=type==='error'?'var(--red)':'var(--green)';el.style.color='#fff';el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
-function showPage(id){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+id).classList.add('active');}
+function showPage(id){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('active');
+  setTimeout(initTiltEffect, 300);
+}
 function goPublic(){if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubscribe=null;}showPage('public');loadPublicData();setTimeout(()=>{initQaSection();loadVoteData();},300);}
 function updateNav(){
   const nr=document.getElementById('nav-right');
@@ -1562,6 +1684,11 @@ async function loadPublicData(){
     if(CU&&CU.role==='admin')updateAdminTargetSelect();
     const overlay=document.getElementById('chart-blur-overlay');
     if(overlay)overlay.style.display=CU?'none':'flex';
+    // 觸發排行榜動畫
+    setTimeout(()=>{
+      animateLbRows();
+      initTiltEffect();
+    },100);
   }catch(e){console.error(e);}
 }
 
@@ -1591,22 +1718,30 @@ async function loadUserRecords(){
       <div class="stat-box" onclick="showTooltip('體脂降率','體脂肪從比賽開始到現在下降的百分率。數字越高代表減脂效果越好！▾ 代表下降（好），▴ 代表上升（需加油）')" style="cursor:pointer">
         <div class="stat-label">體脂降率 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${fatActual}</div>
-        <div class="stat-val" style="color:${fatColor}">${fatArrow} ${Math.abs(s.fatRate).toFixed(1)}%</div>
+        <div class="stat-val" id="anim-fat" style="color:${fatColor}">${fatArrow} ${Math.abs(s.fatRate).toFixed(2)}%</div>
       </div>
       <div class="stat-box" onclick="showTooltip('骨骼肌升率','骨骼肌從比賽開始到現在上升的百分率。數字越高代表增肌效果越好！▴ 代表上升（好），▾ 代表下降（需加油）')" style="cursor:pointer">
         <div class="stat-label">骨骼肌升率 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
         <div style="font-size:10px;color:var(--muted);margin-bottom:2px">${muscleActual}</div>
-        <div class="stat-val" style="color:${muscleColor}">${muscleArrow} ${Math.abs(s.muscleRate).toFixed(1)}%</div>
+        <div class="stat-val" id="anim-muscle" style="color:${muscleColor}">${muscleArrow} ${Math.abs(s.muscleRate).toFixed(2)}%</div>
       </div>
       <div class="stat-box" onclick="showTooltip('穩定加分','每次測量都下降 → +10%，只有一次回升 → +5%，兩次以上回升 → 不加分。生理期那次不計入判斷。')" style="cursor:pointer">
         <div class="stat-label">穩定加分 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
-        <div class="stat-val" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div>
+        <div class="stat-val" id="anim-bonus" style="color:var(--accent)">+${s.bonus.toFixed(0)}%</div>
       </div>
       <div class="stat-box" onclick="showTooltip('總評分','計算公式：（體脂降率 × 70% + 骨骼肌升率 × 30%）× (1 + 穩定加分%)。這是比賽排名的依據！')" style="cursor:pointer">
         <div class="stat-label">總評分 <span style="font-size:9px;color:var(--muted)">ⓘ</span></div>
-        <div class="stat-val" style="color:var(--text)">${s.total.toFixed(2)}%</div>
+        <div class="stat-val" id="anim-total" style="color:var(--text)">${s.total.toFixed(2)}%</div>
       </div>
     </div>`;
+    setTimeout(()=>{
+      const fatEl=document.getElementById('anim-fat');
+      const muscleEl=document.getElementById('anim-muscle');
+      const totalEl=document.getElementById('anim-total');
+      if(fatEl)fatEl.innerHTML=`${fatArrow} <span id="anim-fat-n">${Math.abs(s.fatRate).toFixed(2)}</span>%`;
+      if(muscleEl)muscleEl.innerHTML=`${muscleArrow} <span id="anim-muscle-n">${Math.abs(s.muscleRate).toFixed(2)}</span>%`;
+      if(totalEl)totalEl.innerHTML=`<span id="anim-total-n">${s.total.toFixed(2)}</span>%`;
+    },50);
   }
   const validRecs=recs.filter(r=>r.status==='approved'||r.status==='delete_pending');
   const renderTable=(list)=>list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px 0">尚無紀錄</div>':`<div style="overflow-x:auto"><table><tr><th>日期</th><th>來源</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
