@@ -618,6 +618,8 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 @keyframes pulse-glow{0%,100%{box-shadow:0 0 20px rgba(245,166,35,0.08),0 4px 24px rgba(0,0,0,0.4)}50%{box-shadow:0 0 40px rgba(245,166,35,0.18),0 4px 24px rgba(0,0,0,0.4)}}
 .prize-banner{animation:pulse-glow 3s ease-in-out infinite}
 
+@keyframes crownBounce{0%,100%{transform:translateY(0) rotate(-5deg)}50%{transform:translateY(-4px) rotate(5deg)}}
+
 .page.active main > *{animation:fadeInUp 0.4s ease both}
 .page.active main > *:nth-child(1){animation-delay:0.05s}
 .page.active main > *:nth-child(2){animation-delay:0.1s}
@@ -779,7 +781,7 @@ tr:hover td{background:rgba(255,255,255,0.015)}
       </div>
       <!-- 像素兔猻動畫（收起時顯示） -->
       <div id="pallas-stage" style="display:flex;justify-content:center;padding:12px 0 4px">
-        <canvas id="pallas-canvas" width="200" height="90" style="image-rendering:pixelated;image-rendering:crisp-edges"></canvas>
+        <canvas id="pallas-canvas" width="220" height="100" style="image-rendering:pixelated;image-rendering:crisp-edges"></canvas>
       </div>
       <div id="rules-content" style="display:none;margin-top:14px">
         <div style="margin-bottom:12px">
@@ -1671,72 +1673,89 @@ let pallasTimer=null;
 let pallasFrame=0;
 let pallasX=0;
 let pallasDir=1;
-let pallasAction='walk'; // walk, jump, stretch
+let pallasAction='walk';
 let pallasActionTimer=0;
 
-const PALLAS_SCALE=5;
-const PALLAS_W=200;
-const PALLAS_H=90;
+const PALLAS_SCALE=4;
+const PALLAS_W=220;
+const PALLAS_H=100;
 
-// 像素兔猻 frames — 走路2格、跳躍、伸展
-// 用10x10像素格子，顏色：灰褐色身體、深色眼睛、白色肚子
 const C={
-  _:null,           // 透明
-  b:'#8a7560',      // 身體主色（灰褐）
-  d:'#6b5a48',      // 深褐（邊緣/陰影）
-  l:'#b0a090',      // 淺色（肚子/臉）
-  e:'#2a1f15',      // 眼睛深色
-  w:'#d4c9b8',      // 白/淺米（肚皮）
-  n:'#5a4a38',      // 鼻子
-  t:'#c4a882',      // 尾巴
+  _:null,
+  b:'#9e8b74',   // 身體主色
+  d:'#6b5a48',   // 深褐邊緣
+  l:'#c4b49e',   // 淺色臉/肚
+  e:'#1a1008',   // 眼睛
+  w:'#e8ddd0',   // 白色肚皮
+  n:'#8a6a58',   // 鼻子
+  t:'#b8a48e',   // 尾巴淺
+  s:'#5a4a3a',   // 深陰影
+  p:'#d4c4ae',   // 淡米色
+  y:'#ffe066',   // 眼睛黃
 };
 
-// 走路 frame1（10x8 像素）
+// 走路 frame1 — 16x12
 const WALK1=[
-  [C._,C._,C.d,C.d,C.d,C.d,C._,C._,C._,C._],
-  [C._,C.d,C.b,C.b,C.b,C.b,C.d,C._,C._,C._],
-  [C.d,C.b,C.e,C.l,C.b,C.b,C.b,C.d,C.t,C._],
-  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._],
-  [C._,C.d,C.w,C.w,C.w,C.w,C.b,C.d,C._,C._],
-  [C._,C.d,C.b,C.w,C.w,C.b,C.d,C._,C._,C._],
-  [C._,C.d,C.b,C.d,C._,C.d,C.b,C.d,C._,C._],
-  [C._,C._,C.d,C._,C._,C._,C.d,C._,C._,C._],
+  [C._,C._,C._,C.d,C.d,C.d,C.d,C.d,C.d,C.d,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C.d,C.b,C.b,C.l,C.l,C.l,C.b,C.b,C.d,C._,C._,C.d,C.t,C._],
+  [C._,C.d,C.b,C.l,C.e,C.l,C.n,C.l,C.e,C.b,C.b,C.d,C.d,C.t,C.t,C._],
+  [C._,C.d,C.b,C.l,C.l,C.l,C.l,C.l,C.l,C.b,C.b,C.b,C.b,C.d,C._,C._],
+  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._,C._],
+  [C.d,C.b,C.w,C.w,C.w,C.w,C.w,C.w,C.w,C.w,C.b,C.b,C.d,C._,C._,C._],
+  [C.d,C.b,C.w,C.w,C.w,C.w,C.w,C.w,C.w,C.b,C.b,C.d,C._,C._,C._,C._],
+  [C._,C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._,C._,C._,C._,C._],
+  [C._,C._,C.d,C.b,C.b,C.d,C._,C._,C.d,C.b,C.b,C.d,C._,C._,C._,C._],
+  [C._,C._,C.d,C.b,C.d,C._,C._,C._,C._,C.d,C.b,C.d,C._,C._,C._,C._],
+  [C._,C._,C._,C.d,C._,C._,C._,C._,C._,C._,C.d,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
 ];
 
-// 走路 frame2（腳換位）
+// 走路 frame2 — 腳換位
 const WALK2=[
-  [C._,C._,C.d,C.d,C.d,C.d,C._,C._,C._,C._],
-  [C._,C.d,C.b,C.b,C.b,C.b,C.d,C._,C._,C._],
-  [C.d,C.b,C.e,C.l,C.b,C.b,C.b,C.d,C.t,C._],
-  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._],
-  [C._,C.d,C.w,C.w,C.w,C.w,C.b,C.d,C._,C._],
-  [C._,C.d,C.b,C.w,C.w,C.b,C.d,C._,C._,C._],
-  [C._,C._,C.d,C.b,C.d,C.b,C.d,C._,C._,C._],
-  [C._,C._,C._,C.d,C._,C._,C.d,C._,C._,C._],
+  [C._,C._,C._,C.d,C.d,C.d,C.d,C.d,C.d,C.d,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C.d,C.b,C.b,C.l,C.l,C.l,C.b,C.b,C.d,C._,C._,C.d,C.t,C._],
+  [C._,C.d,C.b,C.l,C.e,C.l,C.n,C.l,C.e,C.b,C.b,C.d,C.d,C.t,C.t,C._],
+  [C._,C.d,C.b,C.l,C.l,C.l,C.l,C.l,C.l,C.b,C.b,C.b,C.b,C.d,C._,C._],
+  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._,C._],
+  [C.d,C.b,C.w,C.w,C.w,C.w,C.w,C.w,C.w,C.w,C.b,C.b,C.d,C._,C._,C._],
+  [C.d,C.b,C.w,C.w,C.w,C.w,C.w,C.w,C.w,C.b,C.b,C.d,C._,C._,C._,C._],
+  [C._,C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._,C._,C._,C._,C._],
+  [C._,C._,C.d,C.b,C.d,C._,C._,C.d,C.b,C.b,C.d,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C.d,C._,C._,C._,C.d,C.b,C.d,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C.d,C._,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
 ];
 
-// 跳躍 frame
+// 跳躍
 const JUMP=[
-  [C._,C._,C.d,C.d,C.d,C.d,C._,C._,C._,C._],
-  [C._,C.d,C.b,C.b,C.b,C.b,C.d,C._,C._,C._],
-  [C.d,C.b,C.e,C.l,C.b,C.b,C.b,C.d,C.t,C._],
-  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._],
-  [C._,C.d,C.w,C.w,C.w,C.w,C.b,C.d,C._,C._],
-  [C._,C.d,C.b,C.w,C.w,C.b,C.d,C._,C._,C._],
-  [C.d,C._,C.d,C.b,C.b,C.d,C._,C.d,C._,C._],
-  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C.d,C.d,C.d,C.d,C.d,C.d,C.d,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C.d,C.b,C.b,C.l,C.l,C.l,C.b,C.b,C.d,C._,C._,C.d,C.t,C._],
+  [C._,C.d,C.b,C.l,C.e,C.l,C.n,C.l,C.e,C.b,C.b,C.d,C.d,C.t,C.t,C._],
+  [C._,C.d,C.b,C.l,C.l,C.l,C.l,C.l,C.l,C.b,C.b,C.b,C.b,C.d,C._,C._],
+  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._,C._],
+  [C.d,C.b,C.w,C.w,C.w,C.w,C.w,C.w,C.w,C.w,C.b,C.b,C.d,C._,C._,C._],
+  [C.d,C.b,C.w,C.w,C.w,C.w,C.w,C.w,C.w,C.b,C.b,C.d,C._,C._,C._,C._],
+  [C._,C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._,C._,C._,C._,C._],
+  [C._,C.d,C.b,C.d,C._,C._,C._,C._,C.d,C.b,C.d,C._,C._,C._,C._,C._],
+  [C.d,C.b,C.d,C._,C._,C._,C._,C._,C._,C.d,C.b,C.d,C._,C._,C._,C._],
+  [C._,C.d,C._,C._,C._,C._,C._,C._,C._,C._,C.d,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
 ];
 
-// 伸展 frame（趴下伸懶腰）
+// 伸懶腰
 const STRETCH=[
-  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
-  [C._,C.d,C.d,C.d,C.d,C.d,C.d,C._,C._,C._],
-  [C.d,C.b,C.e,C.l,C.b,C.b,C.b,C.d,C.t,C.d],
-  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d],
-  [C.d,C.w,C.w,C.w,C.w,C.w,C.w,C.b,C.b,C.d],
-  [C.d,C.b,C.w,C.w,C.w,C.b,C.b,C.d,C.d,C._],
-  [C._,C.d,C.d,C.d,C.d,C.d,C._,C._,C._,C._],
-  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
+  [C._,C.d,C.d,C.d,C.d,C.d,C.d,C.d,C.d,C.d,C._,C._,C.d,C.t,C.t,C.d],
+  [C.d,C.b,C.b,C.l,C.e,C.l,C.n,C.l,C.e,C.b,C.d,C.d,C.t,C.t,C.b,C.d],
+  [C.d,C.b,C.b,C.l,C.l,C.l,C.l,C.l,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d],
+  [C.d,C.b,C.w,C.w,C.w,C.w,C.w,C.w,C.w,C.b,C.b,C.b,C.b,C.b,C.b,C.d],
+  [C.d,C.b,C.w,C.w,C.w,C.w,C.w,C.w,C.b,C.b,C.b,C.d,C.d,C.d,C.d,C._],
+  [C._,C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C.d,C.d,C.d,C.d,C.d,C.d,C.d,C._,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
 ];
 
 const FRAMES_WALK=[WALK1,WALK2];
@@ -1767,40 +1786,38 @@ function pallasStep(){
   ctx.clearRect(0,0,PALLAS_W,PALLAS_H);
 
   // 地面線
-  ctx.fillStyle='rgba(245,166,35,0.15)';
-  ctx.fillRect(0,PALLAS_H-6,PALLAS_W,1);
+  ctx.fillStyle='rgba(245,166,35,0.12)';
+  ctx.fillRect(0,PALLAS_H-4,PALLAS_W,1);
 
   let frames,yOffset=0;
   pallasActionTimer++;
 
   if(pallasAction==='walk'){
     frames=FRAMES_WALK;
-    // 隨機切換動作
-    if(pallasActionTimer>20&&Math.random()<0.04){
+    if(pallasActionTimer>15&&Math.random()<0.05){
       if(Math.random()<0.5)pallasAction='jump';
       else pallasAction='stretch';
       pallasActionTimer=0;
     }
     pallasX+=pallasDir*2;
-    yOffset=PALLAS_H-8*PALLAS_SCALE-6;
+    yOffset=PALLAS_H-12*PALLAS_SCALE-4;
   } else if(pallasAction==='jump'){
     frames=FRAMES_JUMP;
     const jumpProgress=pallasActionTimer/16;
-    yOffset=PALLAS_H-8*PALLAS_SCALE-6 - Math.sin(jumpProgress*Math.PI)*20;
+    yOffset=PALLAS_H-12*PALLAS_SCALE-4 - Math.sin(jumpProgress*Math.PI)*20;
     pallasX+=pallasDir*2.5;
     if(pallasActionTimer>=16){pallasAction='walk';pallasActionTimer=0;}
   } else if(pallasAction==='stretch'){
     frames=FRAMES_STRETCH;
-    yOffset=PALLAS_H-8*PALLAS_SCALE-6+4;
-    if(pallasActionTimer>=35){pallasAction='walk';pallasActionTimer=0;}
+    yOffset=PALLAS_H-12*PALLAS_SCALE-4+8;
+    if(pallasActionTimer>=30){pallasAction='walk';pallasActionTimer=0;}
   }
 
-  // 邊界反彈
-  const spriteW=10*PALLAS_SCALE;
+  const spriteW=16*PALLAS_SCALE;
   if(pallasX>=PALLAS_W-spriteW){pallasDir=-1;pallasX=PALLAS_W-spriteW;}
   if(pallasX<=0){pallasDir=1;pallasX=0;}
 
-  const frame=frames[Math.floor(pallasFrame/8)%frames.length];
+  const frame=frames[Math.floor(pallasFrame/6)%frames.length];
   pallasFrame++;
 
   drawPallas(ctx, frame, pallasX, yOffset, PALLAS_SCALE, pallasDir===-1);
@@ -1818,8 +1835,8 @@ function stopPallas(){
   if(canvas)canvas.getContext('2d').clearRect(0,0,PALLAS_W,PALLAS_H);
 }
 
-// 頁面載入後啟動
 window.addEventListener('load',()=>startPallas());
+
 function toast(msg,type='success'){const el=document.getElementById('toast-el');el.textContent=msg;el.style.background=type==='error'?'var(--red)':'var(--green)';el.style.color='#fff';el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -1888,7 +1905,7 @@ async function loadPublicData(){
     rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered&&!r.isSpectator&&r.forScoring!==false){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
     Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
     // 排行榜只顯示官方數據
-    const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
+    const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,isWinner:s.isWinner,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
     let winners=0;
     currentUsers.forEach(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;});
     document.getElementById('prize-amount').textContent=`NT$ ${((currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK)).toLocaleString()}`;
@@ -1896,7 +1913,10 @@ async function loadPublicData(){
       const maxScore=rows[0]?Math.max(rows[0].score,0.01):1,barW=Math.max((u.score/maxScore)*100,0);
       const rankClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
       const rankLabel=i<3?['1','2','3'][i]:`${i+1}`;
-      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer"><div class="lb-rank"><div class="rank-badge ${rankClass}">${rankLabel}</div></div><div style="flex:1"><div style="font-weight:600;font-size:13px">${u.name}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%;transition:width 0.8s ease"></div></div></div><div style="font-size:13px;color:var(--accent);font-weight:800;font-family:'Syne',sans-serif">${u.score.toFixed(2)}%</div></div>`;
+      const isWinner=u.isWinner;
+      const crownHtml=i===0?`<div style="font-size:16px;animation:crownBounce 1s ease-in-out infinite;display:inline-block;line-height:1">👑</div>`:'';
+      const winnerTag=isWinner?`<span style="font-size:10px;background:linear-gradient(135deg,var(--green),var(--green2));color:#000;border-radius:6px;padding:1px 6px;font-weight:700;margin-left:6px">✅ 退款</span>`:'';
+      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer">${crownHtml?`<div style="width:20px;text-align:center;flex-shrink:0">${crownHtml}</div>`:''}<div class="lb-rank"><div class="rank-badge ${rankClass}">${rankLabel}</div></div><div style="flex:1"><div style="font-weight:600;font-size:13px">${u.name}${winnerTag}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%;transition:width 0.8s ease"></div></div></div><div style="font-size:13px;color:var(--accent);font-weight:800;font-family:'Syne',sans-serif">${u.score.toFixed(2)}%</div></div>`;
     }).join('');
     const ctx=document.getElementById('chart-public-fat').getContext('2d');if(publicChart)publicChart.destroy();
     const maxLen=Math.max(...rows.map(r=>r.history.length),0);
@@ -1919,8 +1939,18 @@ async function loadUserRecords(){
   const app=[...recs].filter(r=>r.adminEntered&&r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
   const gBox=document.getElementById('user-goal-box'),sBar=document.getElementById('user-score-bar');
   if(app.length>0){
-    const s=calculateFullStats(app),f=app[0],target=(f.bodyFat*(1-RATE_GOAL)).toFixed(1);
-    gBox.innerHTML=`<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div></div><div>${s.isWinner?'✅ 已達標':'進行中'}</div></div>`;
+    const s=calculateFullStats(app),f=app[0],last=app[app.length-1];
+    const target=(f.bodyFat*(1-RATE_GOAL)).toFixed(1);
+    const currentFat=last.bodyFat;
+    const stillNeed=currentFat-parseFloat(target);
+    const stillNeedPct=((currentFat-parseFloat(target))/f.bodyFat*100).toFixed(1);
+    let hintHtml='';
+    if(s.isWinner){
+      hintHtml=`<div style="font-size:12px;color:var(--green);font-weight:700;margin-top:4px">🎉 已達標！可退款 NT$2,000</div>`;
+    } else {
+      hintHtml=`<div style="font-size:12px;color:var(--accent);margin-top:4px">還需降 <strong style="color:var(--red)">${stillNeed.toFixed(1)}%</strong>（約 ${stillNeedPct}% 降幅）才能退款</div>`;
+    }
+    gBox.innerHTML=`<div class="goal-box"><div><div style="font-size:10px;color:var(--muted)">🎯 目標：體脂下降率 7% (退款門檻)</div><div style="font-size:18px;font-weight:800;color:var(--green)">目標體脂 ≤ ${target}%</div>${hintHtml}</div><div style="font-size:28px">${s.isWinner?'✅':'🔥'}</div></div>`;
     // 顯示管理員備註
     const userSnap2=await db.collection('users').doc(CU.id).get();
     const notes=userSnap2.data()?.notes;
