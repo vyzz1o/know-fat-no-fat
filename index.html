@@ -1914,9 +1914,8 @@ async function loadPublicData(){
       const rankClass=i===0?'rank-1':i===1?'rank-2':i===2?'rank-3':'rank-n';
       const rankLabel=i<3?['1','2','3'][i]:`${i+1}`;
       const isWinner=u.isWinner;
-      const crownHtml=i===0?`<div style="font-size:16px;animation:crownBounce 1s ease-in-out infinite;display:inline-block;line-height:1">👑</div>`:'';
       const winnerTag=isWinner?`<span style="font-size:10px;background:linear-gradient(135deg,var(--green),var(--green2));color:#000;border-radius:6px;padding:1px 6px;font-weight:700;margin-left:6px">✅ 退款</span>`:'';
-      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer">${crownHtml?`<div style="width:20px;text-align:center;flex-shrink:0">${crownHtml}</div>`:''}<div class="lb-rank"><div class="rank-badge ${rankClass}">${rankLabel}</div></div><div style="flex:1"><div style="font-weight:600;font-size:13px">${u.name}${winnerTag}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%;transition:width 0.8s ease"></div></div></div><div style="font-size:13px;color:var(--accent);font-weight:800;font-family:'Syne',sans-serif">${u.score.toFixed(2)}%</div></div>`;
+      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer"><div class="lb-rank"><div class="rank-badge ${rankClass}">${rankLabel}</div></div><div style="flex:1"><div style="font-weight:600;font-size:13px">${u.name}${winnerTag}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%;transition:width 0.8s ease"></div></div></div><div style="font-size:13px;color:var(--accent);font-weight:800;font-family:'Syne',sans-serif">${u.score.toFixed(2)}%</div></div>`;
     }).join('');
     const ctx=document.getElementById('chart-public-fat').getContext('2d');if(publicChart)publicChart.destroy();
     const maxLen=Math.max(...rows.map(r=>r.history.length),0);
