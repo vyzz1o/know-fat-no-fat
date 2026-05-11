@@ -472,38 +472,19 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 
 /* QA */
 .qa-item{
-  background:linear-gradient(135deg,rgba(25,32,48,0.6) 0%,rgba(19,23,32,0.8) 100%);
+  background:rgba(255,255,255,0.02);
   border:1px solid var(--glass-border);
-  border-radius:16px;
-  padding:18px;
-  margin-bottom:14px;
-  transition:all 0.2s;
-  position:relative;
-  overflow:hidden;
+  border-radius:14px;
+  padding:16px;
+  margin-bottom:12px;
+  transition:border-color 0.2s;
 }
-.qa-item::before{
-  content:'';
-  position:absolute;
-  top:0;left:0;right:0;
-  height:1px;
-  background:linear-gradient(90deg,transparent,rgba(255,255,255,0.06),transparent);
-}
-.qa-item:hover{border-color:rgba(255,255,255,0.1);transform:translateY(-1px);box-shadow:0 8px 24px rgba(0,0,0,0.3)}
-.qa-reply{
-  background:rgba(255,255,255,0.025);
-  border-left:2px solid var(--accent);
-  border-left-color:rgba(245,166,35,0.3);
-  border-radius:0 10px 10px 0;
-  padding:12px 14px;
-  margin-top:12px;
-  font-size:12px;
-  transition:border-left-color 0.2s;
-}
-.qa-reply:hover{border-left-color:var(--accent)}
-.qa-mention{color:var(--accent);font-weight:700;background:rgba(245,166,35,0.1);padding:1px 5px;border-radius:4px}
-.mention-dropdown{position:absolute;background:rgba(14,17,23,0.98);backdrop-filter:blur(16px);border:1px solid var(--glass-border);border-radius:14px;z-index:500;max-height:180px;overflow-y:auto;box-shadow:0 12px 40px rgba(0,0,0,0.7);min-width:180px}
-.mention-item{padding:10px 16px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:10px;transition:background 0.15s;font-family:'DM Sans',sans-serif}
-.mention-item:hover{background:rgba(245,166,35,0.08)}
+.qa-item:hover{border-color:rgba(255,255,255,0.08)}
+.qa-reply{background:rgba(255,255,255,0.02);border-left:2px solid var(--border2);border-radius:8px;padding:10px 14px;margin-top:10px;font-size:12px}
+.qa-mention{color:var(--accent);font-weight:700}
+.mention-dropdown{position:absolute;background:rgba(19,23,32,0.98);backdrop-filter:blur(10px);border:1px solid var(--glass-border);border-radius:12px;z-index:500;max-height:160px;overflow-y:auto;box-shadow:0 8px 32px rgba(0,0,0,0.6);min-width:160px}
+.mention-item{padding:10px 14px;cursor:pointer;font-size:13px;display:flex;align-items:center;gap:8px;transition:background 0.15s}
+.mention-item:hover{background:rgba(255,255,255,0.05)}
 
 /* 訓練禮物 */
 .gift-box{width:80px;height:80px;cursor:pointer;transition:transform 0.2s;display:flex;align-items:center;justify-content:center;font-size:52px;filter:drop-shadow(0 8px 24px rgba(245,166,35,0.3))}
@@ -796,6 +777,10 @@ tr:hover td{background:rgba(255,255,255,0.015)}
         <div style="font-weight:700;font-size:15px">📋 比賽規則</div>
         <div id="rules-arrow" style="color:var(--muted);font-size:13px">▼ 展開</div>
       </div>
+      <!-- 像素兔猻動畫（收起時顯示） -->
+      <div id="pallas-stage" style="display:flex;justify-content:center;padding:12px 0 4px">
+        <canvas id="pallas-canvas" width="180" height="80" style="image-rendering:pixelated;image-rendering:crisp-edges"></canvas>
+      </div>
       <div id="rules-content" style="display:none;margin-top:14px">
         <div style="margin-bottom:12px">
           <div style="color:var(--accent);font-weight:700;margin-bottom:6px">⏱ 比賽時長</div>
@@ -905,30 +890,28 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 <!-- QA 頁面 -->
 <div class="page" id="page-qa">
 <main>
-  <div style="display:flex;align-items:center;gap:12px;margin-bottom:20px">
-    <button onclick="goPublic()" style="background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);color:var(--muted2);cursor:pointer;font-size:16px;border-radius:10px;width:36px;height:36px;display:flex;align-items:center;justify-content:center;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.08)'" onmouseout="this.style.background='rgba(255,255,255,0.04)'">←</button>
-    <div>
-      <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#5b9cf6;letter-spacing:-0.03em">QA 問答區</div>
-      <div style="font-size:11px;color:var(--muted2);letter-spacing:0.05em;text-transform:uppercase">提問 · 回覆 · @某人</div>
-    </div>
+  <div style="display:flex;align-items:center;gap:10px;margin-bottom:16px">
+    <button onclick="goPublic()" style="background:transparent;border:none;color:var(--muted);cursor:pointer;font-size:20px">←</button>
+    <div style="font-size:28px;font-weight:900;color:#5b9cf6;letter-spacing:-2px">QA</div>
+    <div style="font-size:12px;color:var(--muted);margin-left:2px">提問・回覆・@某人</div>
   </div>
   <!-- 輸入區 -->
   <div class="card" id="qa-input-card">
     <div id="qa-input-area">
       <div style="position:relative">
-        <textarea id="qa-text" placeholder="輸入你的問題... 輸入 @ 可以標記某人" oninput="handleQaMention(this,'qa-mention-dropdown')" onkeydown="handleMentionKey(event,'qa-mention-dropdown','qa-text')" style="border-color:rgba(91,156,246,0.2);min-height:90px"></textarea>
+        <textarea id="qa-text" placeholder="輸入你的問題... 輸入 @ 可以標記某人" oninput="handleQaMention(this,'qa-mention-dropdown')" onkeydown="handleMentionKey(event,'qa-mention-dropdown','qa-text')"></textarea>
         <div id="qa-mention-dropdown" class="mention-dropdown" style="display:none"></div>
       </div>
-      <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;flex-wrap:wrap">
+      <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;flex-wrap:wrap">
         <div style="display:flex;gap:8px">
-          <button id="qa-mode-public" class="btn btn-primary" style="width:auto;padding:7px 16px;font-size:12px;background:linear-gradient(135deg,#4f9eff,#3b82f6)" onclick="setQaMode('public')">👤 公開提問</button>
-          <button id="qa-mode-anon" class="btn btn-primary" style="width:auto;padding:7px 16px;font-size:12px;background:rgba(255,255,255,0.04);border:1px solid var(--glass-border);color:var(--muted2)" onclick="setQaMode('anon')">🐭 小老鼠</button>
+          <button id="qa-mode-public" class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px" onclick="setQaMode('public')">👤 公開提問</button>
+          <button id="qa-mode-anon" class="btn btn-primary" style="width:auto;padding:6px 14px;font-size:12px;background:var(--surface);border:1px solid var(--border);color:var(--muted)" onclick="setQaMode('anon')">🐭 小老鼠</button>
         </div>
-        <div id="qa-mode-hint" style="font-size:11px;color:var(--muted2)">公開提問，所有人看得到你的名字</div>
+        <div id="qa-mode-hint" style="font-size:11px;color:var(--muted)">公開提問，所有人看得到你的名字</div>
       </div>
-      <button class="btn btn-primary" style="background:linear-gradient(135deg,#4f9eff,#3b82f6);box-shadow:0 4px 16px rgba(79,158,255,0.25)" onclick="submitQa()">送出問題 🙋</button>
+      <button class="btn btn-primary" style="background:#5b9cf6" onclick="submitQa()">送出問題 🙋</button>
     </div>
-    <div id="qa-login-hint" style="color:var(--muted2);font-size:13px;padding:8px 0;display:none">請先登入才能提問</div>
+    <div id="qa-login-hint" style="color:var(--muted);font-size:13px;padding:6px 0;display:none">請先登入才能提問</div>
   </div>
   <!-- 問題列表 -->
   <div id="qa-list">載入中...</div>
@@ -1666,7 +1649,177 @@ function animateLbRows(){
 
 function getToday(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
 function toggleFaq(){const m=document.getElementById('faq-modal');m.style.display=m.style.display==='none'?'flex':'none';}
-function toggleRules(){const c=document.getElementById('rules-content'),a=document.getElementById('rules-arrow');if(c.style.display==='none'){c.style.display='block';a.textContent='▲ 收起';}else{c.style.display='none';a.textContent='▼ 展開';}}
+function toggleRules(){
+  const c=document.getElementById('rules-content');
+  const a=document.getElementById('rules-arrow');
+  const stage=document.getElementById('pallas-stage');
+  if(c.style.display==='none'){
+    c.style.display='block';
+    a.textContent='▲ 收起';
+    if(stage)stage.style.display='none';
+    stopPallas();
+  } else {
+    c.style.display='none';
+    a.textContent='▼ 展開';
+    if(stage)stage.style.display='flex';
+    startPallas();
+  }
+}
+
+// ── 像素兔猻運動動畫 ──────────────────────────────────────────
+let pallasTimer=null;
+let pallasFrame=0;
+let pallasX=0;
+let pallasDir=1;
+let pallasAction='walk'; // walk, jump, stretch
+let pallasActionTimer=0;
+
+const PALLAS_SCALE=4;
+const PALLAS_W=180;
+const PALLAS_H=80;
+
+// 像素兔猻 frames — 走路2格、跳躍、伸展
+// 用10x10像素格子，顏色：灰褐色身體、深色眼睛、白色肚子
+const C={
+  _:null,           // 透明
+  b:'#8a7560',      // 身體主色（灰褐）
+  d:'#6b5a48',      // 深褐（邊緣/陰影）
+  l:'#b0a090',      // 淺色（肚子/臉）
+  e:'#2a1f15',      // 眼睛深色
+  w:'#d4c9b8',      // 白/淺米（肚皮）
+  n:'#5a4a38',      // 鼻子
+  t:'#c4a882',      // 尾巴
+};
+
+// 走路 frame1（10x8 像素）
+const WALK1=[
+  [C._,C._,C.d,C.d,C.d,C.d,C._,C._,C._,C._],
+  [C._,C.d,C.b,C.b,C.b,C.b,C.d,C._,C._,C._],
+  [C.d,C.b,C.e,C.l,C.b,C.b,C.b,C.d,C.t,C._],
+  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._],
+  [C._,C.d,C.w,C.w,C.w,C.w,C.b,C.d,C._,C._],
+  [C._,C.d,C.b,C.w,C.w,C.b,C.d,C._,C._,C._],
+  [C._,C.d,C.b,C.d,C._,C.d,C.b,C.d,C._,C._],
+  [C._,C._,C.d,C._,C._,C._,C.d,C._,C._,C._],
+];
+
+// 走路 frame2（腳換位）
+const WALK2=[
+  [C._,C._,C.d,C.d,C.d,C.d,C._,C._,C._,C._],
+  [C._,C.d,C.b,C.b,C.b,C.b,C.d,C._,C._,C._],
+  [C.d,C.b,C.e,C.l,C.b,C.b,C.b,C.d,C.t,C._],
+  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._],
+  [C._,C.d,C.w,C.w,C.w,C.w,C.b,C.d,C._,C._],
+  [C._,C.d,C.b,C.w,C.w,C.b,C.d,C._,C._,C._],
+  [C._,C._,C.d,C.b,C.d,C.b,C.d,C._,C._,C._],
+  [C._,C._,C._,C.d,C._,C._,C.d,C._,C._,C._],
+];
+
+// 跳躍 frame
+const JUMP=[
+  [C._,C._,C.d,C.d,C.d,C.d,C._,C._,C._,C._],
+  [C._,C.d,C.b,C.b,C.b,C.b,C.d,C._,C._,C._],
+  [C.d,C.b,C.e,C.l,C.b,C.b,C.b,C.d,C.t,C._],
+  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d,C._],
+  [C._,C.d,C.w,C.w,C.w,C.w,C.b,C.d,C._,C._],
+  [C._,C.d,C.b,C.w,C.w,C.b,C.d,C._,C._,C._],
+  [C.d,C._,C.d,C.b,C.b,C.d,C._,C.d,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
+];
+
+// 伸展 frame（趴下伸懶腰）
+const STRETCH=[
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
+  [C._,C.d,C.d,C.d,C.d,C.d,C.d,C._,C._,C._],
+  [C.d,C.b,C.e,C.l,C.b,C.b,C.b,C.d,C.t,C.d],
+  [C.d,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.b,C.d],
+  [C.d,C.w,C.w,C.w,C.w,C.w,C.w,C.b,C.b,C.d],
+  [C.d,C.b,C.w,C.w,C.w,C.b,C.b,C.d,C.d,C._],
+  [C._,C.d,C.d,C.d,C.d,C.d,C._,C._,C._,C._],
+  [C._,C._,C._,C._,C._,C._,C._,C._,C._,C._],
+];
+
+const FRAMES_WALK=[WALK1,WALK2];
+const FRAMES_JUMP=[JUMP,JUMP];
+const FRAMES_STRETCH=[STRETCH,STRETCH,STRETCH,STRETCH];
+
+function drawPallas(ctx, frame, x, y, scale, flipX){
+  ctx.save();
+  if(flipX){
+    ctx.translate(x+frame[0].length*scale, y);
+    ctx.scale(-1,1);
+    x=0;y=0;
+  }
+  frame.forEach((row,ry)=>{
+    row.forEach((color,rx)=>{
+      if(!color)return;
+      ctx.fillStyle=color;
+      ctx.fillRect((flipX?rx:x+rx)*scale, (flipX?ry:y+ry)*scale, scale, scale);
+    });
+  });
+  ctx.restore();
+}
+
+function pallasStep(){
+  const canvas=document.getElementById('pallas-canvas');
+  if(!canvas)return;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,PALLAS_W,PALLAS_H);
+
+  // 地面線
+  ctx.fillStyle='rgba(245,166,35,0.15)';
+  ctx.fillRect(0,PALLAS_H-6,PALLAS_W,1);
+
+  let frames,yOffset=0;
+  pallasActionTimer++;
+
+  if(pallasAction==='walk'){
+    frames=FRAMES_WALK;
+    // 隨機切換動作
+    if(pallasActionTimer>40&&Math.random()<0.02){
+      if(Math.random()<0.5)pallasAction='jump';
+      else pallasAction='stretch';
+      pallasActionTimer=0;
+    }
+    pallasX+=pallasDir*1.5;
+    yOffset=PALLAS_H-8*PALLAS_SCALE-6;
+  } else if(pallasAction==='jump'){
+    frames=FRAMES_JUMP;
+    const jumpProgress=pallasActionTimer/20;
+    yOffset=PALLAS_H-8*PALLAS_SCALE-6 - Math.sin(jumpProgress*Math.PI)*16;
+    pallasX+=pallasDir*2;
+    if(pallasActionTimer>=20){pallasAction='walk';pallasActionTimer=0;}
+  } else if(pallasAction==='stretch'){
+    frames=FRAMES_STRETCH;
+    yOffset=PALLAS_H-8*PALLAS_SCALE-6+4;
+    if(pallasActionTimer>=60){pallasAction='walk';pallasActionTimer=0;}
+  }
+
+  // 邊界反彈
+  const spriteW=10*PALLAS_SCALE;
+  if(pallasX>=PALLAS_W-spriteW){pallasDir=-1;pallasX=PALLAS_W-spriteW;}
+  if(pallasX<=0){pallasDir=1;pallasX=0;}
+
+  const frame=frames[Math.floor(pallasFrame/8)%frames.length];
+  pallasFrame++;
+
+  drawPallas(ctx, frame, pallasX, yOffset, PALLAS_SCALE, pallasDir===-1);
+}
+
+function startPallas(){
+  pallasX=20;pallasDir=1;pallasFrame=0;pallasAction='walk';pallasActionTimer=0;
+  if(pallasTimer)clearInterval(pallasTimer);
+  pallasTimer=setInterval(pallasStep,60);
+}
+
+function stopPallas(){
+  if(pallasTimer){clearInterval(pallasTimer);pallasTimer=null;}
+  const canvas=document.getElementById('pallas-canvas');
+  if(canvas)canvas.getContext('2d').clearRect(0,0,PALLAS_W,PALLAS_H);
+}
+
+// 頁面載入後啟動
+window.addEventListener('load',()=>startPallas());
 function toast(msg,type='success'){const el=document.getElementById('toast-el');el.textContent=msg;el.style.background=type==='error'?'var(--red)':'var(--green)';el.style.color='#fff';el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
 function showPage(id){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -3212,33 +3365,27 @@ async function loadQaList(isAdmin=false){
     const replyTextareaId=`qa-reply-${q.id}`;
     const replyDropdownId=`qa-reply-dropdown-${q.id}`;
     return`<div class="qa-item">
-      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:10px">
-        <div style="display:flex;align-items:center;gap:8px">
-          <div style="font-size:18px">${q.anon?'🐭':'👤'}</div>
-          <div>
-            <div style="font-size:12px;font-weight:700;color:var(--text)">${displayName}</div>
-            <div style="font-size:10px;color:var(--muted2)">${new Date(q.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
-          </div>
-        </div>
-        ${canDel||q.authorId===CU?.id?`<button onclick="deleteQa('${q.id}')" style="background:transparent;border:none;color:var(--muted2);cursor:pointer;font-size:13px;padding:4px;border-radius:6px;transition:all 0.2s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted2)'">🗑</button>`:''}
+      <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:8px">
+        <div style="font-size:11px;color:var(--muted)">${displayName} · ${new Date(q.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+        ${canDel||q.authorId===CU?.id?`<button onclick="deleteQa('${q.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:13px">🗑</button>`:''}
       </div>
-      <div style="font-size:14px;line-height:1.7;margin-bottom:12px;color:var(--text)">${renderMentions(q.text)}</div>
+      <div style="font-size:13px;line-height:1.6;margin-bottom:10px">${renderMentions(q.text)}</div>
       ${qReplies.map(r=>`
         <div class="qa-reply">
-          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:6px">
-            <div style="color:var(--muted2);font-size:11px;font-weight:600">${r.anon&&!isAdmin?'🐭 小老鼠':isAdmin&&r.anon?`🐭 ${r.authorName}（匿名）`:r.authorName} <span style="font-weight:400;opacity:0.6">· ${new Date(r.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</span></div>
-            ${canDel||r.authorId===CU?.id?`<button onclick="deleteQaReply('${r.id}')" style="background:transparent;border:none;color:var(--muted2);cursor:pointer;font-size:12px;transition:color 0.2s" onmouseover="this.style.color='var(--red)'" onmouseout="this.style.color='var(--muted2)'">🗑</button>`:''}
+          <div style="display:flex;justify-content:space-between;align-items:flex-start;margin-bottom:4px">
+            <div style="color:var(--muted);font-size:10px">${r.anon&&!isAdmin?'🐭 小老鼠':isAdmin&&r.anon?`🐭 ${r.authorName}（匿名）`:r.authorName} · ${new Date(r.createdAt).toLocaleDateString('zh-TW',{month:'numeric',day:'numeric',hour:'2-digit',minute:'2-digit'})}</div>
+            ${canDel||r.authorId===CU?.id?`<button onclick="deleteQaReply('${r.id}')" style="background:transparent;border:none;color:var(--red);cursor:pointer;font-size:12px">🗑</button>`:''}
           </div>
-          <div style="font-size:13px;line-height:1.6;color:var(--text)">${renderMentions(r.text)}</div>
+          <div style="font-size:12px;line-height:1.5">${renderMentions(r.text)}</div>
         </div>`).join('')}
-      ${CU?`<div style="margin-top:12px;position:relative">
-        <textarea id="${replyTextareaId}" placeholder="回覆... 輸入 @ 標記某人" style="height:56px;font-size:12px;resize:none;border-color:rgba(255,255,255,0.06);min-height:56px" oninput="handleQaMention(this,'${replyDropdownId}')" onkeydown="handleMentionKey(event,'${replyDropdownId}','${replyTextareaId}')"></textarea>
+      ${CU?`<div style="margin-top:10px;position:relative">
+        <textarea id="${replyTextareaId}" placeholder="回覆... 輸入 @ 標記某人" style="height:60px;font-size:12px;resize:none" oninput="handleQaMention(this,'${replyDropdownId}')" onkeydown="handleMentionKey(event,'${replyDropdownId}','${replyTextareaId}')"></textarea>
         <div id="${replyDropdownId}" class="mention-dropdown" style="display:none"></div>
         <div style="display:flex;align-items:center;gap:8px;margin-top:6px">
-          <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}',false)" style="background:rgba(255,255,255,0.05);border:1px solid var(--glass-border);border-radius:8px;padding:6px 14px;color:var(--text);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s" onmouseover="this.style.background='rgba(255,255,255,0.09)'" onmouseout="this.style.background='rgba(255,255,255,0.05)'">回覆</button>
-          <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}',true)" style="background:rgba(255,255,255,0.03);border:1px solid var(--glass-border);border-radius:8px;padding:6px 14px;color:var(--muted2);font-size:12px;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s" onmouseover="this.style.color='var(--text)'" onmouseout="this.style.color='var(--muted2)'">🐭 匿名回覆</button>
+          <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}',false)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--text);font-size:12px;cursor:pointer">回覆</button>
+          <button onclick="submitQaReply('${q.id}','${replyTextareaId}','${replyDropdownId}',true)" style="background:var(--surface);border:1px solid var(--border);border-radius:8px;padding:5px 12px;color:var(--muted);font-size:12px;cursor:pointer">🐭 匿名回覆</button>
         </div>
-      </div>`:'<div style="font-size:11px;color:var(--muted2);margin-top:10px;padding:8px;background:rgba(255,255,255,0.02);border-radius:8px;text-align:center">登入後才能回覆</div>'}
+      </div>`:'<div style="font-size:11px;color:var(--muted);margin-top:8px">登入後才能回覆</div>'}
     </div>`;
   }).join('');
 }
@@ -4081,3 +4228,4 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
+
