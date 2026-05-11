@@ -779,7 +779,7 @@ tr:hover td{background:rgba(255,255,255,0.015)}
       </div>
       <!-- 像素兔猻動畫（收起時顯示） -->
       <div id="pallas-stage" style="display:flex;justify-content:center;padding:12px 0 4px">
-        <canvas id="pallas-canvas" width="180" height="80" style="image-rendering:pixelated;image-rendering:crisp-edges"></canvas>
+        <canvas id="pallas-canvas" width="200" height="90" style="image-rendering:pixelated;image-rendering:crisp-edges"></canvas>
       </div>
       <div id="rules-content" style="display:none;margin-top:14px">
         <div style="margin-bottom:12px">
@@ -1674,9 +1674,9 @@ let pallasDir=1;
 let pallasAction='walk'; // walk, jump, stretch
 let pallasActionTimer=0;
 
-const PALLAS_SCALE=4;
-const PALLAS_W=180;
-const PALLAS_H=80;
+const PALLAS_SCALE=5;
+const PALLAS_W=200;
+const PALLAS_H=90;
 
 // 像素兔猻 frames — 走路2格、跳躍、伸展
 // 用10x10像素格子，顏色：灰褐色身體、深色眼睛、白色肚子
@@ -1776,23 +1776,23 @@ function pallasStep(){
   if(pallasAction==='walk'){
     frames=FRAMES_WALK;
     // 隨機切換動作
-    if(pallasActionTimer>40&&Math.random()<0.02){
+    if(pallasActionTimer>20&&Math.random()<0.04){
       if(Math.random()<0.5)pallasAction='jump';
       else pallasAction='stretch';
       pallasActionTimer=0;
     }
-    pallasX+=pallasDir*1.5;
+    pallasX+=pallasDir*2;
     yOffset=PALLAS_H-8*PALLAS_SCALE-6;
   } else if(pallasAction==='jump'){
     frames=FRAMES_JUMP;
-    const jumpProgress=pallasActionTimer/20;
-    yOffset=PALLAS_H-8*PALLAS_SCALE-6 - Math.sin(jumpProgress*Math.PI)*16;
-    pallasX+=pallasDir*2;
-    if(pallasActionTimer>=20){pallasAction='walk';pallasActionTimer=0;}
+    const jumpProgress=pallasActionTimer/16;
+    yOffset=PALLAS_H-8*PALLAS_SCALE-6 - Math.sin(jumpProgress*Math.PI)*20;
+    pallasX+=pallasDir*2.5;
+    if(pallasActionTimer>=16){pallasAction='walk';pallasActionTimer=0;}
   } else if(pallasAction==='stretch'){
     frames=FRAMES_STRETCH;
     yOffset=PALLAS_H-8*PALLAS_SCALE-6+4;
-    if(pallasActionTimer>=60){pallasAction='walk';pallasActionTimer=0;}
+    if(pallasActionTimer>=35){pallasAction='walk';pallasActionTimer=0;}
   }
 
   // 邊界反彈
@@ -1809,7 +1809,7 @@ function pallasStep(){
 function startPallas(){
   pallasX=20;pallasDir=1;pallasFrame=0;pallasAction='walk';pallasActionTimer=0;
   if(pallasTimer)clearInterval(pallasTimer);
-  pallasTimer=setInterval(pallasStep,60);
+  pallasTimer=setInterval(pallasStep,50);
 }
 
 function stopPallas(){
@@ -4228,4 +4228,3 @@ if('serviceWorker' in navigator){
 </script>
 </body>
 </html>
-
