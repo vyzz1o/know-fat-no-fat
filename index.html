@@ -2295,11 +2295,61 @@ function stopPallas(){
 window.addEventListener('load',()=>startPallas());
 
 function toast(msg,type='success'){const el=document.getElementById('toast-el');el.textContent=msg;el.style.background=type==='error'?'var(--red)':'var(--green)';el.style.color='#fff';el.style.display='block';setTimeout(()=>el.style.display='none',3000);}
-function showPage(id){
+function showPage(id, pushState=true){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
   document.getElementById('page-'+id).classList.add('active');
   setTimeout(initTiltEffect, 300);
+  if(pushState){
+    history.pushState({page:id}, '', '#'+id);
+  }
 }
+
+// 瀏覽器返回/前進鍵處理
+window.addEventListener('popstate',(e)=>{
+  const page=e.state?.page;
+  if(!page){
+    // 沒有狀態，回到首頁
+    showPage('public', false);
+    loadPublicData();
+    initTicker();
+    setTimeout(()=>{initQaSection();loadVoteData();},300);
+    return;
+  }
+  // 有些頁面需要特殊處理
+  if(page==='public'){
+    if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubscribe=null;}
+    showPage('public', false);
+    loadPublicData();
+    initTicker();
+    setTimeout(()=>{initQaSection();loadVoteData();},300);
+  } else if(page==='user'){
+    showPage('user', false);
+    userTab('mydata');
+    loadUserRecords();
+    loadUserDiaries();
+  } else if(page==='admin'){
+    showPage('admin', false);
+    loadPending();
+    loadAdminUserList();
+  } else if(page==='spectator'){
+    showPage('spectator', false);
+    loadSpectatorPage();
+  } else if(page==='jiaoxiao'){
+    showPage('jiaoxiao', false);
+    loadJiaoTargets();
+  } else if(page==='qa'){
+    showPage('qa', false);
+    initQaSection();
+  } else if(page==='checkin'){
+    showPage('checkin', false);
+    loadCheckinPage();
+  } else if(page==='workout'){
+    showPage('workout', false);
+    loadWorkout();
+  } else {
+    showPage(page, false);
+  }
+});
 function goPublic(){if(commentsUnsubscribe){commentsUnsubscribe();commentsUnsubscribe=null;}showPage('public');loadPublicData();initTicker();setTimeout(()=>{initQaSection();loadVoteData();},300);}
 function updateNav(){
   const nr=document.getElementById('nav-right');
@@ -4227,6 +4277,10 @@ async function deleteComment(commentId){
 
 // ── 自動恢復登入（含 12 小時過期檢查）──
 (async function restoreSession(){
+  // 設定初始 history 狀態
+  if(!history.state){
+    history.replaceState({page:'public'}, '', window.location.hash||'#public');
+  }
   try{
     const saved=localStorage.getItem('ci_user');
     const expire=localStorage.getItem('ci_expire');
