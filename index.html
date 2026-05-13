@@ -132,7 +132,21 @@ input,textarea,select{
   margin-bottom:12px;
   box-sizing:border-box;
   -webkit-appearance:none;
+  appearance:none;
   transition:border-color 0.2s, box-shadow 0.2s;
+}
+select{
+  background-image:url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 12 12'%3E%3Cpath fill='%237a859e' d='M6 8L1 3h10z'/%3E%3C/svg%3E");
+  background-repeat:no-repeat;
+  background-position:right 12px center;
+  padding-right:32px;
+  cursor:pointer;
+  background-color:#131720;
+}
+select option{
+  background-color:#131720;
+  color:#eef0f6;
+  padding:8px;
 }
 input:focus,textarea:focus,select:focus{
   border-color:rgba(245,166,35,0.4);
@@ -2446,7 +2460,7 @@ async function loadPublicData(){
           trendHtml=`<span style="color:var(--muted2);font-size:11px" title="排名不變">—</span>`;
         }
       }
-      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer"><div class="lb-rank"><div class="rank-badge ${rankClass}">${rankLabel}</div></div><div style="flex:1"><div style="font-weight:600;font-size:13px">${u.name}${winnerTag}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%;transition:width 0.8s ease"></div></div></div><div style="display:flex;align-items:center;gap:8px"><div style="width:16px;text-align:center">${trendHtml}</div><div style="font-size:13px;color:var(--accent);font-weight:800;font-family:'Syne',sans-serif">${u.score.toFixed(2)}%</div></div></div>`;
+      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer"><div class="lb-rank" style="display:flex;flex-direction:column;align-items:center;gap:2px"><div class="rank-badge ${rankClass}">${rankLabel}</div>${trendHtml?`<div style="font-size:9px;line-height:1">${trendHtml}</div>`:''}</div><div style="flex:1"><div style="font-weight:600;font-size:13px">${u.name}${winnerTag}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%;transition:width 0.8s ease"></div></div></div><div style="font-size:13px;color:var(--accent);font-weight:800;font-family:'Syne',sans-serif">${u.score.toFixed(2)}%</div></div>`;
     }).join('');
     const ctx=document.getElementById('chart-public-fat').getContext('2d');if(publicChart)publicChart.destroy();
     const maxLen=Math.max(...rows.map(r=>r.history.length),0);
