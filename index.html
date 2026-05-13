@@ -896,18 +896,20 @@ tr:hover td{background:rgba(255,255,255,0.015)}
     <div class="countdown-nums" id="countdown-display"></div>
     <div id="next-measure-box" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
   </div>
-  <div onclick="openVoteModal()" style="cursor:pointer;background:linear-gradient(135deg,#4cde8f18,#5b9cf618);border:1px solid #4cde8f44;border-radius:12px;padding:16px 20px;margin-bottom:14px">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
-      <div style="font-weight:800;font-size:14px">📊 規則修改投票進行中</div>
-      <div style="font-size:12px;color:var(--accent);font-weight:700">點擊投票 →</div>
+  <div style="cursor:pointer;background:linear-gradient(135deg,#4cde8f18,#5b9cf618);border:1px solid #4cde8f44;border-radius:12px;padding:16px 20px;margin-bottom:14px" onclick="openVoteModal()">
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
+      <div style="font-weight:800;font-size:14px">✅ 規則修改投票已完成</div>
+      <div style="font-size:12px;color:var(--green);font-weight:700">投票成功</div>
     </div>
-    <div style="position:relative;height:20px;border-radius:8px;overflow:hidden;width:100%;margin-bottom:8px;background:#f05c6e33">
-      <div id="vote-banner-yes" style="position:absolute;left:0;top:0;height:100%;background:var(--green);width:50%;transition:width 0.4s;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:#000"></div>
-      <div id="vote-banner-no" style="position:absolute;right:0;top:0;height:100%;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;color:var(--red);padding-right:8px"></div>
-    </div>
-    <div style="display:flex;justify-content:space-between;align-items:center">
+    <div style="font-size:12px;color:var(--muted2);line-height:1.6">新計分規則已生效：體脂降率 × 70% + 骨骼肌升率 × 30%</div>
+    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
       <div id="vote-banner-count" style="font-size:11px;color:var(--muted)">載入中...</div>
       <div id="vote-banner-my" style="font-size:11px;color:var(--muted)"></div>
+    </div>
+    <!-- 隱藏但保留用於 JS 更新 -->
+    <div style="display:none">
+      <div id="vote-banner-yes"></div>
+      <div id="vote-banner-no"></div>
     </div>
   </div>
   <div class="prize-banner">
@@ -1678,9 +1680,6 @@ tr:hover td{background:rgba(255,255,255,0.015)}
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">➕ 新增測量</div>
       <div style="color:var(--muted);margin-bottom:16px">
         <div>• 自行填入體重、體脂等數據，立即儲存</div>
-        <div>• 上傳時可選擇「🔒 僅自己看」或「📊 公開趨勢」</div>
-        <div>• 公開趨勢：只會讓你的體脂曲線出現在排行榜趨勢圖，<strong style="color:var(--text)">不會露出實際數字</strong></div>
-        <div>• <strong style="color:var(--text)">自填數據不會影響計分和排名</strong>，計分只看管理員在測量日錄入的官方數據</div>
       </div>
       <div style="color:var(--accent);font-weight:700;margin-bottom:6px">🎁 今日訓練</div>
       <div style="color:var(--muted);margin-bottom:16px">
@@ -2412,7 +2411,18 @@ async function loadPublicData(){
     rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered&&!r.isSpectator&&r.forScoring!==false){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
     Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
     // 排行榜只顯示官方數據
-    const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,isWinner:s.isWinner,history:r.map(rec=>rec.bodyFat)};}).sort((a,b)=>b.score-a.score);
+    const rows=currentUsers.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,isWinner:s.isWinner,history:r.map(rec=>rec.bodyFat),recs:r};}).sort((a,b)=>b.score-a.score);
+
+    // 計算上次排名（拿掉最後一筆數據重新排）
+    const prevRows=currentUsers.map(u=>{
+      const r=adminRecords[u.id]||[];
+      const prevRecs=r.length>=2?r.slice(0,-1):r;
+      const s=calculateFullStats(prevRecs);
+      return{id:u.id,score:s.total};
+    }).sort((a,b)=>b.score-a.score);
+    const prevRankMap={};
+    prevRows.forEach((u,i)=>{prevRankMap[u.id]=i+1;});
+
     let winners=0;
     currentUsers.forEach(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);if(s.isWinner)winners++;});
     document.getElementById('prize-amount').textContent=`NT$ ${((currentUsers.length*PRIZE_PER)-(winners*PRIZE_BACK)).toLocaleString()}`;
@@ -2422,7 +2432,21 @@ async function loadPublicData(){
       const rankLabel=i<3?['1','2','3'][i]:`${i+1}`;
       const isWinner=u.isWinner;
       const winnerTag=isWinner?`<span style="font-size:10px;background:linear-gradient(135deg,var(--green),var(--green2));color:#000;border-radius:6px;padding:1px 6px;font-weight:700;margin-left:6px">✅ 退款</span>`:'';
-      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer"><div class="lb-rank"><div class="rank-badge ${rankClass}">${rankLabel}</div></div><div style="flex:1"><div style="font-weight:600;font-size:13px">${u.name}${winnerTag}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%;transition:width 0.8s ease"></div></div></div><div style="font-size:13px;color:var(--accent);font-weight:800;font-family:'Syne',sans-serif">${u.score.toFixed(2)}%</div></div>`;
+      // 升降箭頭
+      const currentRank=i+1;
+      const prevRank=prevRankMap[u.id]||currentRank;
+      const rankDiff=prevRank-currentRank; // 正數=上升，負數=下降
+      let trendHtml='';
+      if(u.recs.length>=2){
+        if(rankDiff>0){
+          trendHtml=`<span style="color:var(--green);font-size:11px;font-weight:700" title="上升${rankDiff}名">▲</span>`;
+        } else if(rankDiff<0){
+          trendHtml=`<span style="color:var(--red);font-size:11px;font-weight:700" title="下降${Math.abs(rankDiff)}名">▼</span>`;
+        } else {
+          trendHtml=`<span style="color:var(--muted2);font-size:11px" title="排名不變">—</span>`;
+        }
+      }
+      return`<div class="lb-row" onclick="showProfile('${u.id}','${u.name}')" style="cursor:pointer"><div class="lb-rank"><div class="rank-badge ${rankClass}">${rankLabel}</div></div><div style="flex:1"><div style="font-weight:600;font-size:13px">${u.name}${winnerTag}</div><div class="lb-bar-wrap"><div class="lb-bar" style="width:${barW}%;transition:width 0.8s ease"></div></div></div><div style="display:flex;align-items:center;gap:8px"><div style="width:16px;text-align:center">${trendHtml}</div><div style="font-size:13px;color:var(--accent);font-weight:800;font-family:'Syne',sans-serif">${u.score.toFixed(2)}%</div></div></div>`;
     }).join('');
     const ctx=document.getElementById('chart-public-fat').getContext('2d');if(publicChart)publicChart.destroy();
     const maxLen=Math.max(...rows.map(r=>r.history.length),0);
