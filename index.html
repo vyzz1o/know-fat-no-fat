@@ -2635,6 +2635,8 @@ async function editSelfRecord(id){
   const snap=await db.collection('records').doc(id).get();
   if(!snap.exists)return;
   const r=snap.data();
+  const d=prompt("測量日期 (YYYY-MM-DD)：",r.date);if(d===null)return;
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return toast("日期格式錯誤，請用 YYYY-MM-DD","error");
   const w=prompt("體重 (kg)：",r.weight);if(w===null)return;
   const f=prompt("體脂 (%)：",r.bodyFat);if(f===null)return;
   const sc=prompt("皮下脂肪率 (%)：",r.subcut??'');
@@ -2644,7 +2646,7 @@ async function editSelfRecord(id){
   const ba=prompt("身體年齡：",r.bodyage??'');
   if(!w||!f)return toast("體重和體脂為必填","error");
   await db.collection('records').doc(id).update({
-    weight:parseFloat(w),bodyFat:parseFloat(f),
+    date:d,weight:parseFloat(w),bodyFat:parseFloat(f),
     subcut:sc?parseFloat(sc):null,muscle:mu?parseFloat(mu):null,
     visceral:vi?parseFloat(vi):null,bmr:bm?parseFloat(bm):null,
     bodyage:ba?parseFloat(ba):null,updatedAt:Date.now()
