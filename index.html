@@ -1644,12 +1644,13 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 <div id="toast-el" class="toast"></div>
 
 <div id="user-chart-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:#000a;z-index:999;align-items:center;justify-content:center;padding:20px">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:600px">
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:16px;padding:24px;width:100%;max-width:640px;max-height:90vh;overflow-y:auto">
     <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:16px">
       <div id="user-chart-title" style="font-weight:700;font-size:16px"></div>
       <button onclick="closeUserChart()" style="background:transparent;border:none;color:var(--muted);font-size:20px;cursor:pointer">✕</button>
     </div>
-    <div style="height:260px"><canvas id="user-chart-canvas"></canvas></div>
+    <div style="height:260px" id="user-chart-wrap"><canvas id="user-chart-canvas"></canvas></div>
+    <div id="user-chart-table" style="margin-top:16px"></div>
   </div>
 </div>
 
@@ -2856,37 +2857,85 @@ async function editUserInfo(uid){
   toast('✅ 基本資料已更新！');
   loadAdminUserList();
 }
+let userChartInst=null;
 async function showUserChart(uid,name){
   const snap=await db.collection('records').get();
-  const allRecs=snap.docs.map(d=>d.data()).filter(r=>r.userId===uid&&r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
-  const adminRecs=allRecs.filter(r=>r.adminEntered);
+  const allRecs=snap.docs.map(d=>({id:d.id,...d.data()})).filter(r=>r.userId===uid&&r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
+  const adminRecs=allRecs.filter(r=>r.adminEntered&&r.forScoring!==false);
   const recs=adminRecs.length>=2?adminRecs:allRecs;
-  document.getElementById('user-chart-title').textContent=`${name} 的數據趨勢`;
-  document.getElementById('user-chart-modal').style.display='flex';
+
+  const modal=document.getElementById('user-chart-modal');
+  document.getElementById('user-chart-title').textContent=`${name} 的數據`;
+  modal.style.display='flex';
+
   if(userChartInst){userChartInst.destroy();userChartInst=null;}
-  // 重建 canvas
-  const wrap=document.querySelector('#user-chart-modal [style*="260px"]');
-  if(wrap){wrap.innerHTML='<canvas id="user-chart-canvas"></canvas>';}
+  const wrap=document.getElementById('user-chart-wrap');
+  if(wrap)wrap.innerHTML='<canvas id="user-chart-canvas"></canvas>';
+
+  // 畫圖
   const canvas=document.getElementById('user-chart-canvas');
-  if(!canvas)return;
-  if(recs.length<2){
-    wrap.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:40px 0">尚無足夠數據（需至少 2 筆）</div>';
-    return;
+  if(canvas&&recs.length>=2){
+    userChartInst=new Chart(canvas.getContext('2d'),{
+      type:'line',
+      data:{
+        labels:recs.map(r=>r.date.slice(5)),
+        datasets:[
+          {label:'體脂率 %',data:recs.map(r=>r.bodyFat),borderColor:'#f5a623',tension:0.3,yAxisID:'y'},
+          {label:'體重 kg',data:recs.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'},
+          {label:'骨骼肌 %',data:recs.map(r=>r.muscle||null),borderColor:'#4cde8f',tension:0.3,yAxisID:'y',borderDash:[4,4]}
+        ]
+      },
+      options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}
+    });
+  } else if(wrap&&recs.length<2){
+    wrap.innerHTML='<div style="color:var(--muted);font-size:13px;text-align:center;padding:24px 0">尚無足夠數據（需至少 2 筆）</div>';
   }
-  userChartInst=new Chart(canvas.getContext('2d'),{
-    type:'line',
-    data:{
-      labels:recs.map(r=>r.date.slice(5)),
-      datasets:[
-        {label:'體脂率 %',data:recs.map(r=>r.bodyFat),borderColor:'#f5a623',tension:0.3,yAxisID:'y'},
-        {label:'體重 kg',data:recs.map(r=>r.weight),borderColor:'#5b9cf6',tension:0.3,yAxisID:'y2'},
-        {label:'骨骼肌 %',data:recs.map(r=>r.muscle||null),borderColor:'#4cde8f',tension:0.3,yAxisID:'y',borderDash:[4,4]}
-      ]
-    },
-    options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:true,labels:{color:'#e8eaf0',font:{size:11}}}},scales:{y:{ticks:{color:'#7a8299'},grid:{color:'#2a3148'}},y2:{position:'right',ticks:{color:'#7a8299'},grid:{display:false}}}}
-  });
+
+  // 數據表格 + 結語編輯
+  const tableWrap=document.getElementById('user-chart-table');
+  if(!tableWrap)return;
+  if(adminRecs.length===0){tableWrap.innerHTML='<div style="color:var(--muted);font-size:13px;padding:8px 0">尚無官方數據</div>';return;}
+  tableWrap.innerHTML=`
+    <div style="font-size:12px;font-weight:700;color:var(--muted2);margin-bottom:8px">官方紀錄 · 點「✏️ 結語」可補寫或修改</div>
+    <div style="overflow-x:auto">
+    <table style="font-size:11px;width:100%">
+      <tr><th>日期</th><th>體重</th><th>體脂</th><th>骨骼肌</th><th>計分</th><th>結語</th><th></th></tr>
+      ${adminRecs.map(r=>`
+        <tr id="uchart-row-${r.id}">
+          <td>${r.date}</td>
+          <td>${r.weight}kg</td>
+          <td>${r.bodyFat}%</td>
+          <td>${r.muscle!=null?r.muscle+'%':'--'}</td>
+          <td>${r.forScoring===false?'<span style="color:var(--muted)">參考</span>':'✅'}</td>
+          <td style="max-width:180px;color:${r.comment?'var(--muted2)':'var(--muted)'};font-style:${r.comment?'normal':'italic'}">${r.comment||'未填'}</td>
+          <td><button onclick="editRecordComment('${r.id}','${uid}','${name}')" style="background:transparent;border:none;color:var(--accent);cursor:pointer;font-size:12px;padding:2px 4px">✏️</button></td>
+        </tr>`).join('')}
+    </table></div>`;
 }
 function closeUserChart(){document.getElementById('user-chart-modal').style.display='none';if(userChartInst){userChartInst.destroy();userChartInst=null;}}
+
+async function editRecordComment(recId, uid, name){
+  const snap=await db.collection('records').doc(recId).get();
+  if(!snap.exists)return;
+  const current=snap.data().comment||'';
+  const row=document.getElementById(`uchart-row-${recId}`);
+  if(!row)return;
+  const commentCell=row.children[5];
+  const btnCell=row.children[6];
+  commentCell.innerHTML=`<input id="comment-input-${recId}" value="${current}" placeholder="輸入結語..." style="width:160px;background:#1e2638;border:1px solid var(--accent);border-radius:5px;color:var(--text);font-size:11px;padding:3px 6px">`;
+  btnCell.innerHTML=`<button onclick="saveRecordComment('${recId}','${uid}','${name}')" style="background:var(--green);color:#000;border:none;border-radius:5px;padding:2px 7px;font-size:11px;font-weight:700;cursor:pointer">存</button>
+    <button onclick="showUserChart('${uid}','${name}')" style="background:transparent;border:none;color:var(--muted);font-size:11px;cursor:pointer;margin-left:3px">✕</button>`;
+  document.getElementById(`comment-input-${recId}`).focus();
+}
+
+async function saveRecordComment(recId, uid, name){
+  const input=document.getElementById(`comment-input-${recId}`);
+  if(!input)return;
+  const val=input.value.trim();
+  await db.collection('records').doc(recId).update({comment:val||null});
+  toast('✅ 結語已儲存！');
+  showUserChart(uid, name);
+}
 async function switchRole(id, newRole){
   const label=newRole==='spectator'?'監視者':'選手';
   if(!confirm(`確定將此帳號改為「${label}」？`))return;
