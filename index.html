@@ -1420,6 +1420,8 @@ tr:hover td{background:rgba(255,255,255,0.015)}
       <input type="number" step="1" id="admin-rec-visceral" placeholder="內臟脂肪程度">
       <input type="number" step="1" id="admin-rec-bmr" placeholder="基礎代謝量 (kcal)">
       <input type="number" step="1" id="admin-rec-bodyage" placeholder="身體年齡">
+      <label style="margin-bottom:4px">本次小結語 <span style="color:var(--muted);font-weight:400">（選填，選手量完後可以看到）</span></label>
+      <textarea id="admin-rec-comment" placeholder="例：這次體脂降幅不錯，骨骼肌也有上升，繼續保持！" style="height:70px;margin-bottom:10px"></textarea>
       <label style="margin-bottom:4px">納入計分</label>
       <select id="admin-rec-scoring" style="margin-bottom:10px">
         <option value="1">✅ 納入比賽計分（官方數據）</option>
@@ -2552,7 +2554,8 @@ async function loadUserRecords(){
           ops=`<button style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="startEditRow('${r.id}')">編輯</button><button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',false)">刪除</button>`;
         }
       }
-      return`<tr id="row-${r.id}"><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'%':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>`;
+      const commentRow=r.adminEntered&&r.comment?`<tr><td colspan="12" style="padding:6px 10px 10px;border-bottom:1px solid rgba(30,38,56,0.5)"><div style="background:linear-gradient(135deg,rgba(245,166,35,0.07),rgba(245,166,35,0.02));border-left:2px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;color:var(--muted2);line-height:1.6"><span style="color:var(--accent);font-weight:700;margin-right:6px">💬 管理員結語</span>${r.comment}</div></td></tr>`:'';
+      return`<tr id="row-${r.id}"><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'%':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>${commentRow}`;
     }).join('')+`</table></div>`;
   };
   document.getElementById('user-record-list').innerHTML=renderTable(validRecs);
@@ -2934,6 +2937,7 @@ async function adminSubmitRecord(){
   const subcut=document.getElementById('admin-rec-subcut').value,muscle=document.getElementById('admin-rec-muscle').value,visceral=document.getElementById('admin-rec-visceral').value,bmr=document.getElementById('admin-rec-bmr').value,bodyage=document.getElementById('admin-rec-bodyage').value;
   const scoringVal=document.getElementById('admin-rec-scoring').value;
   const forScoring=scoringVal==='1'&&!isSpectator; // 監視者永遠不計分
+  const comment=document.getElementById('admin-rec-comment').value.trim();
   if(!w||!f||!d)return toast('請填寫所有欄位','error');
   await db.collection('records').add({
     userId:tid,weight:parseFloat(w),bodyFat:parseFloat(f),
@@ -2942,9 +2946,11 @@ async function adminSubmitRecord(){
     bodyage:bodyage?parseFloat(bodyage):null,
     date:d,status:'approved',adminEntered:true,
     isSpectator:isSpectator||false,
-    forScoring, // true = 納入計分, false = 僅供參考
+    forScoring,
+    comment:comment||null,
     createdAt:Date.now()
   });
+  document.getElementById('admin-rec-comment').value='';
   if(isSpectator) toast('已為監視者錄入（不計入比賽）');
   else if(forScoring) toast('✅ 已錄入並納入比賽計分！');
   else toast('📋 已錄入（僅供參考，不影響排名）');
