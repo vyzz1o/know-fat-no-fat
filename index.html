@@ -2539,21 +2539,25 @@ async function loadUserRecords(){
     },50);
   }
   const validRecs=recs.filter(r=>r.status==='approved'||r.status==='delete_pending');
-  const renderTable=(list)=>list.length===0?'<div style="color:var(--muted);font-size:12px;padding:8px 0">尚無紀錄</div>':`<div style="overflow-x:auto"><table><tr><th>日期</th><th>來源</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
-    const src=r.adminEntered?`<span style="color:var(--accent);font-size:11px">管理員</span>`:`<span style="color:var(--muted);font-size:11px">本人</span>`;
-    const statusTxt=r.status==='approved'?'✅':r.status==='delete_pending'?'🗑待刪除':'⏳';
-    let ops='';
-    if(r.status==='approved'){
-      if(r.adminEntered){
-        ops=`<button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',true)">申請刪除</button>`;
-      } else {
-        const isPublic=r.visibility==='public';
-        ops=`<button style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="editSelfRecord('${r.id}')">編輯</button><button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',false)">刪除</button>`;
+  const renderTable=(list)=>{
+    if(list.length===0)return'<div style="color:var(--muted);font-size:12px;padding:8px 0">尚無紀錄</div>';
+    return`<div style="overflow-x:auto"><table id="self-record-table"><tr><th>日期</th><th>來源</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
+      const src=r.adminEntered?`<span style="color:var(--accent);font-size:11px">管理員</span>`:`<span style="color:var(--muted);font-size:11px">本人</span>`;
+      const statusTxt=r.status==='approved'?'✅':r.status==='delete_pending'?'🗑待刪除':'⏳';
+      let ops='';
+      if(r.status==='approved'){
+        if(r.adminEntered){
+          ops=`<button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',true)">申請刪除</button>`;
+        } else {
+          ops=`<button style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="startEditRow('${r.id}')">編輯</button><button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',false)">刪除</button>`;
+        }
       }
-    }
-    return`<tr><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'%':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>`;
-  }).join('')+`</table></div>`;
+      return`<tr id="row-${r.id}"><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'%':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>`;
+    }).join('')+`</table></div>`;
+  };
   document.getElementById('user-record-list').innerHTML=renderTable(validRecs);
+  // 把 validRecs 存起來給 inline edit 用
+  window._selfRecs=Object.fromEntries(validRecs.map(r=>[r.id,r]));
   const chartEl=document.getElementById('my-chart-canvas');
   const allApp=[...recs].filter(r=>r.status==='approved').sort((a,b)=>a.date.localeCompare(b.date));
   if(chartEl){
@@ -2631,27 +2635,57 @@ async function deleteRecord(id, adminEntered){
   }
   loadUserRecords();
 }
-async function editSelfRecord(id){
-  const snap=await db.collection('records').doc(id).get();
-  if(!snap.exists)return;
-  const r=snap.data();
-  const d=prompt("測量日期 (YYYY-MM-DD)：",r.date);if(d===null)return;
-  if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return toast("日期格式錯誤，請用 YYYY-MM-DD","error");
-  const w=prompt("體重 (kg)：",r.weight);if(w===null)return;
-  const f=prompt("體脂 (%)：",r.bodyFat);if(f===null)return;
-  const sc=prompt("皮下脂肪率 (%)：",r.subcut??'');
-  const mu=prompt("骨骼肌 (%)：",r.muscle??'');
-  const vi=prompt("內臟脂肪程度：",r.visceral??'');
-  const bm=prompt("基礎代謝量 (kcal)：",r.bmr??'');
-  const ba=prompt("身體年齡：",r.bodyage??'');
-  if(!w||!f)return toast("體重和體脂為必填","error");
+function startEditRow(id){
+  const r=window._selfRecs?.[id];
+  if(!r)return;
+  const row=document.getElementById('row-'+id);
+  if(!row)return;
+  const inp=(val,placeholder,w='52px')=>`<input value="${val??''}" placeholder="${placeholder}" style="width:${w};background:#1e2638;border:1px solid var(--accent);border-radius:5px;color:var(--text);font-size:11px;padding:3px 5px;box-sizing:border-box">`;
+  row.innerHTML=`
+    <td>${inp(r.date,'YYYY-MM-DD','94px')}</td>
+    <td><span style="color:var(--muted);font-size:11px">本人</span></td>
+    <td>${inp(r.weight,'體重','54px')}</td>
+    <td>${inp(r.bodyFat,'體脂','44px')}</td>
+    <td>${inp(r.subcut??'','皮下','44px')}</td>
+    <td>${inp(r.muscle??'','骨骼肌','44px')}</td>
+    <td>${inp(r.visceral??'','內臟','38px')}</td>
+    <td>${inp(r.bmr??'','基代','50px')}</td>
+    <td>${inp(r.bodyage??'','年齡','38px')}</td>
+    <td>${r.isPeriod?'🔴':'--'}</td>
+    <td>✅</td>
+    <td style="white-space:nowrap">
+      <button style="background:var(--green);color:#000;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="saveEditRow('${id}')">儲存</button>
+      <button style="background:rgba(255,255,255,0.06);color:var(--muted);border:1px solid var(--border2);border-radius:6px;padding:3px 8px;font-size:11px;cursor:pointer" onclick="loadUserRecords()">取消</button>
+    </td>`;
+  // 自動 focus 第一個 input
+  const first=row.querySelector('input');
+  if(first)first.focus();
+}
+
+async function saveEditRow(id){
+  const row=document.getElementById('row-'+id);
+  if(!row)return;
+  const inputs=row.querySelectorAll('input');
+  const [d,w,f,sc,mu,vi,bm,ba]=Array.from(inputs).map(i=>i.value.trim());
+  if(!/^\d{4}-\d{2}-\d{2}$/.test(d))return toast('日期格式錯誤，請用 YYYY-MM-DD','error');
+  if(!w||!f)return toast('體重和體脂為必填','error');
   await db.collection('records').doc(id).update({
-    date:d,weight:parseFloat(w),bodyFat:parseFloat(f),
-    subcut:sc?parseFloat(sc):null,muscle:mu?parseFloat(mu):null,
-    visceral:vi?parseFloat(vi):null,bmr:bm?parseFloat(bm):null,
-    bodyage:ba?parseFloat(ba):null,updatedAt:Date.now()
+    date:d,
+    weight:parseFloat(w),bodyFat:parseFloat(f),
+    subcut:sc?parseFloat(sc):null,
+    muscle:mu?parseFloat(mu):null,
+    visceral:vi?parseFloat(vi):null,
+    bmr:bm?parseFloat(bm):null,
+    bodyage:ba?parseFloat(ba):null,
+    updatedAt:Date.now()
   });
-  toast("已更新！");loadUserRecords();
+  toast('✅ 已更新！');
+  loadUserRecords();
+}
+
+async function editSelfRecord(id){
+  // 保留相容，直接呼叫 startEditRow
+  startEditRow(id);
 }
 async function submitDiary(){
   const c=document.getElementById('diary-content').value;if(!c)return;
