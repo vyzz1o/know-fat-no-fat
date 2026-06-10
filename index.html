@@ -2572,7 +2572,17 @@ async function loadPublicData(){
     if(maxLen>0)publicChart=new Chart(ctx,{type:'line',data:{labels:Array.from({length:maxLen},(_,i)=>`T${i+1}`),datasets:rows.map((u,i)=>({label:u.name,data:u.history,borderColor:COLORS[i%COLORS.length],tension:0.3}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
     if(CU&&CU.role==='admin')updateAdminTargetSelect();
     const overlay=document.getElementById('chart-blur-overlay');
-    if(overlay)overlay.style.display=CU?'none':'flex';
+    const today=getToday();
+    const isEnded=today>='2026-06-10'; // 測試用，正式改回 2026-06-24
+    if(overlay){
+      if(isEnded){
+        // 比賽結束：曲線鎖起來，顯示不同訊息
+        overlay.style.display='flex';
+        overlay.innerHTML=`<div style="font-size:20px">🔒</div><div style="font-size:13px;font-weight:700;color:var(--text)">比賽結算中，數據暫時保密</div>`;
+      } else {
+        overlay.style.display=CU?'none':'flex';
+      }
+    }
     // 觸發排行榜動畫
     setTimeout(()=>{
       animateLbRows();
@@ -4209,7 +4219,7 @@ async function deleteAnnounce(id){
 }
 
 function adminTab(t){
-  ['pending','admin-add','register','history','announce','emoji','qa','voteresult','export','uploadworkout'].forEach(tab=>{
+  ['pending','admin-add','register','history','announce','emoji','qa','voteresult','export','uploadworkout','reveal'].forEach(tab=>{
     const el=document.getElementById('atab-'+tab);
     if(el)el.style.display=tab===t?'block':'none';
   });
