@@ -1014,12 +1014,12 @@ tr:hover td{background:rgba(255,255,255,0.015)}
     <div style="font-size:11px;color:var(--accent);margin-bottom:10px">💬 點擊名字｜進入個人頁面</div>
     <div style="position:relative">
       <div id="public-lb">載入數據中...</div>
-      <div id="lb-ended-overlay" style="display:none;position:absolute;inset:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(8,10,15,0.75);border-radius:12px;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:5;padding:24px;text-align:center">
+      <div id="lb-ended-overlay" style="display:none;position:absolute;inset:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(8,10,15,0.75);border-radius:12px;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:50;padding:24px;text-align:center">
         <div style="font-size:32px">🏆</div>
         <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800">比賽結算中</div>
         <div style="font-size:13px;color:var(--muted2)">最終結果即將揭曉...</div>
         <div id="lb-reveal-btn-wrap" style="display:none;margin-top:8px">
-          <button onclick="startRevealCeremony()" style="background:linear-gradient(135deg,#FFD700,#FFA500);border:none;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:800;color:#000;cursor:pointer;font-family:'DM Sans',sans-serif">🎬 揭曉結果！</button>
+          <button onclick="startRevealCeremony()" style="background:linear-gradient(135deg,#FFD700,#FFA500);border:none;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:800;color:#000;cursor:pointer;font-family:'DM Sans',sans-serif;position:relative;z-index:20;pointer-events:all">🎬 揭曉結果！</button>
         </div>
       </div>
     </div>
