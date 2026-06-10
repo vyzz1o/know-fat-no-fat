@@ -1872,7 +1872,7 @@ async function checkRaceEnded(){
     const snap=await db.collection('settings').doc('race').get();
     const data=snap.data();
     const today=getToday();
-    const isEnded=today>='2026-06-24';
+    const isEnded=today>='2026-06-10';
     const isRevealed=data?.revealed===true;
     const overlay=document.getElementById('lb-ended-overlay');
     if(!overlay)return;
