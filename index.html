@@ -1014,12 +1014,12 @@ tr:hover td{background:rgba(255,255,255,0.015)}
     <div style="font-size:11px;color:var(--accent);margin-bottom:10px">💬 點擊名字｜進入個人頁面</div>
     <div style="position:relative">
       <div id="public-lb">載入數據中...</div>
-      <div id="lb-ended-overlay" style="display:none;position:absolute;inset:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(8,10,15,0.75);border-radius:12px;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:50;padding:24px;text-align:center">
+      <div id="lb-ended-overlay" style="display:none;position:absolute;inset:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(8,10,15,0.75);border-radius:12px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:5;padding:24px;text-align:center">
         <div style="font-size:32px">🏆</div>
         <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800">比賽結算中</div>
         <div style="font-size:13px;color:var(--muted2)">最終結果即將揭曉...</div>
         <div id="lb-reveal-btn-wrap" style="display:none;margin-top:8px">
-          <button onclick="startRevealCeremony()" style="background:linear-gradient(135deg,#FFD700,#FFA500);border:none;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:800;color:#000;cursor:pointer;font-family:'DM Sans',sans-serif;position:relative;z-index:20;pointer-events:all">🎬 揭曉結果！</button>
+          <button onclick="startRevealCeremony()" style="background:linear-gradient(135deg,#FFD700,#FFA500);border:none;border-radius:12px;padding:12px 28px;font-size:14px;font-weight:800;color:#000;cursor:pointer;font-family:'DM Sans',sans-serif">🎬 揭曉結果！</button>
         </div>
       </div>
     </div>
@@ -1749,12 +1749,6 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 
 <!-- Tooltip 彈窗 -->
 <div id="tooltip-modal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;z-index:1001;align-items:center;justify-content:center;padding:20px" onclick="closeTooltip()">
-  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;max-width:280px;text-align:center;box-shadow:0 8px 32px #000a">
-    <div id="tooltip-title" style="font-size:14px;font-weight:800;margin-bottom:8px;color:var(--accent)"></div>
-    <div id="tooltip-body" style="font-size:13px;color:var(--muted);line-height:1.6"></div>
-    <div style="font-size:11px;color:var(--muted);margin-top:12px">點任意處關閉</div>
-  </div>
-</div>
 
 <!-- 揭曉聚光燈 -->
 <div class="reveal-spotlight" id="reveal-spotlight"></div>
@@ -1762,10 +1756,16 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 <!-- 揭曉全螢幕 Modal -->
 <div class="reveal-modal" id="reveal-modal">
   <div id="reveal-bg-text" style="position:absolute;font-family:'Syne',sans-serif;font-size:clamp(60px,15vw,120px);font-weight:800;color:rgba(255,255,255,0.02);letter-spacing:-0.04em;user-select:none;pointer-events:none">KNOW FAT NO FAT</div>
-  <div id="reveal-stage" style="position:relative;z-index:1;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px;overflow-y:auto;max-height:100vh"></div>
+  <div id="reveal-stage" style="position:relative;z-index:1;width:100%;display:flex;flex-direction:column;align-items:center;gap:16px;padding:20px"></div>
   <div id="reveal-progress-dots" class="reveal-progress"></div>
-  <button id="reveal-next-btn" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);color:var(--text);border-radius:12px;padding:12px 32px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;z-index:2001" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">下一個 →</button>
+  <button id="reveal-next-btn" onclick="revealNext()" style="position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:rgba(255,255,255,0.08);border:1px solid var(--glass-border);color:var(--text);border-radius:12px;padding:12px 32px;font-size:14px;font-weight:700;cursor:pointer;font-family:'DM Sans',sans-serif;transition:all 0.2s;z-index:2001" onmouseover="this.style.background='rgba(255,255,255,0.14)'" onmouseout="this.style.background='rgba(255,255,255,0.08)'">下一個 →</button>
   <button onclick="closeReveal()" style="position:fixed;top:20px;right:20px;background:transparent;border:none;color:var(--muted2);font-size:24px;cursor:pointer;z-index:2001;padding:8px">✕</button>
+</div>
+  <div style="background:var(--card);border:1px solid var(--border);border-radius:12px;padding:16px 20px;max-width:280px;text-align:center;box-shadow:0 8px 32px #000a">
+    <div id="tooltip-title" style="font-size:14px;font-weight:800;margin-bottom:8px;color:var(--accent)"></div>
+    <div id="tooltip-body" style="font-size:13px;color:var(--muted);line-height:1.6"></div>
+    <div style="font-size:11px;color:var(--muted);margin-top:12px">點任意處關閉</div>
+  </div>
 </div>
 
 <script>
@@ -1854,17 +1854,13 @@ function animateLbRows(){
 
 // ── 比賽結束 & 揭曉系統 ──────────────────────────────────────────
 
-// 分組揭曉順序
-const REVEAL_GROUPS=[
-  [7,6,5],   // 組1
-  [8,9],     // 組2
-  [4,3],     // 組3
-  [10,11],   // 組4
-  [1,2],     // 壓軸
-];
+// 揭曉順序：8,3,9,2,10,11,1（索引，從0開始，所以rank是i+1）
+// 但實際人數可能不到11人，所以動態處理
+const REVEAL_ORDER_RANKS=[8,3,9,2,10,11,1]; // 要揭曉的名次（1-indexed）
 
-let revealData=[];
-let revealGroupIndex=0;
+let revealData=[];      // 排序好的完整排行
+let revealQueue=[];     // 揭曉順序（實際存在的名次）
+let revealIndex=0;      // 目前揭曉到第幾個
 let revealDone=false;
 
 async function checkRaceEnded(){
@@ -1872,23 +1868,24 @@ async function checkRaceEnded(){
     const snap=await db.collection('settings').doc('race').get();
     const data=snap.data();
     const today=getToday();
-    const isEnded=today>='2026-06-10'; // 測試用，正式改回 2026-06-24
+    const isEnded=today>='2026-06-24';
     const isRevealed=data?.revealed===true;
-    console.log('checkRaceEnded:', {today, isEnded, isRevealed, data});
+
     const overlay=document.getElementById('lb-ended-overlay');
-    if(!overlay){console.log('overlay not found');return;}
+    if(!overlay)return;
+
     if(isEnded&&!isRevealed){
       overlay.style.display='flex';
-      console.log('showing overlay, no reveal btn');
     } else if(isEnded&&isRevealed){
       overlay.style.display='flex';
       const btnWrap=document.getElementById('lb-reveal-btn-wrap');
-      console.log('btnWrap:', btnWrap, 'setting display block');
       if(btnWrap)btnWrap.style.display='block';
     } else {
       overlay.style.display='none';
     }
-  }catch(e){console.error('checkRaceEnded error:', e);}
+  }catch(e){
+    // settings doc 不存在也沒關係
+  }
 }
 
 async function loadRevealPreview(){
@@ -1901,10 +1898,12 @@ async function loadRevealPreview(){
   rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered&&!r.isSpectator&&r.forScoring!==false){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
   Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
   const rows=users.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,isWinner:s.isWinner,fatRate:s.fatRate,muscleRate:s.muscleRate,bonus:s.bonus};}).sort((a,b)=>b.score-a.score);
+
   const totalPool=users.length*PRIZE_PER;
   const refundTotal=rows.filter(r=>r.isWinner).length*PRIZE_BACK;
   const prizePool=totalPool-refundTotal;
   const prizes=[Math.round(prizePool*0.6),Math.round(prizePool*0.25),Math.round(prizePool*0.15)];
+
   el.innerHTML=`
     <div style="font-size:12px;color:var(--muted2);margin-bottom:12px">最終排名預覽（共 ${rows.length} 人）</div>
     ${rows.map((u,i)=>`
@@ -1936,29 +1935,47 @@ async function publishReveal(){
 }
 
 async function startRevealCeremony(){
+  // 載入數據
   const uSnap=await db.collection('users').get();
   const users=uSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
   const rSnap=await db.collection('records').where('status','==','approved').get();
   const adminRecords={};
   rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered&&!r.isSpectator&&r.forScoring!==false){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
   Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
+
   const totalPool=users.length*PRIZE_PER;
-  const rows=users.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,isWinner:s.isWinner,fatRate:s.fatRate,muscleRate:s.muscleRate,bonus:s.bonus};}).sort((a,b)=>b.score-a.score);
+  const rows=users.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,isWinner:s.isWinner,fatRate:s.fatRate,muscleRate:s.muscleRate};}).sort((a,b)=>b.score-a.score);
+
   const refundTotal=rows.filter(r=>r.isWinner).length*PRIZE_BACK;
   const prizePool=totalPool-refundTotal;
   const prizes=[Math.round(prizePool*0.6),Math.round(prizePool*0.25),Math.round(prizePool*0.15)];
   rows.forEach((u,i)=>{u.rank=i+1;u.prize=i<3?prizes[i]:0;});
+
   revealData=rows;
-  revealGroupIndex=0;
+
+  // 建立揭曉順序
+  const totalRanks=rows.length;
+  const orderTemplate=REVEAL_ORDER_RANKS;
+  // 過濾掉超出範圍的名次，補上沒有在清單裡的名次（從最後往前）
+  const validOrder=orderTemplate.filter(r=>r<=totalRanks);
+  const covered=new Set(validOrder);
+  // 把沒涵蓋到的名次插入（從大到小排，在最前面）
+  const missing=[];
+  for(let r=totalRanks;r>=1;r--){if(!covered.has(r))missing.push(r);}
+  revealQueue=[...missing,...validOrder];
+  revealIndex=0;
   revealDone=false;
 
-  // 進度點（依組數）
+  // 建進度點
   const dotsEl=document.getElementById('reveal-progress-dots');
-  if(dotsEl)dotsEl.innerHTML=REVEAL_GROUPS.map((_,i)=>`<div class="reveal-dot" id="rdot-${i}"></div>`).join('');
+  if(dotsEl)dotsEl.innerHTML=revealQueue.map((_,i)=>`<div class="reveal-dot" id="rdot-${i}"></div>`).join('');
 
+  // 開啟 modal
   document.getElementById('reveal-modal').classList.add('open');
   document.body.style.overflow='hidden';
   document.getElementById('reveal-stage').innerHTML='';
+
+  // 顯示開場
   showRevealIntro();
 }
 
@@ -1972,102 +1989,73 @@ function showRevealIntro(){
       <div style="font-size:16px;color:var(--accent);font-weight:600;animation:fadeInUp 0.6s 0.4s ease both;opacity:0;animation-fill-mode:both">最終排名，即將揭曉</div>
     </div>`;
   const btn=document.getElementById('reveal-next-btn');
-  if(btn){btn.textContent='開始揭曉 🎬';btn.onclick=revealNext;}
+  if(btn)btn.textContent='開始揭曉 🎬';
 }
 
-// 揭曉狀態：'ranks'=顯示名次、'names'=翻牌揭曉名字
-let revealPhase='ranks';
-
 function revealNext(){
-  if(revealGroupIndex>=REVEAL_GROUPS.length){
+  if(revealIndex>=revealQueue.length){
     showRevealFinal();
     return;
   }
 
+  const rank=revealQueue[revealIndex];
+  const user=revealData.find(u=>u.rank===rank);
+  if(!user){revealIndex++;revealNext();return;}
+
   // 更新進度點
   document.querySelectorAll('.reveal-dot').forEach((d,i)=>{
-    d.className='reveal-dot'+(i<revealGroupIndex?' done':i===revealGroupIndex?' current':'');
+    d.className='reveal-dot'+(i<revealIndex?' done':i===revealIndex?' current':'');
   });
 
-  const group=REVEAL_GROUPS[revealGroupIndex];
-  // 過濾掉超出實際人數的名次
-  const validGroup=group.filter(r=>r<=revealData.length);
-  if(validGroup.length===0){revealGroupIndex++;revealNext();return;}
+  const isTop3=rank<=3;
+  const isFirst=rank===1;
+  const stage=document.getElementById('reveal-stage');
 
-  const isLastGroup=revealGroupIndex===REVEAL_GROUPS.length-1;
-  const hasTop3=validGroup.some(r=>r<=3);
+  // 聚光燈
   const spotlight=document.getElementById('reveal-spotlight');
-
-  if(revealPhase==='ranks'){
-    // 第一步：亮出名次數字，問號卡片
-    if(hasTop3)spotlight.classList.add('on');
-    else spotlight.classList.remove('on');
-
-    const stage=document.getElementById('reveal-stage');
-    const rankColors={1:'#FFD700',2:'#C0C0C0',3:'#CD7F32'};
-    const rankLabel=r=>r<=3?['🥇','🥈','🥉'][r-1]:`#${r}`;
-
-    stage.innerHTML=`
-      <div style="text-align:center;margin-bottom:16px;font-size:13px;color:var(--muted2);animation:fadeInUp 0.4s ease both">
-        第 ${revealGroupIndex+1} 組 · ${isLastGroup?'壓軸登場 🔥':''}
-      </div>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        ${validGroup.map(rank=>{
-          const color=rankColors[rank]||'var(--muted2)';
-          return`<div style="background:rgba(25,32,48,0.95);border:1px solid ${rank<=3?color:'var(--glass-border)'};border-radius:20px;padding:20px 24px;text-align:center;min-width:120px;animation:cardFlip 0.5s ease both">
-            <div style="font-family:'Syne',sans-serif;font-size:36px;font-weight:800;color:${color};margin-bottom:8px">${rankLabel(rank)}</div>
-            <div style="font-size:28px;letter-spacing:4px">？？？</div>
-          </div>`;
-        }).join('')}
-      </div>`;
-
-    const btn=document.getElementById('reveal-next-btn');
-    if(btn){btn.textContent='揭曉！✨';btn.onclick=()=>{revealPhase='names';revealNext();}}
+  if(isTop3){
+    spotlight.classList.add('on');
   } else {
-    // 第二步：翻牌揭曉名字
-    const stage=document.getElementById('reveal-stage');
-    const rankColors={1:'#FFD700',2:'#C0C0C0',3:'#CD7F32'};
-    const rankLabel=r=>r<=3?['🥇','🥈','🥉'][r-1]:`#${r}`;
-    const isClimax=isLastGroup;
-
-    stage.innerHTML=`
-      <div style="text-align:center;margin-bottom:16px;font-size:13px;color:var(--muted2)">
-        第 ${revealGroupIndex+1} 組
-      </div>
-      <div style="display:flex;gap:12px;justify-content:center;flex-wrap:wrap">
-        ${validGroup.map((rank,gi)=>{
-          const u=revealData.find(u=>u.rank===rank);
-          if(!u)return'';
-          const color=rankColors[rank]||'var(--text)';
-          const isTop3=rank<=3;
-          const delay=gi*0.15;
-          return`<div style="background:linear-gradient(135deg,rgba(25,32,48,0.95),rgba(14,17,23,0.98));border:1px solid ${isTop3?color:'var(--glass-border)'};border-radius:20px;padding:20px 24px;text-align:center;min-width:120px;animation:spotlightTop3 0.7s ${delay}s ease both;opacity:0;animation-fill-mode:both;${isClimax&&isTop3?'box-shadow:0 0 40px '+color+'44':''}">
-            ${rank===1?'<div style="font-size:20px;animation:crownBounce 1s infinite">👑</div>':''}
-            <div style="font-family:\'Syne\',sans-serif;font-size:32px;font-weight:800;color:${color};margin-bottom:6px">${rankLabel(rank)}</div>
-            <div style="font-family:\'Syne\',sans-serif;font-size:${u.name.length>4?'16px':'20px'};font-weight:800;color:${rank===1?'#FFD700':'var(--text)'}; margin-bottom:8px">${u.name}</div>
-            <div style="font-size:11px;color:var(--muted2);margin-bottom:6px">體脂 ${u.fatRate>=0?'▾':'▴'}${Math.abs(u.fatRate).toFixed(1)}%　骨骼肌 ${u.muscleRate>=0?'▴':'▾'}${Math.abs(u.muscleRate).toFixed(1)}%</div>
-            <div style="font-family:\'Syne\',sans-serif;font-size:20px;font-weight:800;color:var(--accent)">${u.score.toFixed(2)}%</div>
-            ${u.isWinner?'<div style="background:var(--green);color:#000;border-radius:10px;padding:2px 10px;font-size:11px;font-weight:700;margin-top:6px;display:inline-block">✅ 退款</div>':''}
-            ${u.prize>0?`<div style="color:#FFD700;font-size:13px;font-weight:700;margin-top:4px">🎁 NT$${u.prize.toLocaleString()}</div>`:''}
-          </div>`;
-        }).join('')}
-      </div>`;
-
-    if(isClimax)setTimeout(()=>launchConfetti(),600);
-
-    const btn=document.getElementById('reveal-next-btn');
-    revealGroupIndex++;
-    revealPhase='ranks';
-    if(revealGroupIndex>=REVEAL_GROUPS.length){
-      if(btn){btn.textContent='查看完整排名 🏆';btn.onclick=showRevealFinal;}
-    } else {
-      if(btn){btn.textContent='下一組 →';btn.onclick=revealNext;}
-    }
+    spotlight.classList.remove('on');
   }
+
+  // 顏色主題
+  const rankColors={1:'#FFD700',2:'#C0C0C0',3:'#CD7F32'};
+  const rankEmojis={1:'🥇',2:'🥈',3:'🥉'};
+  const color=rankColors[rank]||'var(--text)';
+  const rankEmoji=rankEmojis[rank]||`#${rank}`;
+
+  const cardClass=isFirst?'reveal-card rank1':isTop3?'reveal-card top3':'reveal-card';
+
+  stage.innerHTML=`
+    <div style="text-align:center;margin-bottom:8px;font-size:13px;color:var(--muted2);animation:fadeInUp 0.4s ease both">
+      第 ${revealIndex+1} / ${revealQueue.length} 位
+    </div>
+    <div class="${cardClass}" style="${isFirst?'border-color:rgba(255,215,0,0.5)':isTop3?'border-color:rgba(255,255,255,0.15)':''}">
+      ${isFirst?'<div style="font-size:28px;margin-bottom:8px;animation:crownBounce 1s infinite">👑</div>':''}
+      <div class="reveal-rank-num" style="color:${color}">${rankEmoji}</div>
+      <div class="reveal-name" style="color:${isFirst?'#FFD700':'var(--text)'}">${user.name}</div>
+      <div class="reveal-score">
+        體脂 ▾${Math.abs(user.fatRate).toFixed(1)}%　骨骼肌 ${user.muscleRate>=0?'▴':'▾'}${Math.abs(user.muscleRate).toFixed(1)}%
+      </div>
+      <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:var(--accent)">${user.score.toFixed(2)}%</div>
+      ${user.isWinner?`<div class="reveal-winner-tag" style="margin-top:10px">✅ 達標退款 NT$2,000</div>`:''}
+      ${user.prize>0?`<div class="reveal-prize">🎁 獎金 NT$${user.prize.toLocaleString()}</div>`:''}
+    </div>`;
+
+  // 第一名放彩帶
+  if(isFirst)launchConfetti();
+
+  const btn=document.getElementById('reveal-next-btn');
+  if(btn)btn.textContent=revealIndex<revealQueue.length-1?'下一個 →':'查看完整排名 🏆';
+
+  revealIndex++;
 }
 
 function showRevealFinal(){
-  document.getElementById('reveal-spotlight').classList.remove('on');
+  const spotlight=document.getElementById('reveal-spotlight');
+  spotlight.classList.remove('on');
+
   const totalPool=revealData.length*PRIZE_PER;
   const refundTotal=revealData.filter(r=>r.isWinner).length*PRIZE_BACK;
   const prizePool=totalPool-refundTotal;
@@ -2075,7 +2063,7 @@ function showRevealFinal(){
 
   const stage=document.getElementById('reveal-stage');
   stage.innerHTML=`
-    <div style="width:100%;max-width:520px;animation:fadeInUp 0.6s ease both">
+    <div style="width:100%;max-width:500px;animation:fadeInUp 0.6s ease both">
       <div style="text-align:center;margin-bottom:20px">
         <div style="font-family:'Syne',sans-serif;font-size:22px;font-weight:800;color:#FFD700">🏆 最終排名</div>
         <div style="font-size:12px;color:var(--muted2);margin-top:4px">脂己脂彼 百戰百勝 · 2026</div>
@@ -2086,7 +2074,7 @@ function showRevealFinal(){
             <div style="font-family:'Syne',sans-serif;font-weight:800;font-size:14px;color:${i===0?'#FFD700':i===1?'#C0C0C0':i===2?'#CD7F32':'var(--muted2)'};width:28px;text-align:center">${i+1}</div>
             <div style="flex:1">
               <div style="font-weight:700;font-size:13px">${u.name}${u.isWinner?` <span style="font-size:10px;background:var(--green);color:#000;border-radius:4px;padding:1px 5px">退款</span>`:''}</div>
-              <div style="font-size:11px;color:var(--muted2)">體脂 ${u.fatRate>=0?'▾':'▴'}${Math.abs(u.fatRate).toFixed(1)}%　骨骼肌 ${u.muscleRate>=0?'▴':'▾'}${Math.abs(u.muscleRate).toFixed(1)}%</div>
+              <div style="font-size:11px;color:var(--muted2)">體脂 ▾${Math.abs(u.fatRate).toFixed(1)}%　骨骼肌 ${u.muscleRate>=0?'▴':'▾'}${Math.abs(u.muscleRate).toFixed(1)}%</div>
             </div>
             <div style="text-align:right">
               <div style="color:var(--accent);font-weight:800;font-size:13px">${u.score.toFixed(2)}%</div>
@@ -2094,137 +2082,44 @@ function showRevealFinal(){
             </div>
           </div>`).join('')}
       </div>
-      <div style="background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.03));border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:14px;text-align:center;font-size:13px;color:var(--muted2);margin-bottom:16px">
+      <div style="background:linear-gradient(135deg,rgba(255,215,0,0.08),rgba(255,215,0,0.03));border:1px solid rgba(255,215,0,0.2);border-radius:12px;padding:14px;text-align:center;font-size:13px;color:var(--muted2)">
         💰 獎金池 NT$${prizePool.toLocaleString()} · 🥇 NT$${prizes[0]?.toLocaleString()} · 🥈 NT$${prizes[1]?.toLocaleString()} · 🥉 NT$${prizes[2]?.toLocaleString()}
       </div>
-      <button onclick="showScoreCards()" style="width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:800;color:#000;cursor:pointer">📊 查看個人成績單</button>
     </div>`;
 
   const btn=document.getElementById('reveal-next-btn');
-  if(btn){btn.textContent='關閉 ✕';btn.onclick=closeReveal;}
+  if(btn)btn.textContent='關閉 ✕';
+  btn.onclick=closeReveal;
   launchConfetti();
   revealDone=true;
-}
-
-function showScoreCards(){
-  const stage=document.getElementById('reveal-stage');
-  stage.innerHTML=`
-    <div style="width:100%;max-width:520px;animation:fadeInUp 0.5s ease both">
-      <div style="text-align:center;margin-bottom:16px">
-        <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800;color:var(--accent)">📊 個人成績單</div>
-        <div style="font-size:12px;color:var(--muted2);margin-top:4px">點擊姓名下載成績卡</div>
-      </div>
-      <div style="display:flex;flex-direction:column;gap:10px">
-        ${revealData.map(u=>`
-          <div style="background:rgba(25,32,48,0.9);border:1px solid var(--glass-border);border-radius:12px;padding:12px 16px;display:flex;justify-content:space-between;align-items:center">
-            <div>
-              <div style="font-weight:700;font-size:14px">${u.rank <= 3 ? ['🥇','🥈','🥉'][u.rank-1]+' ':'' }${u.name}</div>
-              <div style="font-size:11px;color:var(--muted2)">第 ${u.rank} 名 · ${u.score.toFixed(2)}%${u.isWinner?' · ✅ 退款':''}</div>
-            </div>
-            <button onclick="downloadScoreCard('${u.id}')" style="background:var(--accent);color:#000;border:none;border-radius:8px;padding:6px 14px;font-size:12px;font-weight:700;cursor:pointer">⬇ 下載</button>
-          </div>`).join('')}
-      </div>
-    </div>`;
-  const btn=document.getElementById('reveal-next-btn');
-  if(btn){btn.textContent='← 返回排名';btn.onclick=showRevealFinal;}
-}
-
-function downloadScoreCard(uid){
-  const u=revealData.find(u=>u.id===uid);
-  if(!u)return;
-  const totalPool=revealData.length*PRIZE_PER;
-  const refundTotal=revealData.filter(r=>r.isWinner).length*PRIZE_BACK;
-  const prizePool=totalPool-refundTotal;
-  const prizes=[Math.round(prizePool*0.6),Math.round(prizePool*0.25),Math.round(prizePool*0.15)];
-
-  const canvas=document.createElement('canvas');
-  canvas.width=600;canvas.height=400;
-  const ctx=canvas.getContext('2d');
-
-  // 背景
-  const bg=ctx.createLinearGradient(0,0,600,400);
-  bg.addColorStop(0,'#0e1117');bg.addColorStop(1,'#131720');
-  ctx.fillStyle=bg;ctx.fillRect(0,0,600,400);
-
-  // 頂部光暈
-  const glow=ctx.createRadialGradient(300,0,0,300,0,300);
-  glow.addColorStop(0,'rgba(245,166,35,0.12)');glow.addColorStop(1,'rgba(0,0,0,0)');
-  ctx.fillStyle=glow;ctx.fillRect(0,0,600,400);
-
-  // 邊框
-  ctx.strokeStyle='rgba(255,255,255,0.08)';ctx.lineWidth=1;
-  ctx.strokeRect(1,1,598,398);
-
-  // 名次顏色
-  const rankColor=u.rank===1?'#FFD700':u.rank===2?'#C0C0C0':u.rank===3?'#CD7F32':'#f5a623';
-  const rankEmoji=u.rank===1?'🥇':u.rank===2?'🥈':u.rank===3?'🥉':`#${u.rank}`;
-
-  // 標題
-  ctx.fillStyle='rgba(255,255,255,0.4)';ctx.font='600 13px sans-serif';ctx.textAlign='center';
-  ctx.fillText('脂己脂彼 百戰百勝 · 2026/04/15 — 2026/06/24',300,36);
-
-  // 分隔線
-  ctx.fillStyle='rgba(245,166,35,0.3)';ctx.fillRect(40,48,520,1);
-
-  // 名次
-  ctx.font='bold 56px sans-serif';ctx.fillStyle=rankColor;ctx.textAlign='center';
-  ctx.fillText(rankEmoji,300,120);
-
-  // 姓名
-  ctx.font='bold 36px sans-serif';ctx.fillStyle='#eef0f6';
-  ctx.fillText(u.name,300,168);
-
-  // 總評分
-  ctx.font='bold 28px sans-serif';ctx.fillStyle='#f5a623';
-  ctx.fillText(`總評分 ${u.score.toFixed(2)}%`,300,212);
-
-  // 分隔線
-  ctx.fillStyle='rgba(255,255,255,0.06)';ctx.fillRect(40,228,520,1);
-
-  // 數據列
-  ctx.font='14px sans-serif';ctx.fillStyle='rgba(255,255,255,0.5)';ctx.textAlign='center';
-  ctx.fillText('體脂降率',160,256);ctx.fillText('骨骼肌升率',300,256);ctx.fillText('穩定加分',440,256);
-
-  ctx.font='bold 20px sans-serif';
-  const fatColor=u.fatRate>=0?'#3ddc84':'#ff4d6d';
-  const muscleColor=u.muscleRate>=0?'#3ddc84':'#ff4d6d';
-  ctx.fillStyle=fatColor;ctx.fillText(`${u.fatRate>=0?'▾':'▴'}${Math.abs(u.fatRate).toFixed(1)}%`,160,284);
-  ctx.fillStyle=muscleColor;ctx.fillText(`${u.muscleRate>=0?'▴':'▾'}${Math.abs(u.muscleRate).toFixed(1)}%`,300,284);
-  ctx.fillStyle='#f5a623';ctx.fillText(`+${u.bonus.toFixed(0)}%`,440,284);
-
-  // 分隔線
-  ctx.fillStyle='rgba(255,255,255,0.06)';ctx.fillRect(40,300,520,1);
-
-  // 退款 & 獎金
-  ctx.font='14px sans-serif';ctx.fillStyle='rgba(255,255,255,0.5)';ctx.textAlign='center';
-  const tags=[];
-  if(u.isWinner)tags.push('✅ 達標退款 NT$2,000');
-  if(u.prize>0)tags.push(`🎁 獎金 NT$${u.prize.toLocaleString()}`);
-  if(tags.length>0){
-    ctx.font='bold 18px sans-serif';ctx.fillStyle='#FFD700';
-    ctx.fillText(tags.join('　'),300,330);
-  }
-
-  // 底部
-  ctx.font='12px sans-serif';ctx.fillStyle='rgba(255,255,255,0.2)';
-  ctx.fillText('Know Fat No Fat · know-fat-no-fat.vercel.app',300,375);
-
-  // 下載
-  const link=document.createElement('a');
-  link.download=`成績單_${u.name}.png`;
-  link.href=canvas.toDataURL('image/png');
-  link.click();
-  toast(`✅ ${u.name} 的成績單已下載！`);
 }
 
 function closeReveal(){
   document.getElementById('reveal-modal').classList.remove('open');
   document.getElementById('reveal-spotlight').classList.remove('on');
   document.body.style.overflow='';
-  revealPhase='ranks';
-  revealGroupIndex=0;
   const btn=document.getElementById('reveal-next-btn');
   if(btn){btn.textContent='下一個 →';btn.onclick=revealNext;}
+}
+
+function launchConfetti(){
+  const colors=['#FFD700','#FF6B6B','#4ECDC4','#45B7D1','#96CEB4','#FFEAA7','#DDA0DD','#f5a623'];
+  for(let i=0;i<60;i++){
+    setTimeout(()=>{
+      const el=document.createElement('div');
+      el.className='confetti-piece';
+      el.style.left=Math.random()*100+'vw';
+      el.style.top='-10px';
+      el.style.background=colors[Math.floor(Math.random()*colors.length)];
+      el.style.width=(Math.random()*8+4)+'px';
+      el.style.height=(Math.random()*8+4)+'px';
+      el.style.borderRadius=Math.random()>0.5?'50%':'2px';
+      el.style.animationDuration=(Math.random()*2+2)+'s';
+      el.style.animationDelay=(Math.random()*0.5)+'s';
+      document.body.appendChild(el);
+      setTimeout(()=>el.remove(),4000);
+    },i*30);
+  }
 }
 
 function getToday(){const n=new Date();return`${n.getFullYear()}-${String(n.getMonth()+1).padStart(2,'0')}-${String(n.getDate()).padStart(2,'0')}`;}
@@ -2575,17 +2470,7 @@ async function loadPublicData(){
     if(maxLen>0)publicChart=new Chart(ctx,{type:'line',data:{labels:Array.from({length:maxLen},(_,i)=>`T${i+1}`),datasets:rows.map((u,i)=>({label:u.name,data:u.history,borderColor:COLORS[i%COLORS.length],tension:0.3}))},options:{responsive:true,maintainAspectRatio:false,plugins:{legend:{display:false}}}});
     if(CU&&CU.role==='admin')updateAdminTargetSelect();
     const overlay=document.getElementById('chart-blur-overlay');
-    const today=getToday();
-    const isEnded=today>='2026-06-10'; // 測試用，正式改回 2026-06-24
-    if(overlay){
-      if(isEnded){
-        // 比賽結束：曲線鎖起來，顯示不同訊息
-        overlay.style.display='flex';
-        overlay.innerHTML=`<div style="font-size:20px">🔒</div><div style="font-size:13px;font-weight:700;color:var(--text)">比賽結算中，數據暫時保密</div>`;
-      } else {
-        overlay.style.display=CU?'none':'flex';
-      }
-    }
+    if(overlay)overlay.style.display=CU?'none':'flex';
     // 觸發排行榜動畫
     setTimeout(()=>{
       animateLbRows();
@@ -4222,7 +4107,7 @@ async function deleteAnnounce(id){
 }
 
 function adminTab(t){
-  ['pending','admin-add','register','history','announce','emoji','qa','voteresult','export','uploadworkout','reveal'].forEach(tab=>{
+  ['pending','admin-add','register','history','announce','emoji','qa','voteresult','export','uploadworkout'].forEach(tab=>{
     const el=document.getElementById('atab-'+tab);
     if(el)el.style.display=tab===t?'block':'none';
   });
