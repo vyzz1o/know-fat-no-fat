@@ -1014,7 +1014,7 @@ tr:hover td{background:rgba(255,255,255,0.015)}
     <div style="font-size:11px;color:var(--accent);margin-bottom:10px">💬 點擊名字｜進入個人頁面</div>
     <div style="position:relative">
       <div id="public-lb">載入數據中...</div>
-      <div id="lb-ended-overlay" style="display:none;position:absolute;inset:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(8,10,15,0.75);border-radius:12px;display:none;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:5;padding:24px;text-align:center">
+      <div id="lb-ended-overlay" style="display:none;position:absolute;inset:0;backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);background:rgba(8,10,15,0.75);border-radius:12px;flex-direction:column;align-items:center;justify-content:center;gap:10px;z-index:5;padding:24px;text-align:center">
         <div style="font-size:32px">🏆</div>
         <div style="font-family:'Syne',sans-serif;font-size:18px;font-weight:800">比賽結算中</div>
         <div style="font-size:13px;color:var(--muted2)">最終結果即將揭曉...</div>
@@ -1874,18 +1874,21 @@ async function checkRaceEnded(){
     const today=getToday();
     const isEnded=today>='2026-06-10'; // 測試用，正式改回 2026-06-24
     const isRevealed=data?.revealed===true;
+    console.log('checkRaceEnded:', {today, isEnded, isRevealed, data});
     const overlay=document.getElementById('lb-ended-overlay');
-    if(!overlay)return;
+    if(!overlay){console.log('overlay not found');return;}
     if(isEnded&&!isRevealed){
       overlay.style.display='flex';
+      console.log('showing overlay, no reveal btn');
     } else if(isEnded&&isRevealed){
       overlay.style.display='flex';
       const btnWrap=document.getElementById('lb-reveal-btn-wrap');
+      console.log('btnWrap:', btnWrap, 'setting display block');
       if(btnWrap)btnWrap.style.display='block';
     } else {
       overlay.style.display='none';
     }
-  }catch(e){}
+  }catch(e){console.error('checkRaceEnded error:', e);}
 }
 
 async function loadRevealPreview(){
