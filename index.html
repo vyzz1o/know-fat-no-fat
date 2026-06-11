@@ -1976,7 +1976,7 @@ function showRevealIntro(){
 function showAllAwardGrid(){
   const stage=document.getElementById('reveal-stage');
   const btn=document.getElementById('reveal-next-btn');
-  if(btn)btn.style.display='none';
+  if(btn){btn.style.display='block';btn.textContent='查看完整排名 🏆';btn.onclick=showRevealFinal;}
   const rankColors={1:'#FFD700',2:'#C0C0C0',3:'#CD7F32'};
   stage.innerHTML=`
     <div style="text-align:center;margin-bottom:12px;animation:fadeInUp 0.4s ease both">
@@ -1989,54 +1989,58 @@ function showAllAwardGrid(){
         const rankLabel=u.rank<=3?['🥇','🥈','🥉'][u.rank-1]:`#${u.rank}`;
         return`<div id="award-cell-${u.rank}"
           onclick="revealAwardCell(${u.rank})"
-          style="background:rgba(20,26,38,0.95);border:1px solid ${borderColor};border-radius:14px;padding:16px 8px;text-align:center;cursor:pointer;transition:all 0.3s;opacity:0.25;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center">
+          onmouseover="if(!this.dataset.revealed)this.style.opacity='0.9';this.style.transform='scale(1.06)'"
+          onmouseout="if(!this.dataset.revealed)this.style.opacity='0.25';this.style.transform='scale(1)'"
+          style="background:rgba(20,26,38,0.95);border:1px solid ${borderColor};border-radius:14px;padding:16px 8px;text-align:center;cursor:pointer;transition:all 0.2s;opacity:0.25;min-height:80px;display:flex;flex-direction:column;align-items:center;justify-content:center">
           <div id="award-cell-inner-${u.rank}">
             <div style="font-family:'Syne',sans-serif;font-size:28px;font-weight:800;color:${color};line-height:1">${rankLabel}</div>
           </div>
         </div>`;
       }).join('')}
-    </div>
-    <div id="reveal-group-hint" style="margin-top:12px;font-size:12px;color:var(--accent);text-align:center;min-height:18px"></div>
-    <div id="award-popup-overlay" onclick="closeAwardPopup()" style="display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(8px);z-index:3000;align-items:center;justify-content:center;padding:20px">
-      <div id="award-popup-card" style="background:linear-gradient(135deg,rgba(25,32,48,0.98),rgba(14,17,23,0.99));border-radius:24px;padding:32px 28px;text-align:center;max-width:320px;width:100%;position:relative;animation:spotlightTop3 0.5s ease both">
-        <div id="award-popup-content"></div>
-        <div style="font-size:11px;color:var(--muted);margin-top:16px">點擊任意處關閉</div>
-      </div>
-    </div>`;
-  highlightGroup(0);
+    </div>`;}
+
+function highlightGroup(){} // 空函數保持相容
+
+function ensureAwardPopup(){
+  if(document.getElementById('award-popup-overlay'))return;
+  const div=document.createElement('div');
+  div.id='award-popup-overlay';
+  div.onclick=closeAwardPopup;
+  div.style.cssText='display:none;position:fixed;inset:0;background:rgba(0,0,0,0.78);backdrop-filter:blur(8px);-webkit-backdrop-filter:blur(8px);z-index:9999;align-items:center;justify-content:center;padding:20px';
+  div.innerHTML='<div id="award-popup-card" style="background:linear-gradient(135deg,rgba(25,32,48,0.98),rgba(14,17,23,0.99));border-radius:24px;padding:32px 28px;text-align:center;max-width:320px;width:100%;position:relative"><div id="award-popup-content"></div><div style="font-size:11px;color:rgba(255,255,255,0.3);margin-top:16px">點擊任意處關閉</div></div>';
+  document.body.appendChild(div);
 }
 
 function revealAwardCell(rank){
-  const group=REVEAL_GROUPS[revealGroupIndex].filter(r=>r<=revealData.length);
-  if(!group.includes(rank))return;
   const cell=document.getElementById(`award-cell-${rank}`);
-  if(!cell||cell.dataset.revealed)return;
+  if(!cell)return;
   const u=revealData.find(u=>u.rank===rank);
   if(!u)return;
   const award=PLAYER_AWARDS[u.name]||{award:'神秘大獎',emoji:'🎁'};
   const rankColors={1:'#FFD700',2:'#C0C0C0',3:'#CD7F32'};
   const color=rankColors[rank]||'var(--text)';
   const rankLabel=rank<=3?['🥇','🥈','🥉'][rank-1]:`#${rank}`;
+  ensureAwardPopup();
   const popup=document.getElementById('award-popup-overlay');
   const content=document.getElementById('award-popup-content');
-  if(popup&&content){
-    content.innerHTML=`
-      ${rank===1?'<div style="font-size:20px;animation:crownBounce 1s infinite;margin-bottom:4px">👑</div>':''}
-      <div style="font-size:52px;margin-bottom:8px">${award.emoji}</div>
-      <div style="font-size:12px;color:var(--muted2);font-weight:600;margin-bottom:16px;line-height:1.4">${award.award}</div>
-      <div style="height:1px;background:rgba(255,255,255,0.07);margin-bottom:16px"></div>
-      <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:${color};margin-bottom:4px">${rankLabel}</div>
-      <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:${rank===1?'#FFD700':'var(--text)'};margin-bottom:8px">${u.name}</div>
-      <div style="font-size:13px;color:var(--muted2);margin-bottom:10px">體脂 ${u.fatRate>=0?'▾':'▴'}${Math.abs(u.fatRate).toFixed(1)}%　骨骼肌 ${u.muscleRate>=0?'▴':'▾'}${Math.abs(u.muscleRate).toFixed(1)}%</div>
-      <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:var(--accent)">${u.score.toFixed(2)}%</div>
-      ${u.isWinner?'<div style="background:var(--green);color:#000;border-radius:10px;padding:3px 12px;font-size:12px;font-weight:700;margin-top:8px;display:inline-block">✅ 達標退款 NT$2,000</div>':''}
-      ${u.prize>0?`<div style="color:#FFD700;font-size:14px;font-weight:700;margin-top:6px">🎁 獎金 NT\$${u.prize.toLocaleString()}</div>`:''}`;
-    popup.style.display='flex';
-    if(rank<=3)document.getElementById('reveal-spotlight').classList.add('on');
-    if(rank===1)setTimeout(()=>launchConfetti(),300);
-    popup._pendingRank=rank;
-  }
+  if(!popup||!content)return;
+  content.innerHTML=`
+    ${rank===1?'<div style="font-size:20px;animation:crownBounce 1s infinite;margin-bottom:4px">👑</div>':''}
+    <div style="font-size:52px;margin-bottom:8px">${award.emoji}</div>
+    <div style="font-size:12px;color:rgba(255,255,255,0.5);font-weight:600;margin-bottom:16px;line-height:1.4">${award.award}</div>
+    <div style="height:1px;background:rgba(255,255,255,0.07);margin-bottom:16px"></div>
+    <div style="font-family:'Syne',sans-serif;font-size:32px;font-weight:800;color:${color};margin-bottom:4px">${rankLabel}</div>
+    <div style="font-family:'Syne',sans-serif;font-size:26px;font-weight:800;color:${rank===1?'#FFD700':'#eef0f6'};margin-bottom:8px">${u.name}</div>
+    <div style="font-size:13px;color:rgba(255,255,255,0.45);margin-bottom:10px">體脂 ${u.fatRate>=0?'▾':'▴'}${Math.abs(u.fatRate).toFixed(1)}%　骨骼肌 ${u.muscleRate>=0?'▴':'▾'}${Math.abs(u.muscleRate).toFixed(1)}%</div>
+    <div style="font-family:'Syne',sans-serif;font-size:24px;font-weight:800;color:#f5a623">${u.score.toFixed(2)}%</div>
+    ${u.isWinner?'<div style="background:#3ddc84;color:#000;border-radius:10px;padding:3px 12px;font-size:12px;font-weight:700;margin-top:8px;display:inline-block">✅ 達標退款 NT$2,000</div>':''}
+    ${u.prize>0?`<div style="color:#FFD700;font-size:14px;font-weight:700;margin-top:6px">🎁 獎金 NT$${u.prize.toLocaleString()}</div>`:''}`;
+  popup.style.display='flex';
+  popup._pendingRank=rank;
+  if(rank<=3)document.getElementById('reveal-spotlight').classList.add('on');
+  if(rank===1)setTimeout(()=>launchConfetti(),300);
 }
+
 
 function closeAwardPopup(){
   const popup=document.getElementById('award-popup-overlay');
@@ -2066,9 +2070,6 @@ function closeAwardPopup(){
       <div style="font-family:'Syne',sans-serif;font-size:12px;font-weight:700;color:var(--text);margin-top:2px">${u?.name||''}</div>`;
   }
   revealedCount++;
-  const group=REVEAL_GROUPS[revealGroupIndex].filter(r=>r<=revealData.length);
-  const allGroupDone=group.every(r=>{const c=document.getElementById(`award-cell-${r}`);return c&&c.dataset.revealed;});
-  if(allGroupDone){setTimeout(()=>highlightGroup(revealGroupIndex+1),500);}
   popup._pendingRank=null;
 }
 
