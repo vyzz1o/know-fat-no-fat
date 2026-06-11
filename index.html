@@ -1884,7 +1884,7 @@ async function checkRaceEnded(){
     const snap=await db.collection('settings').doc('race').get();
     const data=snap.data();
     const today=getToday();
-    const isEnded=today>='2026-06-11'; // 測試用，正式改回 2026-06-24
+    const isEnded=today>='2026-06-24';
     const isRevealed=data?.revealed===true;
     const overlay=document.getElementById('lb-ended-overlay');
     if(!overlay)return;
@@ -2575,7 +2575,7 @@ async function loadPublicData(){
     if(CU&&CU.role==='admin')updateAdminTargetSelect();
     const overlay=document.getElementById('chart-blur-overlay');
     const today=getToday();
-    const isEnded=today>='2026-06-11'; // 測試用，正式改回 2026-06-24
+    const isEnded=today>='2026-06-24';
     if(overlay){
       if(isEnded){
         // 比賽結束：曲線鎖起來，顯示不同訊息
