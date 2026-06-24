@@ -795,7 +795,10 @@ tr:hover td{background:rgba(255,255,255,0.015)}
 
 <nav>
   <div class="nav-title" onclick="goPublic()">🏆 脂己脂彼</div>
-  <div id="nav-right"><button class="btn btn-ghost" style="width:auto;padding:5px 12px" onclick="showPage('login')">登入</button></div>
+  <div style="display:flex;align-items:center;gap:8px">
+    <button id="nav-replay-btn" onclick="startRevealCeremony()" style="display:none;background:linear-gradient(135deg,#FFD700,#FFA500);border:none;border-radius:8px;padding:5px 12px;font-size:12px;font-weight:800;color:#000;cursor:pointer;align-items:center;gap:4px">🎬 重看揭曉</button>
+    <div id="nav-right"><button class="btn btn-ghost" style="width:auto;padding:5px 12px" onclick="showPage('login')">登入</button></div>
+  </div>
 </nav>
 
 <!-- 跑馬燈 -->
@@ -1888,12 +1891,20 @@ async function checkRaceEnded(){
     const isRevealed=data?.revealed===true;
     const overlay=document.getElementById('lb-ended-overlay');
     if(!overlay)return;
-    if(isEnded&&!isRevealed){overlay.style.display='flex';}
-    else if(isEnded&&isRevealed){
+    if(isEnded&&!isRevealed){
+      // 結束未揭曉：遮罩，只有管理員看到按鈕
       overlay.style.display='flex';
       const btnWrap=document.getElementById('lb-reveal-btn-wrap');
-      if(btnWrap)btnWrap.style.display='block';
-    } else {overlay.style.display='none';}
+      if(btnWrap)btnWrap.style.display=CU&&CU.role==='admin'?'block':'none';
+    } else if(isEnded&&isRevealed){
+      // 已揭曉：移除遮罩，排行榜正常顯示
+      overlay.style.display='none';
+      // 右上角顯示重看揭曉按鈕
+      const replayBtn=document.getElementById('nav-replay-btn');
+      if(replayBtn)replayBtn.style.display='inline-flex';
+    } else {
+      overlay.style.display='none';
+    }
   }catch(e){}
 }
 
@@ -2578,9 +2589,16 @@ async function loadPublicData(){
     const isEnded=today>='2026-06-24';
     if(overlay){
       if(isEnded){
-        // 比賽結束：曲線鎖起來，顯示不同訊息
-        overlay.style.display='flex';
-        overlay.innerHTML=`<div style="font-size:20px">🔒</div><div style="font-size:13px;font-weight:700;color:var(--text)">比賽結算中，數據暫時保密</div>`;
+        // 比賽結束先查 revealed 狀態
+        db.collection('settings').doc('race').get().then(snap=>{
+          const isRevealed=snap.data()?.revealed===true;
+          if(isRevealed){
+            overlay.style.display='none'; // 已揭曉，曲線正常顯示
+          } else {
+            overlay.style.display='flex';
+            overlay.innerHTML=`<div style="font-size:20px">🔒</div><div style="font-size:13px;font-weight:700;color:var(--text)">比賽結算中，數據暫時保密</div>`;
+          }
+        });
       } else {
         overlay.style.display=CU?'none':'flex';
       }
