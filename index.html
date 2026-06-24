@@ -913,21 +913,12 @@ tr:hover td{background:rgba(255,255,255,0.015)}
     <div class="countdown-nums" id="countdown-display"></div>
     <div id="next-measure-box" style="margin-top:10px;font-size:12px;color:var(--muted)"></div>
   </div>
-  <div style="cursor:pointer;background:linear-gradient(135deg,#4cde8f18,#5b9cf618);border:1px solid #4cde8f44;border-radius:12px;padding:16px 20px;margin-bottom:14px" onclick="openVoteModal()">
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:8px">
-      <div style="font-weight:800;font-size:14px">✅ 規則修改投票已完成</div>
-      <div style="font-size:12px;color:var(--green);font-weight:700">投票成功</div>
-    </div>
-    <div style="font-size:12px;color:var(--muted2);line-height:1.6">新計分規則已生效：體脂降率 × 70% + 骨骼肌升率 × 30%</div>
-    <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px">
-      <div id="vote-banner-count" style="font-size:11px;color:var(--muted)">載入中...</div>
-      <div id="vote-banner-my" style="font-size:11px;color:var(--muted)"></div>
-    </div>
-    <!-- 隱藏但保留用於 JS 更新 -->
-    <div style="display:none">
-      <div id="vote-banner-yes"></div>
-      <div id="vote-banner-no"></div>
-    </div>
+  <div style="background:linear-gradient(135deg,rgba(245,166,35,0.1),rgba(255,123,0,0.06));border:1px solid rgba(245,166,35,0.3);border-radius:12px;padding:16px 20px;margin-bottom:14px;text-align:center">
+    <div style="font-size:11px;color:var(--accent);font-weight:700;letter-spacing:0.1em;text-transform:uppercase;margin-bottom:6px">Coming Soon</div>
+    <div style="font-weight:800;font-size:16px;font-family:'Syne',sans-serif">🔥 第二賽季 即將展開</div>
+    <div id="vote-banner-count" style="display:none"></div>
+    <div id="vote-banner-my" style="display:none"></div>
+    <div style="display:none"><div id="vote-banner-yes"></div><div id="vote-banner-no"></div></div>
   </div>
   <div class="prize-banner">
     <div>
@@ -991,22 +982,12 @@ tr:hover td{background:rgba(255,255,255,0.015)}
         </div>
       </div>
     </div>
-    <!-- 右：兩個入口並排 -->
+    <!-- 右：叫囂入口 -->
     <div style="display:flex;flex-direction:column;gap:10px;margin-bottom:0">
-      <!-- 叫囂入口 -->
-      <div class="jiao-entry" onclick="openJiaoxiao()" style="min-height:120px;flex:1">
-        <div style="font-size:32px;margin-bottom:6px">📣</div>
-        <div class="jiao-entry-title" style="font-size:18px">It's 叫囂 Time</div>
+      <div class="jiao-entry" onclick="openJiaoxiao()" style="flex:1">
+        <div style="font-size:36px;margin-bottom:8px">📣</div>
+        <div class="jiao-entry-title">It's 叫囂 Time</div>
         <div class="jiao-entry-sub">選人・開嗆・公開留言</div>
-      </div>
-      <!-- QA 入口 -->
-      <div onclick="openQaPage()" style="background:linear-gradient(135deg,#5b9cf618,#5b9cf605);border:1px solid #5b9cf644;border-radius:12px;padding:16px 10px;cursor:pointer;display:flex;flex-direction:column;align-items:center;justify-content:center;text-align:center;min-height:120px;flex:1;transition:all 0.2s;user-select:none" onmouseover="this.style.background='linear-gradient(135deg,#5b9cf628,#5b9cf610)'" onmouseout="this.style.background='linear-gradient(135deg,#5b9cf618,#5b9cf605)'">
-        <div style="font-size:32px;font-weight:900;color:#5b9cf6;letter-spacing:-2px;margin-bottom:4px">QA</div>
-        <div style="font-size:12px;color:var(--muted);margin-bottom:8px">提問・回覆・@某人</div>
-        <div style="display:flex;gap:6px;justify-content:center">
-          <div style="background:#5b9cf622;color:#5b9cf6;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">🐭 匿名</div>
-          <div style="background:#5b9cf622;color:#5b9cf6;border-radius:6px;padding:2px 8px;font-size:11px;font-weight:700">@ 標記</div>
-        </div>
       </div>
     </div>
   </div>
@@ -1202,6 +1183,9 @@ tr:hover td{background:rgba(255,255,255,0.015)}
     <div class="card" style="margin-top:0">
       <h2>📈 我的趨勢</h2>
       <div style="height:200px"><canvas id="my-chart-canvas"></canvas></div>
+    </div>
+    <div id="user-scorecard-wrap" style="display:none">
+      <button onclick="downloadMyScoreCard()" style="width:100%;background:linear-gradient(135deg,var(--accent),var(--accent2));border:none;border-radius:12px;padding:12px;font-size:14px;font-weight:800;color:#000;cursor:pointer;margin-bottom:16px">📊 下載我的成績單</button>
     </div>
   </div>
   <div id="utab-addrecord" style="display:none">
@@ -2156,6 +2140,29 @@ function showScoreCards(){
   if(btn){btn.style.display='block';btn.textContent='← 返回排名';btn.onclick=showRevealFinal;}
 }
 
+async function downloadMyScoreCard(){
+  if(!CU)return toast('請先登入','error');
+  // 如果 revealData 有資料直接用，否則重新計算
+  let u=revealData.find(u=>u.id===CU.id);
+  if(!u){
+    const uSnap=await db.collection('users').get();
+    const users=uSnap.docs.map(d=>({id:d.id,...d.data()})).filter(u=>u.role==='user');
+    const rSnap=await db.collection('records').where('status','==','approved').get();
+    const adminRecords={};
+    rSnap.docs.forEach(d=>{const r=d.data();if(r.adminEntered&&!r.isSpectator&&r.forScoring!==false){if(!adminRecords[r.userId])adminRecords[r.userId]=[];adminRecords[r.userId].push(r);}});
+    Object.keys(adminRecords).forEach(id=>adminRecords[id].sort((a,b)=>a.date.localeCompare(b.date)));
+    const totalPool=users.length*PRIZE_PER;
+    const rows=users.map(u=>{const r=adminRecords[u.id]||[];const s=calculateFullStats(r);return{id:u.id,name:u.name||u.id,score:s.total,isWinner:s.isWinner,fatRate:s.fatRate,muscleRate:s.muscleRate,bonus:s.bonus};}).sort((a,b)=>b.score-a.score);
+    const refundTotal=rows.filter(r=>r.isWinner).length*PRIZE_BACK;
+    const prizePool=totalPool-refundTotal;
+    const prizes=[Math.round(prizePool*0.6),Math.round(prizePool*0.25),Math.round(prizePool*0.15)];
+    rows.forEach((row,i)=>{row.rank=i+1;row.prize=i<3?prizes[i]:0;});
+    u=rows.find(r=>r.id===CU.id);
+  }
+  if(!u)return toast('找不到你的數據','error');
+  downloadScoreCard(u.id);
+}
+
 function downloadScoreCard(uid){
   const u=revealData.find(u=>u.id===uid);
   if(!u)return;
@@ -2708,6 +2715,13 @@ async function loadUserRecords(){
       chartEl.parentElement.innerHTML='<div style="color:var(--muted);font-size:12px;padding:20px;text-align:center">需要至少 2 筆紀錄才能顯示趨勢圖</div>';
     }
   }
+  // 揭曉後顯示成績單下載按鈕
+  try{
+    const raceSnap=await db.collection('settings').doc('race').get();
+    const isRevealed=raceSnap.data()?.revealed===true;
+    const wrap=document.getElementById('user-scorecard-wrap');
+    if(wrap)wrap.style.display=isRevealed?'block':'none';
+  }catch(e){}
 }
 
 async function login(){
