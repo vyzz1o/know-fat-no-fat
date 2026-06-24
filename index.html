@@ -2680,10 +2680,16 @@ async function loadUserRecords(){
       if(totalEl)totalEl.innerHTML=`<span id="anim-total-n">${s.total.toFixed(2)}</span>%`;
     },50);
   }
+  const userHeight=CU.height?parseFloat(CU.height):null;
+  const calcBMI=(weight)=>{
+    if(!userHeight||!weight)return'--';
+    const bmi=weight/((userHeight/100)**2);
+    return bmi.toFixed(1);
+  };
   const validRecs=recs.filter(r=>r.status==='approved'||r.status==='delete_pending');
   const renderTable=(list)=>{
     if(list.length===0)return'<div style="color:var(--muted);font-size:12px;padding:8px 0">尚無紀錄</div>';
-    return`<div style="overflow-x:auto"><table id="self-record-table"><tr><th>日期</th><th>來源</th><th>體重</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
+    return`<div style="overflow-x:auto"><table id="self-record-table"><tr><th>日期</th><th>來源</th><th>體重</th><th>BMI</th><th>體脂</th><th>皮下脂肪</th><th>骨骼肌</th><th>內臟脂肪</th><th>基代</th><th>身體年齡</th><th>生理</th><th>狀態</th><th>操作</th></tr>`+list.map(r=>{
       const src=r.adminEntered?`<span style="color:var(--accent);font-size:11px">管理員</span>`:`<span style="color:var(--muted);font-size:11px">本人</span>`;
       const statusTxt=r.status==='approved'?'✅':r.status==='delete_pending'?'🗑待刪除':'⏳';
       let ops='';
@@ -2694,8 +2700,8 @@ async function loadUserRecords(){
           ops=`<button style="background:var(--blue);color:#fff;border:none;border-radius:6px;padding:3px 8px;font-size:11px;font-weight:700;cursor:pointer;margin-right:4px" onclick="startEditRow('${r.id}')">編輯</button><button class="btn-red" style="font-size:11px;padding:2px 7px" onclick="deleteRecord('${r.id}',false)">刪除</button>`;
         }
       }
-      const commentRow=r.adminEntered&&r.comment?`<tr><td colspan="12" style="padding:6px 10px 10px;border-bottom:1px solid rgba(30,38,56,0.5)"><div style="background:linear-gradient(135deg,rgba(245,166,35,0.07),rgba(245,166,35,0.02));border-left:2px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;color:var(--muted2);line-height:1.6"><span style="color:var(--accent);font-weight:700;margin-right:6px">💬 管理員結語</span>${r.comment}</div></td></tr>`:'';
-      return`<tr id="row-${r.id}"><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'%':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>${commentRow}`;
+      const commentRow=r.adminEntered&&r.comment?`<tr><td colspan="13" style="padding:6px 10px 10px;border-bottom:1px solid rgba(30,38,56,0.5)"><div style="background:linear-gradient(135deg,rgba(245,166,35,0.07),rgba(245,166,35,0.02));border-left:2px solid var(--accent);border-radius:0 8px 8px 0;padding:8px 12px;font-size:12px;color:var(--muted2);line-height:1.6"><span style="color:var(--accent);font-weight:700;margin-right:6px">💬 管理員結語</span>${r.comment}</div></td></tr>`:'';
+      return`<tr id="row-${r.id}"><td>${r.date}</td><td>${src}</td><td>${r.weight}kg</td><td>${calcBMI(r.weight)}</td><td>${r.bodyFat}%</td><td>${r.subcut!=null?r.subcut+'%':'--'}</td><td>${r.muscle!=null?r.muscle+'%':'--'}</td><td>${r.visceral!=null?r.visceral:'--'}</td><td>${r.bmr!=null?r.bmr:'--'}</td><td>${r.bodyage!=null?r.bodyage:'--'}</td><td>${r.isPeriod?'🔴':'--'}</td><td>${statusTxt}</td><td style="white-space:nowrap">${ops}</td></tr>${commentRow}`;
     }).join('')+`</table></div>`;
   };
   document.getElementById('user-record-list').innerHTML=renderTable(validRecs);
